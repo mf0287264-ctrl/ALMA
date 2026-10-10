@@ -3,6 +3,15 @@ import { hashPassword } from '../../Utils/argon2.util.js';
 
 class StudentsService {
   async createStudent(data) {
+    if (data.email) {
+      const existingStudent = await studentsRepository.findByEmail(data.email);
+      if (existingStudent) {
+        const error = new Error('Email already exists');
+        error.statusCode = 400;
+        throw error;
+      }
+    }
+
     const rawPassword = data.password || 'StudentPass123!';
     data.password_hash = await hashPassword(rawPassword);
     delete data.password;
@@ -25,6 +34,15 @@ class StudentsService {
   }
 
   async updateStudent(id, data) {
+    if (data.email) {
+      const existingStudent = await studentsRepository.findByEmail(data.email);
+      if (existingStudent && existingStudent._id.toString() !== id.toString()) {
+        const error = new Error('Email already exists');
+        error.statusCode = 400;
+        throw error;
+      }
+    }
+
     if (data.password) {
       data.password_hash = await hashPassword(data.password);
       delete data.password;

@@ -8,7 +8,7 @@ export const createCourseSchema = z.object({
   curriculum: z.string().optional(),
   language: z.string().default('en'),
   status: z.enum(['draft', 'published', 'archived']).default('draft'),
-  created_by: z.string().min(1, 'created_by (User ID) is required'),
+  created_by: z.string().min(1, 'created_by is required'),
   course_image: z.string().optional().nullable()
 });
 

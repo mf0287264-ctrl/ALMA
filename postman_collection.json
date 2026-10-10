@@ -189,7 +189,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"requested_by\": \"USER_ID_HERE\",\n  \"course_id\": \"COURSE_ID_HERE\",\n  \"module_id\": \"MODULE_ID_HERE\",\n  \"input_parameters\": {\n    \"topic\": \"Python For Loops\",\n    \"grade_level\": \"Grade 10\",\n    \"target_duration_minutes\": 30\n  },\n  \"model\": \"gemini-2.5-flash\",\n  \"prompt_version\": \"v1.0\"\n}"
+              "raw": "{\n  \"requested_by\": \"TEACHER_ID_HERE\",\n  \"course_id\": \"COURSE_ID_HERE\",\n  \"module_id\": \"MODULE_ID_HERE\",\n  \"input_parameters\": {\n    \"topic\": \"Python For Loops\",\n    \"grade_level\": \"Grade 10\",\n    \"target_duration_minutes\": 30\n  },\n  \"model\": \"gemini-2.5-flash\",\n  \"prompt_version\": \"v1.0\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/lesson-generations",
@@ -207,7 +207,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"course_id\": \"COURSE_ID_HERE\",\n  \"module_id\": \"MODULE_ID_HERE\",\n  \"title\": \"Mastering Python For Loops\",\n  \"description\": \"Learn how to loop over lists and ranges in Python.\",\n  \"learning_objectives\": [\"Understand range() function\"],\n  \"sections\": [\n    {\n      \"heading\": \"Introduction to Loops\",\n      \"explanation\": \"Loops allow code execution repeatedly.\",\n      \"code_example\": {\n        \"code\": \"for i in range(5):\\n    print(i)\",\n        \"language\": \"python\",\n        \"output_explanation\": \"Prints 0 to 4\"\n      }\n    }\n  ],\n  \"difficulty\": \"beginner\",\n  \"estimated_duration_minutes\": 30,\n  \"status\": \"published\",\n  \"created_by\": \"USER_ID_HERE\"\n}"
+              "raw": "{\n  \"course_id\": \"COURSE_ID_HERE\",\n  \"module_id\": \"MODULE_ID_HERE\",\n  \"title\": \"Mastering Python For Loops\",\n  \"description\": \"Learn how to loop over lists and ranges in Python.\",\n  \"learning_objectives\": [\"Understand range() function\"],\n  \"sections\": [\n    {\n      \"heading\": \"Introduction to Loops\",\n      \"explanation\": \"Loops allow code execution repeatedly.\",\n      \"code_example\": {\n        \"code\": \"for i in range(5):\\n    print(i)\",\n        \"language\": \"python\",\n        \"output_explanation\": \"Prints 0 to 4\"\n      }\n    }\n  ],\n  \"difficulty\": \"beginner\",\n  \"estimated_duration_minutes\": 30,\n  \"status\": \"published\",\n  \"created_by\": \"TEACHER_ID_HERE\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/lessons",

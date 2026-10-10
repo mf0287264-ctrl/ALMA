@@ -6,6 +6,11 @@ class TeachersRepository {
     return db.collection('teachers');
   }
 
+  async findByEmail(email) {
+    if (!email) return null;
+    return await this.collection.findOne({ email: email.toLowerCase().trim() });
+  }
+
   async create(data) {
     const result = await this.collection.insertOne({
       ...data,
