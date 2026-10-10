@@ -1,13 +1,9 @@
-import { MongoClient } from "mongodb";
+import dotenv from "dotenv";
+dotenv.config();
 
-const client = new MongoClient("mongodb://localhost:27017");
-export const db = client.db("ALMA");
-
-export const database_connect = async () => {
-  try {
-    await client.connect();
-    console.log("Database connected");
-  } catch (error) {
-    console.log("DB connection error", error);
-  }
+export const mongoConfig = {
+  uri: process.env.MONGODB_URI || "mongodb://localhost:27017",
+  dbName: process.env.DB_NAME || "ALMA"
 };
+
+export default mongoConfig;

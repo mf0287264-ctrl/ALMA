@@ -3,7 +3,7 @@ dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
-import { database_connect } from './Config/mongodb.config.js';
+import { database_connect } from './DB/db.connection.js';
 import errorHandler from './Middleware/error.middleware.js';
 
 // Route Imports

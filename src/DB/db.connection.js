@@ -1,7 +1,8 @@
 import { MongoClient } from "mongodb";
+import { mongoConfig } from "../Config/mongodb.config.js";
 
-const client = new MongoClient("mongodb://localhost:27017");
-export const db = client.db("ALMA");
+const client = new MongoClient(mongoConfig.uri);
+export const db = client.db(mongoConfig.dbName);
 
 export const database_connect = async () => {
   try {
