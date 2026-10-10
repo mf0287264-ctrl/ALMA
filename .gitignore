@@ -1,13 +1,7 @@
-# Dependencies
 node_modules/
+.env
 __pycache__/
 *.pyc
-.env
-.venv/
-env/
-venv/
-
-# IDE / OS files
 .vscode/
 .idea/
 .DS_Store

@@ -1,0 +1,275 @@
+{
+  "info": {
+    "name": "ALMA Academy API Collection",
+    "description": "Complete Postman Collection for ALMA Academy Secondary School AI Education Platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "health"]
+        }
+      }
+    },
+    {
+      "name": "Students",
+      "item": [
+        {
+          "name": "Create Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Alex\",\n  \"last_name\": \"Smith\",\n  \"email\": \"alex.smith@student.alma.edu\",\n  \"student_code\": \"STU-1001\",\n  \"grade_level\": \"Grade 10\",\n  \"school_name\": \"Greenwood High\",\n  \"parent_phone\": \"+1234567890\",\n  \"national_id\": \"NAT-998877\",\n  \"achievement\": \"Python Beginner Badge\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/students",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "students"]
+            }
+          }
+        },
+        {
+          "name": "Get All Students",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/students",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "students"]
+            }
+          }
+        },
+        {
+          "name": "Get Student By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/students/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "students", ":id"],
+              "variable": [{ "key": "id", "value": "STUDENT_ID_HERE" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Teachers",
+      "item": [
+        {
+          "name": "Create Teacher",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Sarah\",\n  \"last_name\": \"Johnson\",\n  \"email\": \"sarah.johnson@alma.edu\",\n  \"teacher_code\": \"TCH-2001\",\n  \"specialization\": \"Computer Science & Python\",\n  \"school_name\": \"Greenwood High\",\n  \"phone_number\": \"+1987654321\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teachers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "teachers"]
+            }
+          }
+        },
+        {
+          "name": "Get All Teachers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teachers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "teachers"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Courses",
+      "item": [
+        {
+          "name": "Create Course",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Introduction to Python Programming\",\n  \"description\": \"Comprehensive secondary school Python programming course.\",\n  \"subject\": \"Programming\",\n  \"grade_level\": \"Grade 9-10\",\n  \"curriculum\": \"CS-SEC-101\",\n  \"language\": \"en\",\n  \"status\": \"published\",\n  \"created_by\": \"TEACHER_ID_HERE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/courses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "courses"]
+            }
+          }
+        },
+        {
+          "name": "Get All Courses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/courses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "courses"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Modules",
+      "item": [
+        {
+          "name": "Create Module",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": \"COURSE_ID_HERE\",\n  \"title\": \"Control Structures and Loops\",\n  \"description\": \"Mastering if statements, for loops, and while loops.\",\n  \"order\": 1,\n  \"learning_objectives\": [\n    \"Understand boolean expressions\",\n    \"Write for loops in Python\"\n  ],\n  \"status\": \"published\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/modules",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "modules"]
+            }
+          }
+        },
+        {
+          "name": "Get All Modules",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/modules",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "modules"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lessons & AI Generation",
+      "item": [
+        {
+          "name": "Request AI Lesson Generation",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requested_by\": \"USER_ID_HERE\",\n  \"course_id\": \"COURSE_ID_HERE\",\n  \"module_id\": \"MODULE_ID_HERE\",\n  \"input_parameters\": {\n    \"topic\": \"Python For Loops\",\n    \"grade_level\": \"Grade 10\",\n    \"target_duration_minutes\": 30\n  },\n  \"model\": \"gemini-2.5-flash\",\n  \"prompt_version\": \"v1.0\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lesson-generations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "lesson-generations"]
+            }
+          }
+        },
+        {
+          "name": "Create Lesson",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": \"COURSE_ID_HERE\",\n  \"module_id\": \"MODULE_ID_HERE\",\n  \"title\": \"Mastering Python For Loops\",\n  \"description\": \"Learn how to loop over lists and ranges in Python.\",\n  \"learning_objectives\": [\"Understand range() function\"],\n  \"sections\": [\n    {\n      \"heading\": \"Introduction to Loops\",\n      \"explanation\": \"Loops allow code execution repeatedly.\",\n      \"code_example\": {\n        \"code\": \"for i in range(5):\\n    print(i)\",\n        \"language\": \"python\",\n        \"output_explanation\": \"Prints 0 to 4\"\n      }\n    }\n  ],\n  \"difficulty\": \"beginner\",\n  \"estimated_duration_minutes\": 30,\n  \"status\": \"published\",\n  \"created_by\": \"USER_ID_HERE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lessons",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "lessons"]
+            }
+          }
+        },
+        {
+          "name": "Get All Lessons",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lessons",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "lessons"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Assessments & Quizzes",
+      "item": [
+        {
+          "name": "Create Assessment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": \"COURSE_ID_HERE\",\n  \"module_id\": \"MODULE_ID_HERE\",\n  \"title\": \"Python Fundamentals Final Assessment\",\n  \"description\": \"Comprehensive evaluation of Python control flow and data types.\",\n  \"total_points\": 100,\n  \"passing_score\": 70,\n  \"status\": \"published\",\n  \"generated_by_ai\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/assessments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "assessments"]
+            }
+          }
+        },
+        {
+          "name": "Create Quiz",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lesson_id\": \"LESSON_ID_HERE\",\n  \"title\": \"For Loops Quiz\",\n  \"questions\": [\n    {\n      \"question\": \"What is the output of range(3)?\",\n      \"options\": [\"0, 1, 2\", \"1, 2, 3\", \"0, 1, 2, 3\"],\n      \"correct_option_index\": 0,\n      \"explanation\": \"range(3) produces numbers 0, 1, 2.\"\n    }\n  ],\n  \"status\": \"published\",\n  \"generated_by_ai\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/quizzes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "quizzes"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
