@@ -1,0 +1,1 @@
+// Module model schema definition

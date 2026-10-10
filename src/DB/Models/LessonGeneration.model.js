@@ -1,0 +1,1 @@
+// LessonGeneration model schema definition
