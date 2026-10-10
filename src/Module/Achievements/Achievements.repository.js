@@ -1,4 +1,4 @@
-const Achievement = require('../../DB/Models/Achievement.model');
+import Achievement from '../../DB/Models/Achievement.model.js';
 
 class AchievementsRepository {
   async create(data) {
@@ -22,4 +22,4 @@ class AchievementsRepository {
   }
 }
 
-module.exports = new AchievementsRepository();
+export default new AchievementsRepository();

@@ -1,11 +1,14 @@
-const express = require('express');
-const router = express.Router();
-const teachersController = require('./Teachers.controller');
+import express from 'express';
+import teachersController from './Teachers.controller.js';
+import { validate } from '../../Middleware/validation.middleware.js';
+import { createTeacherSchema, updateTeacherSchema } from '../../Validation/Teacher.validation.js';
 
-router.post('/', teachersController.create);
+const router = express.Router();
+
+router.post('/', validate(createTeacherSchema), teachersController.create);
 router.get('/', teachersController.getAll);
 router.get('/:id', teachersController.getById);
-router.put('/:id', teachersController.update);
+router.put('/:id', validate(updateTeacherSchema), teachersController.update);
 router.delete('/:id', teachersController.delete);
 
-module.exports = router;
+export default router;

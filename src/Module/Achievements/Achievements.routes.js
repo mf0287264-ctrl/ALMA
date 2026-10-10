@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import achievementsController from './Achievements.controller.js';
+
 const router = express.Router();
-const achievementsController = require('./Achievements.controller');
 
 router.post('/', achievementsController.create);
 router.get('/', achievementsController.getAll);
@@ -8,4 +9,4 @@ router.get('/:id', achievementsController.getById);
 router.put('/:id', achievementsController.update);
 router.delete('/:id', achievementsController.delete);
 
-module.exports = router;
+export default router;

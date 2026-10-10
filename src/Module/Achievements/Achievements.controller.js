@@ -1,4 +1,4 @@
-const achievementsService = require('./Achievements.service');
+import achievementsService from './Achievements.service.js';
 
 class AchievementsController {
   async create(req, res, next) {
@@ -47,4 +47,4 @@ class AchievementsController {
   }
 }
 
-module.exports = new AchievementsController();
+export default new AchievementsController();

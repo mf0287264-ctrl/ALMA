@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const mongoConfig = require('../Config/mongodb.config');
+import mongoose from 'mongoose';
+import mongoConfig from '../Config/mongodb.config.js';
 
 const connectDB = async () => {
   try {
@@ -11,4 +11,4 @@ const connectDB = async () => {
   }
 };
 
-module.exports = connectDB;
+export default connectDB;

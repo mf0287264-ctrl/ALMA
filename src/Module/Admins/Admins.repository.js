@@ -1,4 +1,4 @@
-const Admin = require('../../DB/Models/Admin.model');
+import Admin from '../../DB/Models/Admin.model.js';
 
 class AdminsRepository {
   async create(data) {
@@ -22,4 +22,4 @@ class AdminsRepository {
   }
 }
 
-module.exports = new AdminsRepository();
+export default new AdminsRepository();

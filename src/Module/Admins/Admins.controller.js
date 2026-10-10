@@ -1,4 +1,4 @@
-const adminsService = require('./Admins.service');
+import adminsService from './Admins.service.js';
 
 class AdminsController {
   async create(req, res, next) {
@@ -47,4 +47,4 @@ class AdminsController {
   }
 }
 
-module.exports = new AdminsController();
+export default new AdminsController();

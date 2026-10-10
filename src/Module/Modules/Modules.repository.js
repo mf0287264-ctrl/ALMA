@@ -1,4 +1,4 @@
-const ModuleModel = require('../../DB/Models/Module.model');
+import ModuleModel from '../../DB/Models/Module.model.js';
 
 class ModulesRepository {
   async create(data) {
@@ -22,4 +22,4 @@ class ModulesRepository {
   }
 }
 
-module.exports = new ModulesRepository();
+export default new ModulesRepository();

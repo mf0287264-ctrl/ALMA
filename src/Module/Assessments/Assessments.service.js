@@ -1,4 +1,4 @@
-const assessmentsRepository = require('./Assessments.repository');
+import assessmentsRepository from './Assessments.repository.js';
 
 class AssessmentsService {
   async createAssessment(data) {
@@ -40,4 +40,4 @@ class AssessmentsService {
   }
 }
 
-module.exports = new AssessmentsService();
+export default new AssessmentsService();

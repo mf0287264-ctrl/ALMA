@@ -1,11 +1,14 @@
-const express = require('express');
-const router = express.Router();
-const modulesController = require('./Modules.controller');
+import express from 'express';
+import modulesController from './Modules.controller.js';
+import { validate } from '../../Middleware/validation.middleware.js';
+import { createModuleSchema, updateModuleSchema } from '../../Validation/Module.validation.js';
 
-router.post('/', modulesController.create);
+const router = express.Router();
+
+router.post('/', validate(createModuleSchema), modulesController.create);
 router.get('/', modulesController.getAll);
 router.get('/:id', modulesController.getById);
-router.put('/:id', modulesController.update);
+router.put('/:id', validate(updateModuleSchema), modulesController.update);
 router.delete('/:id', modulesController.delete);
 
-module.exports = router;
+export default router;

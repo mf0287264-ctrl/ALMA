@@ -1,4 +1,4 @@
-const Teacher = require('../../DB/Models/Teacher.model');
+import Teacher from '../../DB/Models/Teacher.model.js';
 
 class TeachersRepository {
   async create(data) {
@@ -22,4 +22,4 @@ class TeachersRepository {
   }
 }
 
-module.exports = new TeachersRepository();
+export default new TeachersRepository();

@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const courseSchema = new mongoose.Schema(
   {
@@ -9,7 +9,7 @@ const courseSchema = new mongoose.Schema(
     curriculum: { type: String, default: 'General' },
     language: { type: String, default: 'en' },
     status: { type: String, enum: ['draft', 'published', 'archived'], default: 'draft' },
-    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher', required: true },
+    created_by: { type: mongoose.Schema.Types.ObjectId, required: true },
     course_image: { type: String, default: null }
   },
   {
@@ -17,4 +17,4 @@ const courseSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model('Course', courseSchema);
+export default mongoose.model('Course', courseSchema);

@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const questionSchema = new mongoose.Schema({
   question_text: { type: String, required: true },
@@ -26,4 +26,4 @@ const assessmentSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model('Assessment', assessmentSchema);
+export default mongoose.model('Assessment', assessmentSchema);

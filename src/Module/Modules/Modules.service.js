@@ -1,4 +1,4 @@
-const modulesRepository = require('./Modules.repository');
+import modulesRepository from './Modules.repository.js';
 
 class ModulesService {
   async createModule(data) {
@@ -40,4 +40,4 @@ class ModulesService {
   }
 }
 
-module.exports = new ModulesService();
+export default new ModulesService();

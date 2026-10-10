@@ -1,4 +1,4 @@
-const Assessment = require('../../DB/Models/Assessment.model');
+import Assessment from '../../DB/Models/Assessment.model.js';
 
 class AssessmentsRepository {
   async create(data) {
@@ -26,4 +26,4 @@ class AssessmentsRepository {
   }
 }
 
-module.exports = new AssessmentsRepository();
+export default new AssessmentsRepository();

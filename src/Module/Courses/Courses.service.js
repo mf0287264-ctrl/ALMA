@@ -1,4 +1,4 @@
-const coursesRepository = require('./Courses.repository');
+import coursesRepository from './Courses.repository.js';
 
 class CoursesService {
   async createCourse(data) {
@@ -40,4 +40,4 @@ class CoursesService {
   }
 }
 
-module.exports = new CoursesService();
+export default new CoursesService();

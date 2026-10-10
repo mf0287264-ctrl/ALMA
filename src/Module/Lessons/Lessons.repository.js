@@ -1,4 +1,4 @@
-const Lesson = require('../../DB/Models/Lesson.model');
+import Lesson from '../../DB/Models/Lesson.model.js';
 
 class LessonsRepository {
   async create(data) {
@@ -26,4 +26,4 @@ class LessonsRepository {
   }
 }
 
-module.exports = new LessonsRepository();
+export default new LessonsRepository();

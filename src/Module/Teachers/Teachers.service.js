@@ -1,10 +1,12 @@
-const teachersRepository = require('./Teachers.repository');
+import teachersRepository from './Teachers.repository.js';
+import { hashPassword } from '../../Utils/argon2.util.js';
 
 class TeachersService {
   async createTeacher(data) {
-    if (!data.password_hash) {
-      data.password_hash = 'default_hashed_pass';
-    }
+    const rawPassword = data.password || 'TeacherPass123!';
+    data.password_hash = await hashPassword(rawPassword);
+    delete data.password;
+
     return await teachersRepository.create(data);
   }
 
@@ -23,6 +25,10 @@ class TeachersService {
   }
 
   async updateTeacher(id, data) {
+    if (data.password) {
+      data.password_hash = await hashPassword(data.password);
+      delete data.password;
+    }
     const teacher = await teachersRepository.update(id, data);
     if (!teacher) {
       const error = new Error('Teacher not found');
@@ -43,4 +49,4 @@ class TeachersService {
   }
 }
 
-module.exports = new TeachersService();
+export default new TeachersService();

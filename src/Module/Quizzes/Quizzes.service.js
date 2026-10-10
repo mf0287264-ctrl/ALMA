@@ -1,4 +1,4 @@
-const quizzesRepository = require('./Quizzes.repository');
+import quizzesRepository from './Quizzes.repository.js';
 
 class QuizzesService {
   async createQuiz(data) {
@@ -40,4 +40,4 @@ class QuizzesService {
   }
 }
 
-module.exports = new QuizzesService();
+export default new QuizzesService();

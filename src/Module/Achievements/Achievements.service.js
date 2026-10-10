@@ -1,4 +1,4 @@
-const achievementsRepository = require('./Achievements.repository');
+import achievementsRepository from './Achievements.repository.js';
 
 class AchievementsService {
   async createAchievement(data) {
@@ -40,4 +40,4 @@ class AchievementsService {
   }
 }
 
-module.exports = new AchievementsService();
+export default new AchievementsService();

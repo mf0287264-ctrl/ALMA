@@ -1,4 +1,4 @@
-const Quiz = require('../../DB/Models/Quiz.model');
+import Quiz from '../../DB/Models/Quiz.model.js';
 
 class QuizzesRepository {
   async create(data) {
@@ -22,4 +22,4 @@ class QuizzesRepository {
   }
 }
 
-module.exports = new QuizzesRepository();
+export default new QuizzesRepository();

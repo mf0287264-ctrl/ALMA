@@ -1,4 +1,4 @@
-const Student = require('../../DB/Models/Student.model');
+import Student from '../../DB/Models/Student.model.js';
 
 class StudentsRepository {
   async create(data) {
@@ -22,4 +22,4 @@ class StudentsRepository {
   }
 }
 
-module.exports = new StudentsRepository();
+export default new StudentsRepository();

@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import lessonGenerationsController from './LessonGenerations.controller.js';
+
 const router = express.Router();
-const lessonGenerationsController = require('./LessonGenerations.controller');
 
 router.post('/', lessonGenerationsController.create);
 router.get('/', lessonGenerationsController.getAll);
@@ -8,4 +9,4 @@ router.get('/:id', lessonGenerationsController.getById);
 router.put('/:id', lessonGenerationsController.update);
 router.delete('/:id', lessonGenerationsController.delete);
 
-module.exports = router;
+export default router;

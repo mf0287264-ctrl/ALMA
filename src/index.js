@@ -1,20 +1,22 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const connectDB = require('./DB/db.connection');
-const errorHandler = require('./Middleware/error.middleware');
+import dotenv from 'dotenv';
+dotenv.config();
+
+import express from 'express';
+import cors from 'cors';
+import connectDB from './DB/db.connection.js';
+import errorHandler from './Middleware/error.middleware.js';
 
 // Route Imports
-const studentsRoutes = require('./Module/Students/Students.routes');
-const teachersRoutes = require('./Module/Teachers/Teachers.routes');
-const adminsRoutes = require('./Module/Admins/Admins.routes');
-const coursesRoutes = require('./Module/Courses/Courses.routes');
-const modulesRoutes = require('./Module/Modules/Modules.routes');
-const lessonsRoutes = require('./Module/Lessons/Lessons.routes');
-const lessonGenerationsRoutes = require('./Module/LessonGenerations/LessonGenerations.routes');
-const assessmentsRoutes = require('./Module/Assessments/Assessments.routes');
-const quizzesRoutes = require('./Module/Quizzes/Quizzes.routes');
-const achievementsRoutes = require('./Module/Achievements/Achievements.routes');
+import studentsRoutes from './Module/Students/Students.routes.js';
+import teachersRoutes from './Module/Teachers/Teachers.routes.js';
+import adminsRoutes from './Module/Admins/Admins.routes.js';
+import coursesRoutes from './Module/Courses/Courses.routes.js';
+import modulesRoutes from './Module/Modules/Modules.routes.js';
+import lessonsRoutes from './Module/Lessons/Lessons.routes.js';
+import lessonGenerationsRoutes from './Module/LessonGenerations/LessonGenerations.routes.js';
+import assessmentsRoutes from './Module/Assessments/Assessments.routes.js';
+import quizzesRoutes from './Module/Quizzes/Quizzes.routes.js';
+import achievementsRoutes from './Module/Achievements/Achievements.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -54,4 +56,4 @@ app.listen(PORT, () => {
   console.log(`[ALMA Academy API] Server running on port ${PORT}`);
 });
 
-module.exports = app;
+export default app;

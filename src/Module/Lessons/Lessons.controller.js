@@ -1,4 +1,4 @@
-const lessonsService = require('./Lessons.service');
+import lessonsService from './Lessons.service.js';
 
 class LessonsController {
   async create(req, res, next) {
@@ -47,4 +47,4 @@ class LessonsController {
   }
 }
 
-module.exports = new LessonsController();
+export default new LessonsController();

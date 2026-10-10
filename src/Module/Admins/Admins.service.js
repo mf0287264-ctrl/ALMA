@@ -1,10 +1,12 @@
-const adminsRepository = require('./Admins.repository');
+import adminsRepository from './Admins.repository.js';
+import { hashPassword } from '../../Utils/argon2.util.js';
 
 class AdminsService {
   async createAdmin(data) {
-    if (!data.password_hash) {
-      data.password_hash = 'default_hashed_pass';
-    }
+    const rawPassword = data.password || 'AdminPass123!';
+    data.password_hash = await hashPassword(rawPassword);
+    delete data.password;
+
     return await adminsRepository.create(data);
   }
 
@@ -23,6 +25,10 @@ class AdminsService {
   }
 
   async updateAdmin(id, data) {
+    if (data.password) {
+      data.password_hash = await hashPassword(data.password);
+      delete data.password;
+    }
     const admin = await adminsRepository.update(id, data);
     if (!admin) {
       const error = new Error('Admin not found');
@@ -43,4 +49,4 @@ class AdminsService {
   }
 }
 
-module.exports = new AdminsService();
+export default new AdminsService();

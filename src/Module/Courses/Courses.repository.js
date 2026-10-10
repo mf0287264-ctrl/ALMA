@@ -1,4 +1,4 @@
-const Course = require('../../DB/Models/Course.model');
+import Course from '../../DB/Models/Course.model.js';
 
 class CoursesRepository {
   async create(data) {
@@ -6,11 +6,11 @@ class CoursesRepository {
   }
 
   async findAll(filter = {}) {
-    return await Course.find(filter).populate('created_by', 'first_name last_name email');
+    return await Course.find(filter);
   }
 
   async findById(id) {
-    return await Course.findById(id).populate('created_by', 'first_name last_name email');
+    return await Course.findById(id);
   }
 
   async update(id, data) {
@@ -22,4 +22,4 @@ class CoursesRepository {
   }
 }
 
-module.exports = new CoursesRepository();
+export default new CoursesRepository();

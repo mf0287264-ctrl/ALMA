@@ -1,4 +1,4 @@
-const quizzesService = require('./Quizzes.service');
+import quizzesService from './Quizzes.service.js';
 
 class QuizzesController {
   async create(req, res, next) {
@@ -47,4 +47,4 @@ class QuizzesController {
   }
 }
 
-module.exports = new QuizzesController();
+export default new QuizzesController();

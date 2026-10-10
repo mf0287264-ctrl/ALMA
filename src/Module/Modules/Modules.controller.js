@@ -1,4 +1,4 @@
-const modulesService = require('./Modules.service');
+import modulesService from './Modules.service.js';
 
 class ModulesController {
   async create(req, res, next) {
@@ -47,4 +47,4 @@ class ModulesController {
   }
 }
 
-module.exports = new ModulesController();
+export default new ModulesController();

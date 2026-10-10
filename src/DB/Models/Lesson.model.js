@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const sectionSchema = new mongoose.Schema({
   heading: { type: String, required: true },
@@ -32,4 +32,4 @@ const lessonSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model('Lesson', lessonSchema);
+export default mongoose.model('Lesson', lessonSchema);

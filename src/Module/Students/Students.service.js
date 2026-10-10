@@ -1,11 +1,12 @@
-const studentsRepository = require('./Students.repository');
+import studentsRepository from './Students.repository.js';
+import { hashPassword } from '../../Utils/argon2.util.js';
 
 class StudentsService {
   async createStudent(data) {
-    // Generate default password_hash if not provided for testing
-    if (!data.password_hash) {
-      data.password_hash = 'default_hashed_pass';
-    }
+    const rawPassword = data.password || 'StudentPass123!';
+    data.password_hash = await hashPassword(rawPassword);
+    delete data.password;
+    
     return await studentsRepository.create(data);
   }
 
@@ -24,6 +25,10 @@ class StudentsService {
   }
 
   async updateStudent(id, data) {
+    if (data.password) {
+      data.password_hash = await hashPassword(data.password);
+      delete data.password;
+    }
     const student = await studentsRepository.update(id, data);
     if (!student) {
       const error = new Error('Student not found');
@@ -44,4 +49,4 @@ class StudentsService {
   }
 }
 
-module.exports = new StudentsService();
+export default new StudentsService();
