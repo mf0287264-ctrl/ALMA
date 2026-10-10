@@ -1,24 +1,41 @@
-import ModuleModel from '../../DB/Models/Module.model.js';
+import { ObjectId } from 'mongodb';
+import { db } from '../../DB/db.connection.js';
 
 class ModulesRepository {
+  get collection() {
+    return db.collection('modules');
+  }
+
   async create(data) {
-    return await ModuleModel.create(data);
+    const result = await this.collection.insertOne({
+      ...data,
+      created_at: new Date(),
+      updated_at: new Date()
+    });
+    return await this.findById(result.insertedId);
   }
 
   async findAll(filter = {}) {
-    return await ModuleModel.find(filter).populate('course_id', 'title subject grade_level');
+    return await this.collection.find(filter).toArray();
   }
 
   async findById(id) {
-    return await ModuleModel.findById(id).populate('course_id', 'title subject grade_level');
+    const queryId = typeof id === 'string' ? new ObjectId(id) : id;
+    return await this.collection.findOne({ _id: queryId });
   }
 
   async update(id, data) {
-    return await ModuleModel.findByIdAndUpdate(id, data, { new: true });
+    const queryId = typeof id === 'string' ? new ObjectId(id) : id;
+    await this.collection.updateOne(
+      { _id: queryId },
+      { $set: { ...data, updated_at: new Date() } }
+    );
+    return await this.findById(id);
   }
 
   async delete(id) {
-    return await ModuleModel.findByIdAndDelete(id);
+    const queryId = typeof id === 'string' ? new ObjectId(id) : id;
+    return await this.collection.deleteOne({ _id: queryId });
   }
 }
 

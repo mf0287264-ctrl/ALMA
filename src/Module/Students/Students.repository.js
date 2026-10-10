@@ -1,24 +1,41 @@
-import Student from '../../DB/Models/Student.model.js';
+import { ObjectId } from 'mongodb';
+import { db } from '../../DB/db.connection.js';
 
 class StudentsRepository {
+  get collection() {
+    return db.collection('students');
+  }
+
   async create(data) {
-    return await Student.create(data);
+    const result = await this.collection.insertOne({
+      ...data,
+      created_at: new Date(),
+      updated_at: new Date()
+    });
+    return await this.findById(result.insertedId);
   }
 
   async findAll(filter = {}) {
-    return await Student.find(filter).select('-password_hash');
+    return await this.collection.find(filter, { projection: { password_hash: 0 } }).toArray();
   }
 
   async findById(id) {
-    return await Student.findById(id).select('-password_hash');
+    const queryId = typeof id === 'string' ? new ObjectId(id) : id;
+    return await this.collection.findOne({ _id: queryId }, { projection: { password_hash: 0 } });
   }
 
   async update(id, data) {
-    return await Student.findByIdAndUpdate(id, data, { new: true }).select('-password_hash');
+    const queryId = typeof id === 'string' ? new ObjectId(id) : id;
+    await this.collection.updateOne(
+      { _id: queryId },
+      { $set: { ...data, updated_at: new Date() } }
+    );
+    return await this.findById(id);
   }
 
   async delete(id) {
-    return await Student.findByIdAndDelete(id);
+    const queryId = typeof id === 'string' ? new ObjectId(id) : id;
+    return await this.collection.deleteOne({ _id: queryId });
   }
 }
 

@@ -1,24 +1,41 @@
-import Course from '../../DB/Models/Course.model.js';
+import { ObjectId } from 'mongodb';
+import { db } from '../../DB/db.connection.js';
 
 class CoursesRepository {
+  get collection() {
+    return db.collection('courses');
+  }
+
   async create(data) {
-    return await Course.create(data);
+    const result = await this.collection.insertOne({
+      ...data,
+      created_at: new Date(),
+      updated_at: new Date()
+    });
+    return await this.findById(result.insertedId);
   }
 
   async findAll(filter = {}) {
-    return await Course.find(filter);
+    return await this.collection.find(filter).toArray();
   }
 
   async findById(id) {
-    return await Course.findById(id);
+    const queryId = typeof id === 'string' ? new ObjectId(id) : id;
+    return await this.collection.findOne({ _id: queryId });
   }
 
   async update(id, data) {
-    return await Course.findByIdAndUpdate(id, data, { new: true });
+    const queryId = typeof id === 'string' ? new ObjectId(id) : id;
+    await this.collection.updateOne(
+      { _id: queryId },
+      { $set: { ...data, updated_at: new Date() } }
+    );
+    return await this.findById(id);
   }
 
   async delete(id) {
-    return await Course.findByIdAndDelete(id);
+    const queryId = typeof id === 'string' ? new ObjectId(id) : id;
+    return await this.collection.deleteOne({ _id: queryId });
   }
 }
 

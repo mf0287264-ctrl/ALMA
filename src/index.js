@@ -3,7 +3,7 @@ dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
-import connectDB from './DB/db.connection.js';
+import { database_connect } from './DB/db.connection.js';
 import errorHandler from './Middleware/error.middleware.js';
 
 // Route Imports
@@ -22,7 +22,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Connect Database
-connectDB();
+database_connect();
 
 // Middleware
 app.use(cors());

@@ -1,14 +1,18 @@
-import mongoose from 'mongoose';
-import mongoConfig from '../Config/mongodb.config.js';
+import { MongoClient } from "mongodb";
+import dotenv from "dotenv";
+dotenv.config();
 
-const connectDB = async () => {
+const mongoUri = process.env.MONGODB_URI || "mongodb://localhost:27017";
+const dbName = process.env.DB_NAME || "ALMA";
+
+const client = new MongoClient(mongoUri);
+export const db = client.db(dbName);
+
+export const database_connect = async () => {
   try {
-    const conn = await mongoose.connect(mongoConfig.uri, mongoConfig.options);
-    console.log(`[MongoDB] Connected: ${conn.connection.host}/${conn.connection.name}`);
+    await client.connect();
+    console.log("Database connected");
   } catch (error) {
-    console.error(`[MongoDB] Connection Error: ${error.message}`);
-    process.exit(1);
+    console.log("DB connection error", error);
   }
 };
-
-export default connectDB;

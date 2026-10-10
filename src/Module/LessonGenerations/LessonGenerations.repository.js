@@ -1,30 +1,41 @@
-import LessonGeneration from '../../DB/Models/LessonGeneration.model.js';
+import { ObjectId } from 'mongodb';
+import { db } from '../../DB/db.connection.js';
 
 class LessonGenerationsRepository {
+  get collection() {
+    return db.collection('lesson_generations');
+  }
+
   async create(data) {
-    return await LessonGeneration.create(data);
+    const result = await this.collection.insertOne({
+      ...data,
+      created_at: new Date(),
+      updated_at: new Date()
+    });
+    return await this.findById(result.insertedId);
   }
 
   async findAll(filter = {}) {
-    return await LessonGeneration.find(filter)
-      .populate('course_id', 'title subject')
-      .populate('module_id', 'title')
-      .populate('lesson_id', 'title status');
+    return await this.collection.find(filter).toArray();
   }
 
   async findById(id) {
-    return await LessonGeneration.findById(id)
-      .populate('course_id', 'title subject')
-      .populate('module_id', 'title')
-      .populate('lesson_id', 'title status');
+    const queryId = typeof id === 'string' ? new ObjectId(id) : id;
+    return await this.collection.findOne({ _id: queryId });
   }
 
   async update(id, data) {
-    return await LessonGeneration.findByIdAndUpdate(id, data, { new: true });
+    const queryId = typeof id === 'string' ? new ObjectId(id) : id;
+    await this.collection.updateOne(
+      { _id: queryId },
+      { $set: { ...data, updated_at: new Date() } }
+    );
+    return await this.findById(id);
   }
 
   async delete(id) {
-    return await LessonGeneration.findByIdAndDelete(id);
+    const queryId = typeof id === 'string' ? new ObjectId(id) : id;
+    return await this.collection.deleteOne({ _id: queryId });
   }
 }
 

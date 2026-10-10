@@ -1,24 +1,41 @@
-import Achievement from '../../DB/Models/Achievement.model.js';
+import { ObjectId } from 'mongodb';
+import { db } from '../../DB/db.connection.js';
 
 class AchievementsRepository {
+  get collection() {
+    return db.collection('achievements');
+  }
+
   async create(data) {
-    return await Achievement.create(data);
+    const result = await this.collection.insertOne({
+      ...data,
+      created_at: new Date(),
+      updated_at: new Date()
+    });
+    return await this.findById(result.insertedId);
   }
 
   async findAll(filter = {}) {
-    return await Achievement.find(filter).populate('student_id', 'first_name last_name email student_code');
+    return await this.collection.find(filter).toArray();
   }
 
   async findById(id) {
-    return await Achievement.findById(id).populate('student_id', 'first_name last_name email student_code');
+    const queryId = typeof id === 'string' ? new ObjectId(id) : id;
+    return await this.collection.findOne({ _id: queryId });
   }
 
   async update(id, data) {
-    return await Achievement.findByIdAndUpdate(id, data, { new: true });
+    const queryId = typeof id === 'string' ? new ObjectId(id) : id;
+    await this.collection.updateOne(
+      { _id: queryId },
+      { $set: { ...data, updated_at: new Date() } }
+    );
+    return await this.findById(id);
   }
 
   async delete(id) {
-    return await Achievement.findByIdAndDelete(id);
+    const queryId = typeof id === 'string' ? new ObjectId(id) : id;
+    return await this.collection.deleteOne({ _id: queryId });
   }
 }
 
