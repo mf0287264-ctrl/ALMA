@@ -30,13 +30,13 @@ class CoursesService {
   }
 
   async deleteCourse(id) {
-    const course = await coursesRepository.delete(id);
-    if (!course) {
+    const result = await coursesRepository.delete(id);
+    if (!result || result.deletedCount === 0) {
       const error = new Error('Course not found');
       error.statusCode = 404;
       throw error;
     }
-    return course;
+    return result;
   }
 }
 

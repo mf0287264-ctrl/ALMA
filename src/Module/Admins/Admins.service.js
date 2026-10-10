@@ -57,13 +57,13 @@ class AdminsService {
   }
 
   async deleteAdmin(id) {
-    const admin = await adminsRepository.delete(id);
-    if (!admin) {
+    const result = await adminsRepository.delete(id);
+    if (!result || result.deletedCount === 0) {
       const error = new Error('Admin not found');
       error.statusCode = 404;
       throw error;
     }
-    return admin;
+    return result;
   }
 }
 

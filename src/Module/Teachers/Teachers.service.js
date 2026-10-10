@@ -57,13 +57,13 @@ class TeachersService {
   }
 
   async deleteTeacher(id) {
-    const teacher = await teachersRepository.delete(id);
-    if (!teacher) {
+    const result = await teachersRepository.delete(id);
+    if (!result || result.deletedCount === 0) {
       const error = new Error('Teacher not found');
       error.statusCode = 404;
       throw error;
     }
-    return teacher;
+    return result;
   }
 }
 

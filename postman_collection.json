@@ -69,6 +69,38 @@
               "variable": [{ "key": "id", "value": "STUDENT_ID_HERE" }]
             }
           }
+        },
+        {
+          "name": "Update Student",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Alexander\",\n  \"grade_level\": \"Grade 11\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/students/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "students", ":id"],
+              "variable": [{ "key": "id", "value": "STUDENT_ID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Delete Student",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/students/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "students", ":id"],
+              "variable": [{ "key": "id", "value": "STUDENT_ID_HERE" }]
+            }
+          }
         }
       ]
     },
@@ -102,6 +134,131 @@
               "raw": "{{baseUrl}}/api/v1/teachers",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "teachers"]
+            }
+          }
+        },
+        {
+          "name": "Get Teacher By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teachers/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "teachers", ":id"],
+              "variable": [{ "key": "id", "value": "TEACHER_ID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Update Teacher",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"specialization\": \"Artificial Intelligence & Data Science\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teachers/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "teachers", ":id"],
+              "variable": [{ "key": "id", "value": "TEACHER_ID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Delete Teacher",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/teachers/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "teachers", ":id"],
+              "variable": [{ "key": "id", "value": "TEACHER_ID_HERE" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admins",
+      "item": [
+        {
+          "name": "Create Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"System\",\n  \"last_name\": \"Admin\",\n  \"email\": \"admin@alma.edu\",\n  \"admin_code\": \"ADM-001\",\n  \"permissions\": [\"all\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admins",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admins"]
+            }
+          }
+        },
+        {
+          "name": "Get All Admins",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admins",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admins"]
+            }
+          }
+        },
+        {
+          "name": "Get Admin By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admins/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admins", ":id"],
+              "variable": [{ "key": "id", "value": "ADMIN_ID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Update Admin",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Super Admin\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admins/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admins", ":id"],
+              "variable": [{ "key": "id", "value": "ADMIN_ID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Delete Admin",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admins/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admins", ":id"],
+              "variable": [{ "key": "id", "value": "ADMIN_ID_HERE" }]
             }
           }
         }
@@ -139,6 +296,51 @@
               "path": ["api", "v1", "courses"]
             }
           }
+        },
+        {
+          "name": "Get Course By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/courses/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "courses", ":id"],
+              "variable": [{ "key": "id", "value": "COURSE_ID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Update Course",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Advanced Python Programming\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/courses/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "courses", ":id"],
+              "variable": [{ "key": "id", "value": "COURSE_ID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Delete Course",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/courses/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "courses", ":id"],
+              "variable": [{ "key": "id", "value": "COURSE_ID_HERE" }]
+            }
+          }
         }
       ]
     },
@@ -174,6 +376,51 @@
               "path": ["api", "v1", "modules"]
             }
           }
+        },
+        {
+          "name": "Get Module By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/modules/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "modules", ":id"],
+              "variable": [{ "key": "id", "value": "MODULE_ID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Update Module",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Control Flow & Advanced Loops\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/modules/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "modules", ":id"],
+              "variable": [{ "key": "id", "value": "MODULE_ID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Delete Module",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/modules/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "modules", ":id"],
+              "variable": [{ "key": "id", "value": "MODULE_ID_HERE" }]
+            }
+          }
         }
       ]
     },
@@ -195,6 +442,44 @@
               "raw": "{{baseUrl}}/api/v1/lesson-generations",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "lesson-generations"]
+            }
+          }
+        },
+        {
+          "name": "Get All Lesson Generations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lesson-generations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "lesson-generations"]
+            }
+          }
+        },
+        {
+          "name": "Get Lesson Generation By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lesson-generations/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "lesson-generations", ":id"],
+              "variable": [{ "key": "id", "value": "GENERATION_ID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Delete Lesson Generation",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lesson-generations/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "lesson-generations", ":id"],
+              "variable": [{ "key": "id", "value": "GENERATION_ID_HERE" }]
             }
           }
         },
@@ -227,6 +512,51 @@
               "path": ["api", "v1", "lessons"]
             }
           }
+        },
+        {
+          "name": "Get Lesson By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lessons/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "lessons", ":id"],
+              "variable": [{ "key": "id", "value": "LESSON_ID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Update Lesson",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Mastering Python For Loops & Iteration\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lessons/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "lessons", ":id"],
+              "variable": [{ "key": "id", "value": "LESSON_ID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Delete Lesson",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lessons/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "lessons", ":id"],
+              "variable": [{ "key": "id", "value": "LESSON_ID_HERE" }]
+            }
+          }
         }
       ]
     },
@@ -252,6 +582,63 @@
           }
         },
         {
+          "name": "Get All Assessments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/assessments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "assessments"]
+            }
+          }
+        },
+        {
+          "name": "Get Assessment By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/assessments/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "assessments", ":id"],
+              "variable": [{ "key": "id", "value": "ASSESSMENT_ID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Update Assessment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Python Fundamentals Advanced Assessment\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/assessments/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "assessments", ":id"],
+              "variable": [{ "key": "id", "value": "ASSESSMENT_ID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Delete Assessment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/assessments/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "assessments", ":id"],
+              "variable": [{ "key": "id", "value": "ASSESSMENT_ID_HERE" }]
+            }
+          }
+        },
+        {
           "name": "Create Quiz",
           "request": {
             "method": "POST",
@@ -266,6 +653,143 @@
               "raw": "{{baseUrl}}/api/v1/quizzes",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "quizzes"]
+            }
+          }
+        },
+        {
+          "name": "Get All Quizzes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/quizzes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "quizzes"]
+            }
+          }
+        },
+        {
+          "name": "Get Quiz By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/quizzes/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "quizzes", ":id"],
+              "variable": [{ "key": "id", "value": "QUIZ_ID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Update Quiz",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Advanced For Loops Quiz\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/quizzes/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "quizzes", ":id"],
+              "variable": [{ "key": "id", "value": "QUIZ_ID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Delete Quiz",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/quizzes/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "quizzes", ":id"],
+              "variable": [{ "key": "id", "value": "QUIZ_ID_HERE" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Achievements",
+      "item": [
+        {
+          "name": "Create Achievement",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_id\": \"STUDENT_ID_HERE\",\n  \"title\": \"Python Mastery Badge\",\n  \"description\": \"Awarded for completing all Python modules with grade A.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/achievements",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "achievements"]
+            }
+          }
+        },
+        {
+          "name": "Get All Achievements",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/achievements",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "achievements"]
+            }
+          }
+        },
+        {
+          "name": "Get Achievement By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/achievements/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "achievements", ":id"],
+              "variable": [{ "key": "id", "value": "ACHIEVEMENT_ID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Update Achievement",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Advanced Python Mastery Badge\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/achievements/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "achievements", ":id"],
+              "variable": [{ "key": "id", "value": "ACHIEVEMENT_ID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Delete Achievement",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/achievements/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "achievements", ":id"],
+              "variable": [{ "key": "id", "value": "ACHIEVEMENT_ID_HERE" }]
             }
           }
         }

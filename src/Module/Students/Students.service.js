@@ -57,13 +57,13 @@ class StudentsService {
   }
 
   async deleteStudent(id) {
-    const student = await studentsRepository.delete(id);
-    if (!student) {
+    const result = await studentsRepository.delete(id);
+    if (!result || result.deletedCount === 0) {
       const error = new Error('Student not found');
       error.statusCode = 404;
       throw error;
     }
-    return student;
+    return result;
   }
 }
 
