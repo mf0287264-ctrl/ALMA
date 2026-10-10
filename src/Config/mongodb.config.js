@@ -1,9 +1,13 @@
-import dotenv from 'dotenv';
-dotenv.config();
+import { MongoClient } from "mongodb";
 
-export default {
-  uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/alma_academy',
-  options: {
-    autoIndex: true
+const client = new MongoClient("mongodb://localhost:27017");
+export const db = client.db("ALMA");
+
+export const database_connect = async () => {
+  try {
+    await client.connect();
+    console.log("Database connected");
+  } catch (error) {
+    console.log("DB connection error", error);
   }
 };

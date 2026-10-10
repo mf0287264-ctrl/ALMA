@@ -1,12 +1,7 @@
 import { MongoClient } from "mongodb";
-import dotenv from "dotenv";
-dotenv.config();
 
-const mongoUri = process.env.MONGODB_URI || "mongodb://localhost:27017";
-const dbName = process.env.DB_NAME || "ALMA";
-
-const client = new MongoClient(mongoUri);
-export const db = client.db(dbName);
+const client = new MongoClient("mongodb://localhost:27017");
+export const db = client.db("ALMA");
 
 export const database_connect = async () => {
   try {
