@@ -18,8 +18,6 @@ export const createStudentSchema = z.object({
   school_name: z.string().optional().nullable(),
   profile_image: z.string().url().optional().nullable(),
   parent_phone: z.string().optional().nullable(),
-  national_id: z.string().optional().nullable(),
-  achievement: z.string().optional().nullable(),
   current_streak: z.number().int().nonnegative().optional().default(0),
   longest_streak: z.number().int().nonnegative().optional().default(0),
   lessons_completed: z.number().int().nonnegative().optional().default(0),

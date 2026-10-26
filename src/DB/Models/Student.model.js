@@ -29,8 +29,6 @@ const studentSchema = new mongoose.Schema(
     profile_image: { type: String, default: null },
     is_active: { type: Boolean, default: true },
     parent_phone: { type: String, default: null },
-    national_id: { type: String, default: null },
-    achievement: { type: String, default: null },
 
     // --- NEW ADAPTIVE ATTRIBUTES ---
     // Gamification & audio greeting: "You are on a 4-day streak!"

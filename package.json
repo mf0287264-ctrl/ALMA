@@ -6,8 +6,7 @@
   "type": "module",
   "scripts": {
     "start:dev": "nodemon ./src/index.js",
-    "start": "node --watch ./src/index.js",
-    "migrate": "node scripts/migrate-schema.js"
+    "start": "node --watch ./src/index.js"
   },
   "dependencies": {
     "argon2": "^0.45.1",
