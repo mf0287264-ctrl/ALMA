@@ -17,6 +17,7 @@ import lessonGenerationsRoutes from './Module/LessonGenerations/LessonGeneration
 import assessmentsRoutes from './Module/Assessments/Assessments.routes.js';
 import quizzesRoutes from './Module/Quizzes/Quizzes.routes.js';
 import achievementsRoutes from './Module/Achievements/Achievements.routes.js';
+import studentLessonSessionsRoutes from './Module/StudentLessonSessions/StudentLessonSessions.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -39,6 +40,7 @@ app.use('/api/v1/lesson-generations', lessonGenerationsRoutes);
 app.use('/api/v1/assessments', assessmentsRoutes);
 app.use('/api/v1/quizzes', quizzesRoutes);
 app.use('/api/v1/achievements', achievementsRoutes);
+app.use('/api/v1/student-lesson-sessions', studentLessonSessionsRoutes);
 
 // Health Check Endpoint
 app.get('/api/v1/health', (req, res) => {

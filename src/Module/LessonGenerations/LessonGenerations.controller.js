@@ -28,6 +28,15 @@ class LessonGenerationsController {
     }
   }
 
+  async getByJobId(req, res, next) {
+    try {
+      const generation = await lessonGenerationsService.getGenerationByJobId(req.params.jobId);
+      res.status(200).json({ success: true, data: generation });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async update(req, res, next) {
     try {
       const generation = await lessonGenerationsService.updateGeneration(req.params.id, req.body);

@@ -19,8 +19,14 @@
         "header": [],
         "url": {
           "raw": "{{baseUrl}}/api/v1/health",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "v1", "health"]
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "health"
+          ]
         }
       }
     },
@@ -32,16 +38,25 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"first_name\": \"Alex\",\n  \"last_name\": \"Smith\",\n  \"email\": \"alex.smith@student.alma.edu\",\n  \"student_code\": \"STU-1001\",\n  \"grade_level\": \"Grade 10\",\n  \"school_name\": \"Greenwood High\",\n  \"parent_phone\": \"+1234567890\",\n  \"national_id\": \"NAT-998877\",\n  \"achievement\": \"Python Beginner Badge\"\n}"
+              "raw": "{\n  \"first_name\": \"Alex\",\n  \"last_name\": \"Smith\",\n  \"email\": \"alex.smith@student.alma.edu\",\n  \"student_code\": \"STU-1001\",\n  \"grade_level\": \"Grade 8\",\n  \"school_name\": \"Greenwood High\",\n  \"profile_image\": null,\n  \"parent_phone\": \"+1234567890\",\n  \"national_id\": \"NAT-998877\",\n  \"achievement\": \"Python Beginner Badge\",\n  \"current_streak\": 4,\n  \"longest_streak\": 7,\n  \"lessons_completed\": 12,\n  \"struggling_concepts\": [\n    {\n      \"concept_id\": \"zero_indexing\",\n      \"concept_label\": \"Zero-Based Indexing\",\n      \"times_tested\": 5,\n      \"times_wrong\": 2,\n      \"last_diagnosed_misconception\": \"Assumes range(5) starts at 1 instead of 0\"\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/students",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "students"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "students"
+              ]
             }
           }
         },
@@ -52,8 +67,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/students",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "students"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "students"
+              ]
             }
           }
         },
@@ -64,9 +85,21 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/students/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "students", ":id"],
-              "variable": [{ "key": "id", "value": "STUDENT_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "students",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "STUDENT_ID_HERE"
+                }
+              ]
             }
           }
         },
@@ -75,17 +108,32 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"first_name\": \"Alexander\",\n  \"grade_level\": \"Grade 11\"\n}"
+              "raw": "{\n  \"first_name\": \"Alexander\",\n  \"grade_level\": \"Grade 8\",\n  \"current_streak\": 5,\n  \"lessons_completed\": 13,\n  \"struggling_concepts\": [\n    {\n      \"concept_id\": \"zero_indexing\",\n      \"concept_label\": \"Zero-Based Indexing\",\n      \"times_tested\": 6,\n      \"times_wrong\": 2,\n      \"last_diagnosed_misconception\": \"Assumes range(5) starts at 1 instead of 0\"\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/students/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "students", ":id"],
-              "variable": [{ "key": "id", "value": "STUDENT_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "students",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "STUDENT_ID_HERE"
+                }
+              ]
             }
           }
         },
@@ -96,9 +144,21 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/students/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "students", ":id"],
-              "variable": [{ "key": "id", "value": "STUDENT_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "students",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "STUDENT_ID_HERE"
+                }
+              ]
             }
           }
         }
@@ -112,7 +172,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -120,8 +183,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/teachers",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "teachers"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teachers"
+              ]
             }
           }
         },
@@ -132,8 +201,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/teachers",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "teachers"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teachers"
+              ]
             }
           }
         },
@@ -144,9 +219,21 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/teachers/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "teachers", ":id"],
-              "variable": [{ "key": "id", "value": "TEACHER_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teachers",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "TEACHER_ID_HERE"
+                }
+              ]
             }
           }
         },
@@ -155,7 +242,10 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -163,9 +253,21 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/teachers/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "teachers", ":id"],
-              "variable": [{ "key": "id", "value": "TEACHER_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teachers",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "TEACHER_ID_HERE"
+                }
+              ]
             }
           }
         },
@@ -176,9 +278,21 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/teachers/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "teachers", ":id"],
-              "variable": [{ "key": "id", "value": "TEACHER_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teachers",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "TEACHER_ID_HERE"
+                }
+              ]
             }
           }
         }
@@ -192,7 +306,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -200,8 +317,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/admins",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "admins"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admins"
+              ]
             }
           }
         },
@@ -212,8 +335,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/admins",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "admins"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admins"
+              ]
             }
           }
         },
@@ -224,9 +353,21 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/admins/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "admins", ":id"],
-              "variable": [{ "key": "id", "value": "ADMIN_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admins",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "ADMIN_ID_HERE"
+                }
+              ]
             }
           }
         },
@@ -235,7 +376,10 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -243,9 +387,21 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/admins/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "admins", ":id"],
-              "variable": [{ "key": "id", "value": "ADMIN_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admins",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "ADMIN_ID_HERE"
+                }
+              ]
             }
           }
         },
@@ -256,9 +412,21 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/admins/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "admins", ":id"],
-              "variable": [{ "key": "id", "value": "ADMIN_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admins",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "ADMIN_ID_HERE"
+                }
+              ]
             }
           }
         }
@@ -272,7 +440,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -280,8 +451,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/courses",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "courses"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses"
+              ]
             }
           }
         },
@@ -292,8 +469,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/courses",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "courses"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses"
+              ]
             }
           }
         },
@@ -304,9 +487,21 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/courses/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "courses", ":id"],
-              "variable": [{ "key": "id", "value": "COURSE_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "COURSE_ID_HERE"
+                }
+              ]
             }
           }
         },
@@ -315,7 +510,10 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -323,9 +521,21 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/courses/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "courses", ":id"],
-              "variable": [{ "key": "id", "value": "COURSE_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "COURSE_ID_HERE"
+                }
+              ]
             }
           }
         },
@@ -336,9 +546,21 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/courses/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "courses", ":id"],
-              "variable": [{ "key": "id", "value": "COURSE_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "COURSE_ID_HERE"
+                }
+              ]
             }
           }
         }
@@ -352,7 +574,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -360,8 +585,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/modules",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "modules"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "modules"
+              ]
             }
           }
         },
@@ -372,8 +603,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/modules",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "modules"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "modules"
+              ]
             }
           }
         },
@@ -384,9 +621,21 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/modules/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "modules", ":id"],
-              "variable": [{ "key": "id", "value": "MODULE_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "modules",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "MODULE_ID_HERE"
+                }
+              ]
             }
           }
         },
@@ -395,7 +644,10 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -403,9 +655,21 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/modules/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "modules", ":id"],
-              "variable": [{ "key": "id", "value": "MODULE_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "modules",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "MODULE_ID_HERE"
+                }
+              ]
             }
           }
         },
@@ -416,9 +680,21 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/modules/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "modules", ":id"],
-              "variable": [{ "key": "id", "value": "MODULE_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "modules",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "MODULE_ID_HERE"
+                }
+              ]
             }
           }
         }
@@ -432,16 +708,25 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"requested_by\": \"TEACHER_ID_HERE\",\n  \"course_id\": \"COURSE_ID_HERE\",\n  \"module_id\": \"MODULE_ID_HERE\",\n  \"input_parameters\": {\n    \"topic\": \"Python For Loops\",\n    \"grade_level\": \"Grade 10\",\n    \"target_duration_minutes\": 30\n  },\n  \"model\": \"gemini-2.5-flash\",\n  \"prompt_version\": \"v1.0\"\n}"
+              "raw": "{\n  \"job_id\": \"job_3286cb6901\",\n  \"requested_by\": \"TEACHER_ID_HERE\",\n  \"course_id\": \"COURSE_ID_HERE\",\n  \"module_id\": \"MODULE_ID_HERE\",\n  \"topic\": \"Python For Loops & Range Function\",\n  \"programming_language\": \"Python\",\n  \"grade_level\": \"Grade 8\",\n  \"model\": \"gemini-3.5-flash-lite\",\n  \"status\": \"pending\",\n  \"current_step\": \"queued\",\n  \"progress_percent\": 0,\n  \"step_message\": \"Generation initialized...\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/lesson-generations",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "lesson-generations"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lesson-generations"
+              ]
             }
           }
         },
@@ -452,8 +737,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/lesson-generations",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "lesson-generations"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lesson-generations"
+              ]
             }
           }
         },
@@ -464,9 +755,47 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/lesson-generations/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "lesson-generations", ":id"],
-              "variable": [{ "key": "id", "value": "GENERATION_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lesson-generations",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "GENERATION_ID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Lesson Generation By Job ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lesson-generations/job/:jobId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lesson-generations",
+                "job",
+                ":jobId"
+              ],
+              "variable": [
+                {
+                  "key": "jobId",
+                  "value": "job_3286cb6901"
+                }
+              ]
             }
           }
         },
@@ -477,9 +806,21 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/lesson-generations/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "lesson-generations", ":id"],
-              "variable": [{ "key": "id", "value": "GENERATION_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lesson-generations",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "GENERATION_ID_HERE"
+                }
+              ]
             }
           }
         },
@@ -488,16 +829,25 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"course_id\": \"COURSE_ID_HERE\",\n  \"module_id\": \"MODULE_ID_HERE\",\n  \"title\": \"Mastering Python For Loops\",\n  \"description\": \"Learn how to loop over lists and ranges in Python.\",\n  \"learning_objectives\": [\"Understand range() function\"],\n  \"sections\": [\n    {\n      \"heading\": \"Introduction to Loops\",\n      \"explanation\": \"Loops allow code execution repeatedly.\",\n      \"code_example\": {\n        \"code\": \"for i in range(5):\\n    print(i)\",\n        \"language\": \"python\",\n        \"output_explanation\": \"Prints 0 to 4\"\n      }\n    }\n  ],\n  \"difficulty\": \"beginner\",\n  \"estimated_duration_minutes\": 30,\n  \"status\": \"published\",\n  \"created_by\": \"TEACHER_ID_HERE\"\n}"
+              "raw": "{\n  \"course_id\": \"COURSE_ID_HERE\",\n  \"module_id\": \"MODULE_ID_HERE\",\n  \"topic\": \"Python For Loops & Range Function\",\n  \"programming_language\": \"Python\",\n  \"grade_level\": \"Grade 8\",\n  \"target_duration_minutes\": 15,\n  \"current_version_no\": 1,\n  \"approved_version_no\": null,\n  \"created_by\": \"TEACHER_ID_HERE\",\n  \"versions\": [\n    {\n      \"version_no\": 1,\n      \"state\": \"AWAITING_REVIEW\",\n      \"title\": \"Mastering Python For Loops & Range Function\",\n      \"introduction\": [\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"Welcome to Python loops! In programming, repeating tasks manually is slow. Loops let us automate repetition effortlessly.\"\n        },\n        {\n          \"type\": \"callout\",\n          \"callout_type\": \"tip\",\n          \"text\": \"Pro Tip: Loops are the secret weapon to processing large collections of data in milliseconds.\"\n        }\n      ],\n      \"sections\": [\n        {\n          \"order\": 1,\n          \"title\": \"Understanding the range() Function\",\n          \"purpose\": \"Explain zero-based indexing and default start values.\",\n          \"covers_objectives\": [\n            \"Explain range(n) behavior\",\n            \"Identify zero-based start index\"\n          ],\n          \"blocks\": [\n            {\n              \"type\": \"paragraph\",\n              \"text\": \"In Python, range(5) generates integers starting at 0 up to, but not including, 5.\"\n            },\n            {\n              \"type\": \"code\",\n              \"language\": \"python\",\n              \"code\": \"for i in range(5):\\n    print(i)\",\n              \"expected_output\": \"0\\n1\\n2\\n3\\n4\"\n            },\n            {\n              \"type\": \"list\",\n              \"items\": [\n                \"Default start value is 0\",\n                \"Stop value is exclusive\",\n                \"Default step size is 1\"\n              ]\n            }\n          ],\n          \"diagnostic_check\": {\n            \"concept_tag\": \"zero_indexing\",\n            \"question_text\": \"What will print(list(range(3))) output?\",\n            \"code_snippet\": \"print(list(range(3)))\",\n            \"options\": [\n              \"[1, 2, 3]\",\n              \"[0, 1, 2]\",\n              \"[0, 1, 2, 3]\"\n            ],\n            \"correct_answer\": \"[0, 1, 2]\",\n            \"misconception_map\": {\n              \"[1, 2, 3]\": \"Assumes range starts at 1 instead of 0\",\n              \"[0, 1, 2, 3]\": \"Assumes range stop argument is inclusive\"\n            },\n            \"explanation\": \"range(3) starts at 0 and produces 3 numbers: 0, 1, and 2.\"\n          },\n          \"remediation_blocks\": [\n            {\n              \"type\": \"callout\",\n              \"callout_type\": \"warning\",\n              \"text\": \"Remember: In Python, counting always starts at index 0, not 1!\"\n            },\n            {\n              \"type\": \"paragraph\",\n              \"text\": \"If you want numbers 1 through 3, specify the start: range(1, 4).\"\n            }\n          ]\n        }\n      ],\n      \"conclusion\": [\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"Great job! You learned how for loops and range() work together in Python.\"\n        }\n      ],\n      \"segments\": [\n        {\n          \"order_in_lesson\": 1,\n          \"title\": \"Intro to Iteration\",\n          \"narration_text\": \"Welcome to loops in Python. Today we discover how computers automate repetition.\",\n          \"est_seconds\": 45,\n          \"attached_code\": \"for i in range(5):\\n    print(i)\"\n        }\n      ]\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/lessons",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "lessons"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lessons"
+              ]
             }
           }
         },
@@ -508,8 +858,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/lessons",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "lessons"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lessons"
+              ]
             }
           }
         },
@@ -520,9 +876,21 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/lessons/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "lessons", ":id"],
-              "variable": [{ "key": "id", "value": "LESSON_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lessons",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "LESSON_ID_HERE"
+                }
+              ]
             }
           }
         },
@@ -531,17 +899,32 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Mastering Python For Loops & Iteration\"\n}"
+              "raw": "{\n  \"topic\": \"Mastering Python For Loops & Range Function (Updated)\",\n  \"approved_version_no\": 1\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/lessons/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "lessons", ":id"],
-              "variable": [{ "key": "id", "value": "LESSON_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lessons",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "LESSON_ID_HERE"
+                }
+              ]
             }
           }
         },
@@ -552,9 +935,21 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/lessons/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "lessons", ":id"],
-              "variable": [{ "key": "id", "value": "LESSON_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lessons",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "LESSON_ID_HERE"
+                }
+              ]
             }
           }
         }
@@ -568,7 +963,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -576,8 +974,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/assessments",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "assessments"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "assessments"
+              ]
             }
           }
         },
@@ -588,8 +992,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/assessments",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "assessments"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "assessments"
+              ]
             }
           }
         },
@@ -600,9 +1010,21 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/assessments/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "assessments", ":id"],
-              "variable": [{ "key": "id", "value": "ASSESSMENT_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "assessments",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "ASSESSMENT_ID_HERE"
+                }
+              ]
             }
           }
         },
@@ -611,7 +1033,10 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -619,9 +1044,21 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/assessments/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "assessments", ":id"],
-              "variable": [{ "key": "id", "value": "ASSESSMENT_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "assessments",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "ASSESSMENT_ID_HERE"
+                }
+              ]
             }
           }
         },
@@ -632,9 +1069,21 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/assessments/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "assessments", ":id"],
-              "variable": [{ "key": "id", "value": "ASSESSMENT_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "assessments",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "ASSESSMENT_ID_HERE"
+                }
+              ]
             }
           }
         },
@@ -643,7 +1092,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -651,8 +1103,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/quizzes",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "quizzes"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "quizzes"
+              ]
             }
           }
         },
@@ -663,8 +1121,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/quizzes",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "quizzes"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "quizzes"
+              ]
             }
           }
         },
@@ -675,9 +1139,21 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/quizzes/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "quizzes", ":id"],
-              "variable": [{ "key": "id", "value": "QUIZ_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "quizzes",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "QUIZ_ID_HERE"
+                }
+              ]
             }
           }
         },
@@ -686,7 +1162,10 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -694,9 +1173,21 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/quizzes/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "quizzes", ":id"],
-              "variable": [{ "key": "id", "value": "QUIZ_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "quizzes",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "QUIZ_ID_HERE"
+                }
+              ]
             }
           }
         },
@@ -707,9 +1198,21 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/quizzes/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "quizzes", ":id"],
-              "variable": [{ "key": "id", "value": "QUIZ_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "quizzes",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "QUIZ_ID_HERE"
+                }
+              ]
             }
           }
         }
@@ -723,7 +1226,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -731,8 +1237,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/achievements",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "achievements"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "achievements"
+              ]
             }
           }
         },
@@ -743,8 +1255,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/achievements",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "achievements"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "achievements"
+              ]
             }
           }
         },
@@ -755,9 +1273,21 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/achievements/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "achievements", ":id"],
-              "variable": [{ "key": "id", "value": "ACHIEVEMENT_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "achievements",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "ACHIEVEMENT_ID_HERE"
+                }
+              ]
             }
           }
         },
@@ -766,7 +1296,10 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -774,9 +1307,21 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/achievements/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "achievements", ":id"],
-              "variable": [{ "key": "id", "value": "ACHIEVEMENT_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "achievements",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "ACHIEVEMENT_ID_HERE"
+                }
+              ]
             }
           }
         },
@@ -787,9 +1332,225 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/achievements/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "achievements", ":id"],
-              "variable": [{ "key": "id", "value": "ACHIEVEMENT_ID_HERE" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "achievements",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "ACHIEVEMENT_ID_HERE"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Student Lesson Sessions",
+      "item": [
+        {
+          "name": "Create Student Lesson Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"session_id\": \"sess_8947291a2b\",\n  \"student_id\": \"STUDENT_ID_HERE\",\n  \"lesson_id\": \"LESSON_ID_HERE\",\n  \"current_section_order\": 1,\n  \"personalized_greeting\": \"Hey Alex! Awesome job on your 4-day streak! Today let us tackle Python for loops.\",\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/student-lesson-sessions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student-lesson-sessions"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Student Lesson Sessions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/student-lesson-sessions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student-lesson-sessions"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Student Lesson Session By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/student-lesson-sessions/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student-lesson-sessions",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "SESSION_ID_OR_OBJECTID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Student Lesson Session",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_section_order\": 2,\n  \"status\": \"completed\",\n  \"completed_at\": \"2026-10-26T18:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/student-lesson-sessions/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student-lesson-sessions",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "SESSION_ID_OR_OBJECTID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Log Checkpoint Response",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"section_order\": 1,\n  \"selected_answer\": \"[1, 2, 3]\",\n  \"is_correct\": false,\n  \"detected_misconception\": \"Assumes range starts at 1 instead of 0\",\n  \"routed_to_remediation\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/student-lesson-sessions/:id/checkpoint",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student-lesson-sessions",
+                ":id",
+                "checkpoint"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "SESSION_ID_OR_OBJECTID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Log Dialogue Entry",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"section_order\": 1,\n  \"question\": \"Why does range(3) stop before 3?\",\n  \"spoken_answer\": \"In Python, range stops before the limit number because indexing is zero-based, giving you exactly 3 items: 0, 1, and 2.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/student-lesson-sessions/:id/dialogue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student-lesson-sessions",
+                ":id",
+                "dialogue"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "SESSION_ID_OR_OBJECTID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Student Lesson Session",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/student-lesson-sessions/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "student-lesson-sessions",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "SESSION_ID_OR_OBJECTID_HERE"
+                }
+              ]
             }
           }
         }
