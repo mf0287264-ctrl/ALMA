@@ -30,6 +30,7 @@ const studentSchema = new mongoose.Schema(
     role: { type: String, default: 'student' },
     is_active: { type: Boolean, default: true },
     national_id: { type: String, default: null, trim: true },
+    address: { type: String, default: null, trim: true },
     parent_phone: { type: String, default: null },
 
     // --- Onboarding & Diagnostic Quiz Preferences ---

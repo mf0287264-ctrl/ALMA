@@ -40,6 +40,7 @@ export default function RegisterStepTwoPage() {
   const [selectedRole, setSelectedRole] = useState<string>("me");
   const [schoolName, setSchoolName] = useState<string>("");
   const [nationalId, setNationalId] = useState<string>("");
+  const [address, setAddress] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
   const handleContinue = async () => {
@@ -51,6 +52,7 @@ export default function RegisterStepTwoPage() {
         learning_for: selectedRole,
         school_name: schoolName.trim() || null,
         national_id: nationalId.trim() || null,
+        address: address.trim() || null,
       });
 
       if (!res.success) {
@@ -160,6 +162,23 @@ export default function RegisterStepTwoPage() {
               value={nationalId}
               onChange={(e) => setNationalId(e.target.value)}
               placeholder="e.g. 29901011234567"
+              className="w-full rounded-2xl border border-[#d2dcd7] bg-[#fff8ec]/50 px-4 py-2.5 text-sm text-[#10292e] placeholder:text-[#5a6e70]/60 focus:outline-none focus:ring-2 focus:ring-[#118a80] transition-all"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="address"
+              className="block text-xs font-bold text-[#10292e] mb-1"
+            >
+              Address / City (optional)
+            </label>
+            <input
+              id="address"
+              type="text"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="e.g. Cairo, Nasr City"
               className="w-full rounded-2xl border border-[#d2dcd7] bg-[#fff8ec]/50 px-4 py-2.5 text-sm text-[#10292e] placeholder:text-[#5a6e70]/60 focus:outline-none focus:ring-2 focus:ring-[#118a80] transition-all"
             />
           </div>

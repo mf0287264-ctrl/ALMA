@@ -19,6 +19,7 @@ export interface User {
   profile_image?: string | null;
   is_active?: boolean;
   national_id?: string | null;
+  address?: string | null;
   parent_phone?: string | null;
   learning_for?: string;
   age_group?: string | null;

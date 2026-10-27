@@ -26,7 +26,7 @@ export default function RegisterStepThreePage() {
   const [selectedAge, setSelectedAge] = useState<string>("13 to 15");
   const [experience, setExperience] = useState<string>("A little");
   const [learningStyles, setLearningStyles] = useState<string[]>(["Pictures", "Trying things"]);
-  const [gender, setGender] = useState<string>("");
+  const [gender, setGender] = useState<string>("Female");
   const [selectedAvatar, setSelectedAvatar] = useState<string>("#ffa11f");
 
   // Diagnostic Quiz fields
@@ -238,23 +238,23 @@ export default function RegisterStepThreePage() {
               </div>
             </div>
 
-            {/* 5. Gender (optional) */}
+            {/* 5. Choose Gender */}
             <div>
               <h2 className="text-lg sm:text-xl font-extrabold text-[#10292e] tracking-tight mb-2.5">
-                Gender (optional)
+                Choose your gender
               </h2>
-              <div className="flex flex-wrap gap-2 sm:gap-2.5">
+              <div className="flex flex-wrap gap-2.5">
                 {GENDER_OPTIONS.map((g) => {
                   const isSelected = gender === g;
                   return (
                     <button
                       key={g}
                       type="button"
-                      onClick={() => setGender(gender === g ? "" : g)}
+                      onClick={() => setGender(g)}
                       aria-pressed={isSelected}
-                      className={`rounded-full px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.03)] ${
+                      className={`rounded-full px-6 py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.03)] ${
                         isSelected
-                          ? "bg-white border-2 border-[#ffa11f] text-[#10292e] ring-2 ring-[#ffa11f]/15"
+                          ? "bg-white border-2 border-[#ffa11f] text-[#10292e] ring-2 ring-[#ffa11f]/15 scale-105"
                           : "bg-white border border-[#d2dcd7] text-[#10292e] hover:border-[#ffa11f]/60"
                       }`}
                     >

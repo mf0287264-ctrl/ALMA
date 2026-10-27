@@ -20,6 +20,7 @@ export const createStudentSchema = z.object({
   profile_image: z.string().optional().nullable(),
   is_active: z.boolean().optional().default(true),
   national_id: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
   parent_phone: z.string().optional().nullable(),
   learning_for: z.string().optional().default('me'),
   age_group: z.string().optional().nullable(),

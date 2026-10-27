@@ -136,6 +136,33 @@ export default function ProfilePage() {
               </span>
             </div>
 
+            {user?.gender && (
+              <div className="w-full py-4 flex items-center justify-between text-sm font-bold text-[#10292e]">
+                <span>Gender</span>
+                <span className="text-[#5a6e70] font-semibold text-xs sm:text-sm">
+                  {user.gender}
+                </span>
+              </div>
+            )}
+
+            {user?.address && (
+              <div className="w-full py-4 flex items-center justify-between text-sm font-bold text-[#10292e]">
+                <span>Address</span>
+                <span className="text-[#5a6e70] font-semibold text-xs sm:text-sm">
+                  {user.address}
+                </span>
+              </div>
+            )}
+
+            {user?.national_id && (
+              <div className="w-full py-4 flex items-center justify-between text-sm font-bold text-[#10292e]">
+                <span>National ID</span>
+                <span className="text-[#5a6e70] font-semibold text-xs sm:text-sm">
+                  {user.national_id}
+                </span>
+              </div>
+            )}
+
             {/* Notifications */}
             <button
               type="button"
