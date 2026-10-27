@@ -1,5 +1,6 @@
 import studentsRepository from './Students.repository.js';
 import { hashPassword } from '../../Utils/argon2.util.js';
+import { generateToken } from '../../Utils/jwt.util.js';
 
 class StudentsService {
   async createStudent(data) {
@@ -16,7 +17,19 @@ class StudentsService {
     data.password_hash = await hashPassword(rawPassword);
     delete data.password;
     
-    return await studentsRepository.create(data);
+    const createdStudent = await studentsRepository.create(data);
+
+    const token = generateToken({
+      id: createdStudent._id,
+      name: `${createdStudent.first_name || ''} ${createdStudent.last_name || ''}`.trim(),
+      email: createdStudent.email,
+      role: 'student'
+    });
+
+    return {
+      student: createdStudent,
+      token
+    };
   }
 
   async getAllStudents(filter) {

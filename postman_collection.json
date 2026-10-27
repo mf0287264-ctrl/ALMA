@@ -9,6 +9,11 @@
       "key": "baseUrl",
       "value": "http://localhost:5000",
       "type": "string"
+    },
+    {
+      "key": "studentToken",
+      "value": "YOUR_JWT_TOKEN_HERE",
+      "type": "string"
     }
   ],
   "item": [
@@ -35,6 +40,20 @@
       "item": [
         {
           "name": "Create Student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set(\"studentToken\", jsonData.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -45,8 +64,31 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"first_name\": \"Alex\",\n  \"last_name\": \"Smith\",\n  \"email\": \"alex.smith@student.alma.edu\",\n  \"student_code\": \"STU-1001\",\n  \"grade_level\": \"Grade 8\",\n  \"school_name\": \"Greenwood High\",\n  \"profile_image\": null,\n  \"parent_phone\": \"+1234567890\",\n  \"national_id\": \"NAT-998877\",\n  \"achievement\": \"Python Beginner Badge\",\n  \"current_streak\": 4,\n  \"longest_streak\": 7,\n  \"lessons_completed\": 12,\n  \"struggling_concepts\": [\n    {\n      \"concept_id\": \"zero_indexing\",\n      \"concept_label\": \"Zero-Based Indexing\",\n      \"times_tested\": 5,\n      \"times_wrong\": 2,\n      \"last_diagnosed_misconception\": \"Assumes range(5) starts at 1 instead of 0\"\n    }\n  ]\n}"
+              "raw": "{\n  \"first_name\": \"Alex\",\n  \"last_name\": \"Smith\",\n  \"email\": \"alex.smith@student.alma.edu\",\n  \"student_code\": \"STU-1001\",\n  \"grade_level\": \"Grade 8\",\n  \"school_name\": \"Greenwood High\",\n  \"profile_image\": null,\n  \"parent_phone\": \"+1234567890\",\n  \"current_streak\": 4,\n  \"longest_streak\": 7,\n  \"lessons_completed\": 12,\n  \"struggling_concepts\": [\n    {\n      \"concept_id\": \"zero_indexing\",\n      \"concept_label\": \"Zero-Based Indexing\",\n      \"times_tested\": 5,\n      \"times_wrong\": 2,\n      \"last_diagnosed_misconception\": \"Assumes range(5) starts at 1 instead of 0\"\n    }\n  ]\n}"
             },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/students",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "students"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Student Profile (From Token)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/students",
               "host": [
@@ -79,38 +121,17 @@
           }
         },
         {
-          "name": "Get Student By ID",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/students/:id",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "students",
-                ":id"
-              ],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "STUDENT_ID_HERE"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Update Student",
+          "name": "Update Student (From Token)",
           "request": {
             "method": "PUT",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
               }
             ],
             "body": {
@@ -118,46 +139,37 @@
               "raw": "{\n  \"first_name\": \"Alexander\",\n  \"grade_level\": \"Grade 8\",\n  \"current_streak\": 5,\n  \"lessons_completed\": 13,\n  \"struggling_concepts\": [\n    {\n      \"concept_id\": \"zero_indexing\",\n      \"concept_label\": \"Zero-Based Indexing\",\n      \"times_tested\": 6,\n      \"times_wrong\": 2,\n      \"last_diagnosed_misconception\": \"Assumes range(5) starts at 1 instead of 0\"\n    }\n  ]\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/v1/students/:id",
+              "raw": "{{baseUrl}}/api/v1/students",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "students",
-                ":id"
-              ],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "STUDENT_ID_HERE"
-                }
+                "students"
               ]
             }
           }
         },
         {
-          "name": "Delete Student",
+          "name": "Delete Student (From Token)",
           "request": {
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/students/:id",
+              "raw": "{{baseUrl}}/api/v1/students",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "students",
-                ":id"
-              ],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "STUDENT_ID_HERE"
-                }
+                "students"
               ]
             }
           }

@@ -11,6 +11,7 @@ const teacherSchema = new mongoose.Schema(
     school_name: { type: String, default: null },
     profile_image: { type: String, default: null },
     phone_number: { type: String, default: null },
+    role: { type: String, default: 'teacher' },
     is_active: { type: Boolean, default: true }
   },
   {
@@ -18,4 +19,4 @@ const teacherSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model('Teacher', teacherSchema);
+export default mongoose.models.Teacher || mongoose.model('Teacher', teacherSchema);

@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" style={{ fontFamily: "Gill Sans, sans-serif" }} className="h-full antialiased">
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col bg-[#fff8ec]">
         {children}
         <Toaster position="top-left" richColors />
       </body>
