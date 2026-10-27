@@ -17,7 +17,15 @@ export interface User {
   grade_level?: string;
   school_name?: string | null;
   profile_image?: string | null;
+  is_active?: boolean;
+  national_id?: string | null;
   parent_phone?: string | null;
+  learning_for?: string;
+  age_group?: string | null;
+  coding_experience?: string | null;
+  learning_styles?: string[];
+  gender?: string | null;
+  quiz_answers?: any[];
   current_streak?: number;
   longest_streak?: number;
   lessons_completed?: number;
@@ -36,6 +44,7 @@ interface AuthContextType {
   loading: boolean;
   login: (credentials: { email: string; password: string }) => Promise<{ success: boolean; error?: string }>;
   register: (data: { name?: string; first_name?: string; last_name?: string; email: string; password?: string }) => Promise<{ success: boolean; error?: string }>;
+  updateUser: (data: Partial<User>) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -207,6 +216,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateUser = async (data: Partial<User>) => {
+    try {
+      const res = await api.put("/students", data);
+      if (res.data?.data) {
+        setUser(res.data.data);
+      }
+      return { success: true };
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "Failed to update profile";
+      return { success: false, error: errorMessage };
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem("alma_token");
     setToken(null);
@@ -242,6 +267,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         login,
         register,
+        updateUser,
         logout,
         refreshUser,
       }}

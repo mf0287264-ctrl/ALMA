@@ -29,7 +29,16 @@ const studentSchema = new mongoose.Schema(
     profile_image: { type: String, default: null },
     role: { type: String, default: 'student' },
     is_active: { type: Boolean, default: true },
+    national_id: { type: String, default: null, trim: true },
     parent_phone: { type: String, default: null },
+
+    // --- Onboarding & Diagnostic Quiz Preferences ---
+    learning_for: { type: String, default: 'me' },
+    age_group: { type: String, default: null },
+    coding_experience: { type: String, default: null },
+    learning_styles: [{ type: String }],
+    gender: { type: String, default: null },
+    quiz_answers: { type: Array, default: [] },
 
     // --- NEW ADAPTIVE ATTRIBUTES ---
     // Gamification & audio greeting: "You are on a 4-day streak!"

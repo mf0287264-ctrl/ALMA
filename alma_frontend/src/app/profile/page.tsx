@@ -41,7 +41,10 @@ export default function ProfilePage() {
         {/* User Identity Header Card */}
         <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#e8eeea] shadow-sm flex items-center gap-5 sm:gap-6 mb-6">
           {/* Avatar Arch with initials */}
-          <div className="w-18 h-20 bg-[#ffa11f] rounded-t-full flex items-center justify-center shrink-0 shadow-sm">
+          <div
+            style={{ backgroundColor: user?.profile_image || "#ffa11f" }}
+            className="w-18 h-20 rounded-t-full flex items-center justify-center shrink-0 shadow-sm"
+          >
             <span className="text-xl sm:text-2xl font-extrabold text-[#10292e] tracking-tight">
               {initials}
             </span>
@@ -52,7 +55,7 @@ export default function ProfilePage() {
               {fullName}
             </h1>
             <p className="text-sm font-semibold text-[#5a6e70] mt-1">
-              {gradeLevel} · {user?.email || ""}
+              {user?.school_name ? `${user.school_name} · ` : ""}{gradeLevel} · {user?.email || ""}
             </p>
           </div>
         </div>
