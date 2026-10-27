@@ -138,21 +138,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loading) return;
 
-    const isAuthRoute =
-      PUBLIC_AUTH_ROUTES.includes(pathname) ||
-      pathname.startsWith("/register/");
     const isProtectedRoute = PROTECTED_ROUTES.some(
       (route) => pathname === route || pathname.startsWith(`${route}/`)
     );
 
     if (token) {
       // User is authenticated
-      // Disallow visiting welcome, sign-in, sign-up, or onboarding
+      // Check if user has finished required onboarding (gender is required)
+      const hasCompletedOnboarding = Boolean(user?.gender);
+
+      if (!hasCompletedOnboarding) {
+        // If onboarding is incomplete, allow them on step-2 and step-3
+        if (pathname === "/register/step-2" || pathname === "/register/step-3") {
+          return;
+        }
+        // Direct incomplete users to step-2 to finish setting up
+        router.replace("/register/step-2");
+        return;
+      }
+
+      // If user has completed onboarding, disallow visiting auth/onboarding pages
       if (
         pathname === "/" ||
         pathname === "/welcome" ||
         pathname === "/login" ||
-        pathname === "/register"
+        pathname.startsWith("/register")
       ) {
         router.replace("/home");
       }
@@ -163,7 +173,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         router.replace("/welcome");
       }
     }
-  }, [token, loading, pathname, router]);
+  }, [token, user, loading, pathname, router]);
 
   const login = async ({ email, password }: { email: string; password: string }) => {
     try {
