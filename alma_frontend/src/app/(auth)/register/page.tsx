@@ -5,10 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import MangoIcon from "@/components/MangoIcon";
-import { registerAction } from "./register.action";
+import { useAuth } from "@/app/_Context/AuthContext";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { register } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -53,20 +54,17 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const result = await registerAction({
+      const result = await register({
         name,
         email,
         password,
-        rePassword,
-        agreeToTerms,
       });
 
       if (result.success) {
         toast.success("Account created successfully!");
         router.push("/register/step-2");
       } else {
-        setErrors(result.errors || {});
-        toast.error("Please correct the errors in the form.");
+        toast.error(result.error || "Please correct the errors in the form.");
       }
     } catch {
       toast.error("An unexpected error occurred. Please try again.");

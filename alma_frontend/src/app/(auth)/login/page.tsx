@@ -5,10 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import MangoIcon from "@/components/MangoIcon";
-import { loginAction } from "./login.action";
+import { useAuth } from "@/app/_Context/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -22,15 +23,12 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const result = await loginAction({ email, password });
+      const result = await login({ email, password });
       if (result.success) {
         toast.success("Welcome back!");
         router.push("/home");
       } else {
-        setErrors(result.errors || {});
-        const firstError =
-          result.errors?.email?.[0] || result.errors?.password?.[0] || "Invalid credentials";
-        toast.error(firstError);
+        toast.error(result.error || "Invalid credentials");
       }
     } catch {
       toast.error("An unexpected error occurred. Please try again.");

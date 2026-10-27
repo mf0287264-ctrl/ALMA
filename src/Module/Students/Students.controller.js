@@ -10,6 +10,15 @@ class StudentsController {
     }
   }
 
+  async login(req, res, next) {
+    try {
+      const result = await studentsService.login(req.body);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getAll(req, res, next) {
     try {
       const students = await studentsService.getAllStudents(req.query);

@@ -9,12 +9,13 @@ export const conceptStruggleSchema = z.object({
 });
 
 export const createStudentSchema = z.object({
-  first_name: z.string().min(1, 'First name is required'),
-  last_name: z.string().min(1, 'Last name is required'),
+  name: z.string().optional(),
+  first_name: z.string().optional().default('Student'),
+  last_name: z.string().optional().default('User'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters long').optional(),
-  student_code: z.string().min(1, 'Student code is required'),
-  grade_level: z.string().min(1, 'Grade level is required'),
+  student_code: z.string().optional().default(() => `STU-${Math.floor(1000 + Math.random() * 9000)}`),
+  grade_level: z.string().optional().default('Grade 8'),
   school_name: z.string().optional().nullable(),
   profile_image: z.string().url().optional().nullable(),
   parent_phone: z.string().optional().nullable(),
@@ -22,6 +23,11 @@ export const createStudentSchema = z.object({
   longest_streak: z.number().int().nonnegative().optional().default(0),
   lessons_completed: z.number().int().nonnegative().optional().default(0),
   struggling_concepts: z.array(conceptStruggleSchema).optional().default([])
+});
+
+export const loginStudentSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(1, 'Password is required')
 });
 
 export const updateStudentSchema = createStudentSchema.partial();

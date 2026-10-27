@@ -1,9 +1,23 @@
 import studentsRepository from './Students.repository.js';
-import { hashPassword } from '../../Utils/argon2.util.js';
+import { hashPassword, verifyPassword } from '../../Utils/argon2.util.js';
 import { generateToken } from '../../Utils/jwt.util.js';
 
 class StudentsService {
   async createStudent(data) {
+    if (data.name && (!data.first_name || data.first_name === 'Student')) {
+      const parts = data.name.trim().split(' ');
+      data.first_name = parts[0] || 'Student';
+      data.last_name = parts.slice(1).join(' ') || parts[0];
+    }
+    delete data.name;
+
+    if (!data.student_code) {
+      data.student_code = `STU-${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+    if (!data.grade_level) {
+      data.grade_level = 'Grade 8';
+    }
+
     if (data.email) {
       const existingStudent = await studentsRepository.findByEmail(data.email);
       if (existingStudent) {
@@ -28,6 +42,42 @@ class StudentsService {
 
     return {
       student: createdStudent,
+      token
+    };
+  }
+
+  async login({ email, password }) {
+    if (!email || !password) {
+      const error = new Error('Email and password are required');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const student = await studentsRepository.findByEmail(email);
+    if (!student) {
+      const error = new Error('Invalid email or password');
+      error.statusCode = 401;
+      throw error;
+    }
+
+    const isValid = await verifyPassword(student.password_hash, password);
+    if (!isValid) {
+      const error = new Error('Invalid email or password');
+      error.statusCode = 401;
+      throw error;
+    }
+
+    const token = generateToken({
+      id: student._id,
+      name: `${student.first_name || ''} ${student.last_name || ''}`.trim(),
+      email: student.email,
+      role: 'student'
+    });
+
+    const { password_hash, ...studentWithoutPassword } = student;
+
+    return {
+      student: studentWithoutPassword,
       token
     };
   }

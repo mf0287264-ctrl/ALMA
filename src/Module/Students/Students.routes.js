@@ -2,12 +2,15 @@ import express from 'express';
 import studentsController from './Students.controller.js';
 import { validate } from '../../Middleware/validation.middleware.js';
 import { authenticate } from '../../Middleware/auth.middleware.js';
-import { createStudentSchema, updateStudentSchema } from '../../Validation/Student.validation.js';
+import { createStudentSchema, updateStudentSchema, loginStudentSchema } from '../../Validation/Student.validation.js';
 
 const router = express.Router();
 
 // Public: register a student
 router.post('/', validate(createStudentSchema), studentsController.create);
+
+// Public: login a student
+router.post('/login', validate(loginStudentSchema), studentsController.login);
 
 // Authenticated: get own profile from database
 router.get('/profile', authenticate, studentsController.getProfile);

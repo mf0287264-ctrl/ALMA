@@ -5,9 +5,14 @@ import Link from "next/link";
 import { toast } from "sonner";
 import Sidebar from "@/components/Sidebar";
 import MangoIcon from "@/components/MangoIcon";
+import { useAuth } from "@/app/_Context/AuthContext";
 
 export default function HomePage() {
+  const { user } = useAuth();
   const [askQuery, setAskQuery] = useState("");
+
+  const displayName = user?.first_name || user?.name || "Student";
+  const streak = user?.current_streak ?? 0;
 
   const handleAsk = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,12 +31,12 @@ export default function HomePage() {
         {/* Top Header Row: Greeting & Badges */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <h1 className="text-3xl sm:text-4xl font-extrabold text-[#10292e] tracking-tight">
-            Hi, Layla
+            Hi, {displayName}
           </h1>
 
           <div className="flex items-center gap-3">
             <span className="bg-[#ffd84a] text-[#10292e] font-extrabold text-xs sm:text-sm px-4 py-2 rounded-full shadow-sm">
-              12 days
+              {streak} {streak === 1 ? "day" : "days"}
             </span>
             <span className="bg-[#7ccbf0] text-[#10292e] font-extrabold text-xs sm:text-sm px-4 py-2 rounded-full shadow-sm">
               1,840 XP
