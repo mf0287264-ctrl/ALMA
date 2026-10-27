@@ -17,6 +17,24 @@ class StudentsService {
     if (!data.grade_level) {
       data.grade_level = 'Grade 8';
     }
+    if (data.is_active === undefined) {
+      data.is_active = true;
+    }
+    if (data.school_name === undefined) {
+      data.school_name = null;
+    }
+    if (data.profile_image === undefined) {
+      data.profile_image = null;
+    }
+    if (data.national_id === undefined) {
+      data.national_id = null;
+    }
+    if (data.address === undefined) {
+      data.address = null;
+    }
+    if (data.gender === undefined) {
+      data.gender = null;
+    }
 
     if (data.email) {
       const existingStudent = await studentsRepository.findByEmail(data.email);

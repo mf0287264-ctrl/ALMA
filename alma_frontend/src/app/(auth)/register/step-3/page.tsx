@@ -23,11 +23,16 @@ export default function RegisterStepThreePage() {
   const { updateUser, refreshUser } = useAuth();
 
   // Personalization fields
+  const [gender, setGender] = useState<string>("Female");
   const [selectedAge, setSelectedAge] = useState<string>("13 to 15");
   const [experience, setExperience] = useState<string>("A little");
   const [learningStyles, setLearningStyles] = useState<string[]>(["Pictures", "Trying things"]);
-  const [gender, setGender] = useState<string>("Female");
   const [selectedAvatar, setSelectedAvatar] = useState<string>("#ffa11f");
+
+  // Optional student fields
+  const [schoolName, setSchoolName] = useState<string>("");
+  const [address, setAddress] = useState<string>("");
+  const [nationalId, setNationalId] = useState<string>("");
 
   // Diagnostic Quiz fields
   const [quiz1, setQuiz1] = useState<string>("Follow clear, step-by-step instructions");
@@ -44,6 +49,12 @@ export default function RegisterStepThreePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!gender) {
+      toast.error("Please select your gender.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -61,10 +72,13 @@ export default function RegisterStepThreePage() {
       ];
 
       const res = await updateUser({
+        gender,
         age_group: selectedAge,
         coding_experience: experience,
         learning_styles: learningStyles,
-        gender: gender || null,
+        school_name: schoolName.trim() || null,
+        address: address.trim() || null,
+        national_id: nationalId.trim() || null,
         profile_image: selectedAvatar,
         quiz_answers: quizData,
       });
@@ -88,7 +102,7 @@ export default function RegisterStepThreePage() {
   return (
     <div className="w-full min-h-screen flex bg-[#fff8ec]">
       {/* Left Column (Desktop Only: lg and up) */}
-      <div className="hidden lg:flex lg:w-1/2 min-h-screen bg-[#118a80] flex-col items-center justify-center p-12 select-none relative sticky top-0 h-screen">
+      <div className="hidden lg:flex lg:w-1/2 min-h-screen bg-[#118a80] flex-col items-center justify-center p-12 select-none sticky top-0 h-screen">
         <div className="transform hover:scale-105 transition-transform duration-300 mb-8">
           <MangoIcon size={190} animated className="drop-shadow-lg" />
         </div>
@@ -107,7 +121,7 @@ export default function RegisterStepThreePage() {
           {/* Step Indicator */}
           <div className="flex flex-col mb-6">
             <span className="text-xs font-semibold tracking-wider text-[#5a6e70] mb-2 uppercase">
-              Step 3 of 3
+              Step 2 of 2: Collect Profile & Quiz
             </span>
             <div className="w-48 h-1.5 bg-[#e2e8e4] rounded-full overflow-hidden">
               <div
@@ -126,7 +140,34 @@ export default function RegisterStepThreePage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
-            {/* 1. Age Question */}
+            {/* 1. Choose Gender */}
+            <div>
+              <h2 className="text-lg sm:text-xl font-extrabold text-[#10292e] tracking-tight mb-2.5">
+                Choose your gender
+              </h2>
+              <div className="flex flex-wrap gap-2.5">
+                {GENDER_OPTIONS.map((g) => {
+                  const isSelected = gender === g;
+                  return (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setGender(g)}
+                      aria-pressed={isSelected}
+                      className={`rounded-full px-6 py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.03)] ${
+                        isSelected
+                          ? "bg-white border-2 border-[#ffa11f] text-[#10292e] ring-2 ring-[#ffa11f]/15 scale-105"
+                          : "bg-white border border-[#d2dcd7] text-[#10292e] hover:border-[#ffa11f]/60"
+                      }`}
+                    >
+                      {g}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 2. Age Question */}
             <div>
               <h2 className="text-lg sm:text-xl font-extrabold text-[#10292e] tracking-tight mb-2.5">
                 How old are you?
@@ -153,7 +194,7 @@ export default function RegisterStepThreePage() {
               </div>
             </div>
 
-            {/* 2. Coding Experience */}
+            {/* 3. Coding Experience */}
             <div>
               <h2 className="text-lg sm:text-xl font-extrabold text-[#10292e] tracking-tight mb-2.5">
                 Have you coded before?
@@ -180,7 +221,7 @@ export default function RegisterStepThreePage() {
               </div>
             </div>
 
-            {/* 3. Learning Style (Pick any) */}
+            {/* 4. Learning Style (Pick any) */}
             <div>
               <h2 className="text-lg sm:text-xl font-extrabold text-[#10292e] tracking-tight mb-2.5">
                 How do you like to learn? (pick any)
@@ -207,7 +248,65 @@ export default function RegisterStepThreePage() {
               </div>
             </div>
 
-            {/* 4. Avatar Theme (profile_image) */}
+            {/* 5. Optional Student Information Card (school_name, address, national_id) */}
+            <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#d2dcd7] shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-[#10292e] uppercase tracking-wider">
+                Optional Information
+              </h3>
+
+              <div>
+                <label
+                  htmlFor="school_name"
+                  className="block text-xs font-bold text-[#10292e] mb-1"
+                >
+                  School or Academy Name (optional)
+                </label>
+                <input
+                  id="school_name"
+                  type="text"
+                  value={schoolName}
+                  onChange={(e) => setSchoolName(e.target.value)}
+                  placeholder="e.g. Cairo STEM School"
+                  className="w-full rounded-2xl border border-[#d2dcd7] bg-[#fff8ec]/50 px-4 py-2.5 text-sm text-[#10292e] placeholder:text-[#5a6e70]/60 focus:outline-none focus:ring-2 focus:ring-[#118a80] transition-all"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="address"
+                  className="block text-xs font-bold text-[#10292e] mb-1"
+                >
+                  Address / City (optional)
+                </label>
+                <input
+                  id="address"
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="e.g. Cairo, Nasr City"
+                  className="w-full rounded-2xl border border-[#d2dcd7] bg-[#fff8ec]/50 px-4 py-2.5 text-sm text-[#10292e] placeholder:text-[#5a6e70]/60 focus:outline-none focus:ring-2 focus:ring-[#118a80] transition-all"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="national_id"
+                  className="block text-xs font-bold text-[#10292e] mb-1"
+                >
+                  National ID or Student ID (optional)
+                </label>
+                <input
+                  id="national_id"
+                  type="text"
+                  value={nationalId}
+                  onChange={(e) => setNationalId(e.target.value)}
+                  placeholder="e.g. 29901011234567"
+                  className="w-full rounded-2xl border border-[#d2dcd7] bg-[#fff8ec]/50 px-4 py-2.5 text-sm text-[#10292e] placeholder:text-[#5a6e70]/60 focus:outline-none focus:ring-2 focus:ring-[#118a80] transition-all"
+                />
+              </div>
+            </div>
+
+            {/* 6. Avatar Theme (profile_image) */}
             <div>
               <h2 className="text-lg sm:text-xl font-extrabold text-[#10292e] tracking-tight mb-2.5">
                 Pick your avatar style
@@ -238,34 +337,7 @@ export default function RegisterStepThreePage() {
               </div>
             </div>
 
-            {/* 5. Choose Gender */}
-            <div>
-              <h2 className="text-lg sm:text-xl font-extrabold text-[#10292e] tracking-tight mb-2.5">
-                Choose your gender
-              </h2>
-              <div className="flex flex-wrap gap-2.5">
-                {GENDER_OPTIONS.map((g) => {
-                  const isSelected = gender === g;
-                  return (
-                    <button
-                      key={g}
-                      type="button"
-                      onClick={() => setGender(g)}
-                      aria-pressed={isSelected}
-                      className={`rounded-full px-6 py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.03)] ${
-                        isSelected
-                          ? "bg-white border-2 border-[#ffa11f] text-[#10292e] ring-2 ring-[#ffa11f]/15 scale-105"
-                          : "bg-white border border-[#d2dcd7] text-[#10292e] hover:border-[#ffa11f]/60"
-                      }`}
-                    >
-                      {g}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 6. Diagnostic Quiz Section */}
+            {/* 7. Diagnostic Quiz Section */}
             <div className="bg-white rounded-3xl p-6 border-2 border-[#ffd84a] shadow-sm space-y-5">
               <div className="flex items-center gap-2">
                 <span className="bg-[#ffd84a] text-[#10292e] text-xs font-black px-3 py-1 rounded-full uppercase">

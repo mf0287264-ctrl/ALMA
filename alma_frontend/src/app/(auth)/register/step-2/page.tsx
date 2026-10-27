@@ -38,9 +38,6 @@ export default function RegisterStepTwoPage() {
   const router = useRouter();
   const { updateUser } = useAuth();
   const [selectedRole, setSelectedRole] = useState<string>("me");
-  const [schoolName, setSchoolName] = useState<string>("");
-  const [nationalId, setNationalId] = useState<string>("");
-  const [address, setAddress] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
   const handleContinue = async () => {
@@ -48,20 +45,12 @@ export default function RegisterStepTwoPage() {
     const roleName = ROLES.find((r) => r.id === selectedRole)?.title;
 
     try {
-      const res = await updateUser({
+      await updateUser({
         learning_for: selectedRole,
-        school_name: schoolName.trim() || null,
-        national_id: nationalId.trim() || null,
-        address: address.trim() || null,
       });
-
-      if (!res.success) {
-        toast.error(res.error || "Could not save details, continuing...");
-      } else {
-        toast.success(`Selected: ${roleName}`);
-      }
+      toast.success(`Selected: ${roleName}`);
     } catch {
-      // Proceed even if network hiccups
+      // Continue even if network hiccups
     } finally {
       setLoading(false);
       router.push("/register/step-3");
@@ -74,23 +63,26 @@ export default function RegisterStepTwoPage() {
         {/* Step Indicator & Progress Bar */}
         <div className="flex flex-col items-center mb-6">
           <span className="text-xs font-semibold tracking-wider text-[#5a6e70] mb-2 uppercase">
-            Step 2 of 3
+            Step 1 of 2: Who am I
           </span>
           <div className="w-56 sm:w-64 h-1.5 bg-[#e2e8e4] rounded-full overflow-hidden">
             <div
               className="h-full bg-[#ffa11f] rounded-full transition-all duration-500 ease-out"
-              style={{ width: "66.6%" }}
+              style={{ width: "50%" }}
             />
           </div>
         </div>
 
         {/* Heading */}
-        <h1 className="text-3xl sm:text-4xl md:text-[2.6rem] font-extrabold text-[#10292e] tracking-tight mb-8 sm:mb-10">
+        <h1 className="text-3xl sm:text-4xl md:text-[2.6rem] font-extrabold text-[#10292e] tracking-tight mb-3">
           Who will be learning?
         </h1>
+        <p className="text-sm sm:text-base text-[#5a6e70] max-w-md mb-8 sm:mb-10">
+          Tell us who this account is for so we can set up the right learning environment.
+        </p>
 
         {/* 3 Role Selection Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 w-full mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 w-full mb-10">
           {ROLES.map((role) => {
             const isSelected = selectedRole === role.id;
             return (
@@ -124,64 +116,6 @@ export default function RegisterStepTwoPage() {
               </button>
             );
           })}
-        </div>
-
-        {/* Optional details (School Name & National ID) */}
-        <div className="w-full max-w-md bg-white rounded-3xl p-6 border border-[#d2dcd7] text-left shadow-sm mb-8 space-y-4">
-          <h3 className="text-sm font-bold text-[#10292e] uppercase tracking-wider">
-            Optional Information
-          </h3>
-
-          <div>
-            <label
-              htmlFor="school_name"
-              className="block text-xs font-bold text-[#10292e] mb-1"
-            >
-              School or Academy Name (optional)
-            </label>
-            <input
-              id="school_name"
-              type="text"
-              value={schoolName}
-              onChange={(e) => setSchoolName(e.target.value)}
-              placeholder="e.g. Cairo STEM School"
-              className="w-full rounded-2xl border border-[#d2dcd7] bg-[#fff8ec]/50 px-4 py-2.5 text-sm text-[#10292e] placeholder:text-[#5a6e70]/60 focus:outline-none focus:ring-2 focus:ring-[#118a80] transition-all"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="national_id"
-              className="block text-xs font-bold text-[#10292e] mb-1"
-            >
-              National ID or Student ID (optional)
-            </label>
-            <input
-              id="national_id"
-              type="text"
-              value={nationalId}
-              onChange={(e) => setNationalId(e.target.value)}
-              placeholder="e.g. 29901011234567"
-              className="w-full rounded-2xl border border-[#d2dcd7] bg-[#fff8ec]/50 px-4 py-2.5 text-sm text-[#10292e] placeholder:text-[#5a6e70]/60 focus:outline-none focus:ring-2 focus:ring-[#118a80] transition-all"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="address"
-              className="block text-xs font-bold text-[#10292e] mb-1"
-            >
-              Address / City (optional)
-            </label>
-            <input
-              id="address"
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="e.g. Cairo, Nasr City"
-              className="w-full rounded-2xl border border-[#d2dcd7] bg-[#fff8ec]/50 px-4 py-2.5 text-sm text-[#10292e] placeholder:text-[#5a6e70]/60 focus:outline-none focus:ring-2 focus:ring-[#118a80] transition-all"
-            />
-          </div>
         </div>
 
         {/* Action Button */}
