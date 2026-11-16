@@ -1,6 +1,6 @@
 import studentsRepository from './Students.repository.js';
 import { hashPassword, verifyPassword } from '../../Utils/argon2.util.js';
-import { generateToken } from '../../Utils/jwt.util.js';
+import { generateToken, generateRefreshToken } from '../../Utils/jwt.util.js';
 
 class StudentsService {
   async createStudent(data) {
@@ -36,6 +36,25 @@ class StudentsService {
       data.gender = null;
     }
 
+    // ── Parent / Guardian fields ──────────────────────────────────────────────
+    if (data.parent_name === undefined) {
+      data.parent_name = null;
+    }
+    if (data.parent_phone === undefined) {
+      data.parent_phone = null;
+    }
+    if (data.parent_email === undefined) {
+      data.parent_email = null;
+    }
+    if (data.parent_national_id === undefined) {
+      data.parent_national_id = null;
+    }
+    if (data.parent_relation === undefined) {
+      // e.g. 'father' | 'mother' | 'guardian'
+      data.parent_relation = null;
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     if (data.email) {
       const existingStudent = await studentsRepository.findByEmail(data.email);
       if (existingStudent) {
@@ -48,19 +67,23 @@ class StudentsService {
     const rawPassword = data.password || 'StudentPass123!';
     data.password_hash = await hashPassword(rawPassword);
     delete data.password;
-    
+
     const createdStudent = await studentsRepository.create(data);
 
-    const token = generateToken({
+    const payload = {
       id: createdStudent._id,
       name: `${createdStudent.first_name || ''} ${createdStudent.last_name || ''}`.trim(),
       email: createdStudent.email,
-      role: 'student'
-    });
+      role: 'student',
+    };
+
+    const accessToken = generateToken(payload);
+    const refreshToken = generateRefreshToken(payload);
 
     return {
       student: createdStudent,
-      token
+      accessToken,
+      refreshToken,
     };
   }
 
@@ -85,18 +108,22 @@ class StudentsService {
       throw error;
     }
 
-    const token = generateToken({
+    const payload = {
       id: student._id,
       name: `${student.first_name || ''} ${student.last_name || ''}`.trim(),
       email: student.email,
-      role: 'student'
-    });
+      role: 'student',
+    };
+
+    const accessToken = generateToken(payload);
+    const refreshToken = generateRefreshToken(payload);
 
     const { password_hash, ...studentWithoutPassword } = student;
 
     return {
       student: studentWithoutPassword,
-      token
+      accessToken,
+      refreshToken,
     };
   }
 

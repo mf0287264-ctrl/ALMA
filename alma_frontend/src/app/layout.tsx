@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Toaster } from "sonner";
+import AuthProviders from "./_providers/AuthProviders";
 import { AuthProvider } from "./_Context/AuthContext";
 import "./globals.css";
 
@@ -16,10 +17,16 @@ export default function RootLayout({
   return (
     <html lang="en" style={{ fontFamily: "Gill Sans, sans-serif" }} className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-[#fff8ec]">
-        <AuthProvider>
-          {children}
-          <Toaster position="top-left" richColors />
-        </AuthProvider>
+        {/*
+          AuthProviders wraps everything with next-auth SessionProvider.
+          AuthProvider (our custom context) sits inside so it can call useSession().
+        */}
+        <AuthProviders>
+          <AuthProvider>
+            {children}
+            <Toaster position="top-left" richColors />
+          </AuthProvider>
+        </AuthProviders>
       </body>
     </html>
   );

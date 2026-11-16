@@ -296,10 +296,20 @@ export default function RegisterPage() {
             <p className="text-center text-sm text-[#5a6e70] pt-2">
               Already have an account?{" "}
               <Link
-                href="/login"
+                href="/choose-role?mode=login"
                 className="font-bold text-[#0b6b63] hover:text-[#084e48] hover:underline transition-colors"
               >
                 Log in
+              </Link>
+            </p>
+
+            <p className="text-center text-xs text-[#5a6e70] pt-1">
+              Educator or Teacher?{" "}
+              <Link
+                href="/register/teacher"
+                className="font-bold text-[#f25c78] hover:underline transition-colors"
+              >
+                Create Teacher account →
               </Link>
             </p>
           </form>

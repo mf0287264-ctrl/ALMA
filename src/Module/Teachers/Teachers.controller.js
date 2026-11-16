@@ -3,8 +3,25 @@ import teachersService from './Teachers.service.js';
 class TeachersController {
   async create(req, res, next) {
     try {
-      const teacher = await teachersService.createTeacher(req.body);
-      res.status(201).json({ success: true, data: teacher });
+      const result = await teachersService.createTeacher(req.body);
+      res.status(201).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async login(req, res, next) {
+    try {
+      const result = await teachersService.login(req.body);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getProfile(req, res, next) {
+    try {
+      res.status(200).json({ success: true, data: req.authUser });
     } catch (error) {
       next(error);
     }
@@ -30,7 +47,8 @@ class TeachersController {
 
   async update(req, res, next) {
     try {
-      const teacher = await teachersService.updateTeacher(req.params.id, req.body);
+      const teacherId = req.authUser?._id || req.params.id;
+      const teacher = await teachersService.updateTeacher(teacherId, req.body);
       res.status(200).json({ success: true, data: teacher });
     } catch (error) {
       next(error);
@@ -39,7 +57,8 @@ class TeachersController {
 
   async delete(req, res, next) {
     try {
-      await teachersService.deleteTeacher(req.params.id);
+      const teacherId = req.authUser?._id || req.params.id;
+      await teachersService.deleteTeacher(teacherId);
       res.status(200).json({ success: true, message: 'Teacher deleted successfully' });
     } catch (error) {
       next(error);

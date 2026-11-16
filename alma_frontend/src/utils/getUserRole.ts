@@ -1,6 +1,11 @@
 import { decode } from "next-auth/jwt";
 import { cookies } from "next/headers";
 
+/**
+ * Server-only helper.
+ * Returns the user's role ('student' | 'teacher' | 'admin') from the session cookie,
+ * or null if unauthenticated.
+ */
 export async function getUserRole(): Promise<string | null> {
   const myCookies = await cookies();
   const tokenFromCookies =
@@ -9,10 +14,10 @@ export async function getUserRole(): Promise<string | null> {
 
   if (!tokenFromCookies) return null;
 
-  const tokenAfterDecoded = await decode({
+  const decoded = await decode({
     token: tokenFromCookies,
     secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET!,
   });
 
-  return (tokenAfterDecoded?.role as string | undefined) ?? null;
+  return (decoded?.role as string | undefined) ?? null;
 }

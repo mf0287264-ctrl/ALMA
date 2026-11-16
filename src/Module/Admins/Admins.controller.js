@@ -3,8 +3,25 @@ import adminsService from './Admins.service.js';
 class AdminsController {
   async create(req, res, next) {
     try {
-      const admin = await adminsService.createAdmin(req.body);
-      res.status(201).json({ success: true, data: admin });
+      const result = await adminsService.createAdmin(req.body);
+      res.status(201).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async login(req, res, next) {
+    try {
+      const result = await adminsService.login(req.body);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getProfile(req, res, next) {
+    try {
+      res.status(200).json({ success: true, data: req.authUser });
     } catch (error) {
       next(error);
     }
@@ -30,7 +47,8 @@ class AdminsController {
 
   async update(req, res, next) {
     try {
-      const admin = await adminsService.updateAdmin(req.params.id, req.body);
+      const adminId = req.authUser?._id || req.params.id;
+      const admin = await adminsService.updateAdmin(adminId, req.body);
       res.status(200).json({ success: true, data: admin });
     } catch (error) {
       next(error);
@@ -39,7 +57,8 @@ class AdminsController {
 
   async delete(req, res, next) {
     try {
-      await adminsService.deleteAdmin(req.params.id);
+      const adminId = req.authUser?._id || req.params.id;
+      await adminsService.deleteAdmin(adminId);
       res.status(200).json({ success: true, message: 'Admin deleted successfully' });
     } catch (error) {
       next(error);

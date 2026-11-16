@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Sidebar from "@/components/Sidebar";
@@ -8,7 +8,12 @@ import { useAuth } from "@/app/_Context/AuthContext";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, updateUser, logout } = useAuth();
+
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
 
   const fullName = user?.first_name
     ? `${user.first_name} ${user.last_name || ""}`.trim()
@@ -29,6 +34,41 @@ export default function ProfilePage() {
   const handleLogout = () => {
     logout();
     toast.success("Logged out successfully");
+  };
+
+  const handleSavePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters long.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+
+    setSavingPassword(true);
+    try {
+      const res = await updateUser({ password: newPassword });
+      if (res.success) {
+        setShowPasswordModal(false);
+        setNewPassword("");
+        setConfirmPassword("");
+        toast.success("Password changed successfully! Please log in with your new password.");
+
+        // Clear session and redirect to student login
+        setTimeout(() => {
+          logout();
+          router.replace("/login?role=student");
+        }, 1200);
+      } else {
+        toast.error(res.error || "Failed to update password.");
+      }
+    } catch {
+      toast.error("An error occurred while changing password.");
+    } finally {
+      setSavingPassword(false);
+    }
   };
 
   return (
@@ -163,6 +203,21 @@ export default function ProfilePage() {
               </div>
             )}
 
+            {/* Password / Change Password */}
+            <button
+              type="button"
+              onClick={() => setShowPasswordModal(true)}
+              className="w-full py-4 flex items-center justify-between text-left text-sm font-bold text-[#10292e] hover:text-[#118a80] transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-2.5">
+                <span>Password</span>
+                <span className="font-mono text-xs text-[#83908f] tracking-widest">••••••••</span>
+              </div>
+              <span className="text-xs font-bold text-[#118a80] hover:underline">
+                Change
+              </span>
+            </button>
+
             {/* Notifications */}
             <button
               type="button"
@@ -205,6 +260,67 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+
+        {/* Change Password Modal */}
+        {showPasswordModal && (
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-[#e8eeea]">
+              <h3 className="text-xl font-black text-[#10292e] mb-2">
+                Change Password
+              </h3>
+              <p className="text-xs text-[#5a6e70] mb-5">
+                Enter your new password below. For your security, you will be asked to sign in again after updating.
+              </p>
+
+              <form onSubmit={handleSavePassword} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#10292e] mb-1">
+                    New Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Min 6 characters"
+                    className="w-full rounded-2xl border border-[#d2dcd7] px-4 py-2.5 text-xs text-[#10292e] focus:outline-none focus:ring-2 focus:ring-[#ffa11f]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#10292e] mb-1">
+                    Confirm New Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter password"
+                    className="w-full rounded-2xl border border-[#d2dcd7] px-4 py-2.5 text-xs text-[#10292e] focus:outline-none focus:ring-2 focus:ring-[#ffa11f]"
+                  />
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordModal(false)}
+                    className="px-5 py-2 rounded-full border border-[#d2dcd7] text-xs font-bold text-[#5a6e70] hover:bg-[#fafaf8] cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingPassword}
+                    className="px-6 py-2 rounded-full bg-[#ffa11f] hover:bg-[#e69019] text-[#10292e] text-xs font-black shadow-xs cursor-pointer disabled:opacity-50"
+                  >
+                    {savingPassword ? "Updating..." : "Update Password"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

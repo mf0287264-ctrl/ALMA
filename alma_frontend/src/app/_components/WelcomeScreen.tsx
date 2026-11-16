@@ -40,14 +40,14 @@ export default function WelcomeScreen({ onBackToSplash }: WelcomeScreenProps) {
         {/* Buttons */}
         <div className="w-full mt-8 space-y-3.5">
           <Link
-            href="/register"
+            href="/choose-role?mode=register"
             className="w-full block bg-[#ffa11f] hover:brightness-95 active:scale-[0.98] text-[#10292e] font-bold py-3.5 px-6 rounded-full transition-all shadow-sm text-center"
           >
             Create an account
           </Link>
 
           <Link
-            href="/login"
+            href="/choose-role?mode=login"
             className="w-full block bg-white hover:bg-[#fafaf8] active:scale-[0.98] border-2 border-[#10292e] text-[#10292e] font-bold py-3.5 px-6 rounded-full transition-all shadow-sm text-center"
           >
             Log in

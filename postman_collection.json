@@ -14,9 +14,292 @@
       "key": "studentToken",
       "value": "YOUR_JWT_TOKEN_HERE",
       "type": "string"
+    },
+    {
+      "key": "parentToken",
+      "value": "YOUR_PARENT_ACCESS_TOKEN_HERE",
+      "type": "string"
+    },
+    {
+      "key": "parentRefreshToken",
+      "value": "YOUR_PARENT_REFRESH_TOKEN_HERE",
+      "type": "string"
+    },
+    {
+      "key": "childId",
+      "value": "CHILD_STUDENT_ID_HERE",
+      "type": "string"
     }
   ],
   "item": [
+    {
+      "name": "Parents",
+      "item": [
+        {
+          "name": "Register Parent",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.success && json.data) {",
+                  "  pm.collectionVariables.set('parentToken', json.data.accessToken);",
+                  "  pm.collectionVariables.set('parentRefreshToken', json.data.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Sarah\",\n  \"last_name\": \"Connor\",\n  \"email\": \"sarah.connor@parent.alma.edu\",\n  \"password\": \"ParentPass123!\",\n  \"phone_number\": \"+1234567890\",\n  \"relation\": \"mother\",\n  \"child_email\": \"alex.smith@student.alma.edu\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/parents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parents"
+              ]
+            },
+            "description": "Register a parent account and optionally link a student."
+          }
+        },
+        {
+          "name": "Login Parent",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.success && json.data) {",
+                  "  pm.collectionVariables.set('parentToken', json.data.accessToken);",
+                  "  pm.collectionVariables.set('parentRefreshToken', json.data.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"sarah.connor@parent.alma.edu\",\n  \"password\": \"ParentPass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/parents/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parents",
+                "login"
+              ]
+            },
+            "description": "Login as parent and store 30d accessToken + refreshToken."
+          }
+        },
+        {
+          "name": "Get Parent Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{parentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/parents/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parents",
+                "profile"
+              ]
+            },
+            "description": "Get authenticated parent profile including linked children."
+          }
+        },
+        {
+          "name": "Link Child",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{parentToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"child_email\": \"alex.smith@student.alma.edu\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/parents/link-child",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parents",
+                "link-child"
+              ]
+            },
+            "description": "Link a child by student email or student code."
+          }
+        },
+        {
+          "name": "Get Child Progress",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{parentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/parents/child/{{childId}}/progress",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parents",
+                "child",
+                "{{childId}}",
+                "progress"
+              ]
+            },
+            "description": "Get child learning progress (streaks, lessons completed, struggling concepts)."
+          }
+        },
+        {
+          "name": "Send Message to Teacher",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{parentToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"teacher_id\": \"TEACHER_ID_HERE\",\n  \"subject\": \"Regarding my child's progress\",\n  \"message\": \"Hello, I wanted to discuss how my child is performing.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/parents/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parents",
+                "messages"
+              ]
+            },
+            "description": "Send direct note from parent to teacher."
+          }
+        },
+        {
+          "name": "Get Parent Messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{parentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/parents/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parents",
+                "messages"
+              ]
+            },
+            "description": "View message history sent to teachers."
+          }
+        },
+        {
+          "name": "Update Parent Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{parentToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number\": \"+1987654321\",\n  \"relation\": \"mother\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/parents/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parents",
+                "profile"
+              ]
+            },
+            "description": "Update parent details."
+          }
+        }
+      ]
+    },
     {
       "name": "Health Check",
       "request": {

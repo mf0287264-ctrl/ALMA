@@ -1,15 +1,22 @@
 import { z } from 'zod';
 
 export const createTeacherSchema = z.object({
-  first_name: z.string().min(1, 'First name is required'),
-  last_name: z.string().min(1, 'Last name is required'),
+  name: z.string().optional(),
+  first_name: z.string().optional().default('Teacher'),
+  last_name: z.string().optional().default('User'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters long').optional(),
-  teacher_code: z.string().min(1, 'Teacher code is required'),
-  specialization: z.string().min(1, 'Specialization is required'),
+  teacher_code: z.string().optional().default(() => `TEA-${Math.floor(1000 + Math.random() * 9000)}`),
+  specialization: z.string().optional().default('Computer Science'),
   school_name: z.string().optional().nullable(),
-  profile_image: z.string().url().optional().nullable(),
+  profile_image: z.string().optional().nullable(),
   phone_number: z.string().optional().nullable()
 });
 
+export const loginTeacherSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(1, 'Password is required')
+});
+
 export const updateTeacherSchema = createTeacherSchema.partial();
+

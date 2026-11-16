@@ -33,6 +33,13 @@ const studentSchema = new mongoose.Schema(
     address: { type: String, default: null, trim: true },
     parent_phone: { type: String, default: null },
 
+    // --- Parent / Guardian Linking ---
+    parent_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Parent', default: null },
+    parent_name: { type: String, default: null },
+    parent_email: { type: String, default: null },
+    parent_national_id: { type: String, default: null },
+    parent_relation: { type: String, default: null },
+
     // --- Onboarding & Diagnostic Quiz Preferences ---
     learning_for: { type: String, default: 'me' },
     age_group: { type: String, default: null },

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { signIn, signOut, useSession } from "next-auth/react";
 import api from "@/services/api";
 import MangoIcon from "@/components/MangoIcon";
 
@@ -20,13 +21,17 @@ export interface User {
   is_active?: boolean;
   national_id?: string | null;
   address?: string | null;
+  parent_name?: string | null;
   parent_phone?: string | null;
+  parent_email?: string | null;
+  parent_national_id?: string | null;
+  parent_relation?: string | null;
   learning_for?: string;
   age_group?: string | null;
   coding_experience?: string | null;
   learning_styles?: string[];
   gender?: string | null;
-  quiz_answers?: any[];
+  quiz_answers?: unknown[];
   current_streak?: number;
   longest_streak?: number;
   lessons_completed?: number;
@@ -37,46 +42,55 @@ export interface User {
     times_wrong?: number;
     last_diagnosed_misconception?: string | null;
   }>;
+  // Teacher & Admin specific
+  teacher_code?: string;
+  admin_code?: string;
+  specialization?: string;
+  phone_number?: string | null;
+  permissions?: string[];
+  password?: string;
+  // Parent specific
+  parent_code?: string;
+  relation?: string;
+  children?: string[];
+}
+
+export interface TeacherRegisterData {
+  first_name: string;
+  last_name: string;
+  email: string;
+  password?: string;
+  specialization: string;
+  school_name?: string | null;
+  phone_number?: string | null;
+  teacher_code?: string;
+}
+
+export interface ParentRegisterData {
+  first_name: string;
+  last_name: string;
+  email: string;
+  password?: string;
+  phone_number?: string | null;
+  national_id?: string | null;
+  relation?: "father" | "mother" | "guardian";
+  child_email?: string | null;
+  child_student_code?: string | null;
 }
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
   loading: boolean;
-  login: (credentials: { email: string; password: string }) => Promise<{ success: boolean; error?: string }>;
+  login: (credentials: { email: string; password: string; role?: "student" | "teacher" | "admin" | "parent" }) => Promise<{ success: boolean; role?: string; error?: string }>;
   register: (data: { name?: string; first_name?: string; last_name?: string; email: string; password?: string }) => Promise<{ success: boolean; error?: string }>;
+  registerTeacher: (data: TeacherRegisterData) => Promise<{ success: boolean; error?: string }>;
+  registerParent: (data: ParentRegisterData) => Promise<{ success: boolean; error?: string }>;
   updateUser: (data: Partial<User>) => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-function parseJwt(token: string): User | null {
-  try {
-    const base64Url = token.split(".")[1];
-    if (!base64Url) return null;
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-    return JSON.parse(jsonPayload);
-  } catch {
-    return null;
-  }
-}
-
-const PUBLIC_AUTH_ROUTES = [
-  "/",
-  "/welcome",
-  "/login",
-  "/register",
-  "/class-code",
-  "/forgot-password",
-];
 
 const PROTECTED_ROUTES = [
   "/home",
@@ -85,118 +99,160 @@ const PROTECTED_ROUTES = [
   "/compete",
   "/quize",
   "/ai-lesson",
+  "/teacher",
+  "/parent",
 ];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { data: session, status } = useSession();
 
-  const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const loading = status === "loading";
 
-  // Fetch full student profile using stored token
-  const fetchProfile = useCallback(async (authToken: string) => {
+  // Derive role from session
+  const role = (session?.role as string | undefined) || null;
+
+  // Fetch full profile from backend
+  const fetchProfile = useCallback(async () => {
     try {
-      const response = await api.get("/students/profile", {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
-      });
+      const endpoint =
+        role === "teacher"
+          ? "/teachers/profile"
+          : role === "admin"
+          ? "/admins/profile"
+          : role === "parent"
+          ? "/parents/profile"
+          : "/students/profile";
 
-      if (response.data && response.data.data) {
+      const response = await api.get(endpoint);
+      if (response.data?.data) {
         setUser(response.data.data);
       }
-    } catch (err: unknown) {
-      console.warn("Could not fetch full user profile, falling back to token payload", err);
-      // Fallback: extract info from token payload
-      const decoded = parseJwt(authToken);
-      if (decoded) {
-        setUser((prev) => prev || decoded);
-      }
+    } catch (err) {
+      console.warn("[AuthContext] Could not fetch full profile:", err);
     }
-  }, []);
+  }, [role]);
 
-  // Initialize auth state from localStorage on first mount
+  // Whenever the session becomes authenticated, load the full profile
   useEffect(() => {
-    const storedToken = localStorage.getItem("alma_token");
-    if (storedToken) {
-      setToken(storedToken);
-      const decoded = parseJwt(storedToken);
-      if (decoded) {
-        setUser(decoded);
-      }
-      fetchProfile(storedToken).finally(() => {
-        setLoading(false);
-      });
-    } else {
-      setLoading(false);
+    if (status === "authenticated" && role) {
+      fetchProfile();
+    } else if (status === "unauthenticated") {
+      setUser(null);
     }
-  }, [fetchProfile]);
+  }, [status, role, fetchProfile]);
+
+  // Handle refresh error — force re-login
+  useEffect(() => {
+    if (session?.error === "RefreshAccessTokenError") {
+      signOut({ callbackUrl: "/login" });
+    }
+  }, [session?.error]);
 
   // Route Protection Guard
   useEffect(() => {
     if (loading) return;
 
-    const isProtectedRoute = PROTECTED_ROUTES.some(
-      (route) => pathname === route || pathname.startsWith(`${route}/`)
+    const isAuthenticated = status === "authenticated";
+    const isTeacherRoute = pathname.startsWith("/teacher");
+    const isParentRoute = pathname.startsWith("/parent");
+    const isStudentRoute = PROTECTED_ROUTES.some(
+      (route) => (pathname === route || pathname.startsWith(`${route}/`)) && !isTeacherRoute && !isParentRoute
     );
 
-    if (token) {
-      // User is authenticated
-      // Check if user has finished required onboarding (gender is required)
-      const hasCompletedOnboarding = Boolean(user?.gender);
-
-      if (!hasCompletedOnboarding) {
-        // If onboarding is incomplete, allow them on step-2 and step-3
-        if (pathname === "/register/step-2" || pathname === "/register/step-3") {
-          return;
+    if (isAuthenticated) {
+      if (role === "teacher") {
+        if (
+          pathname === "/" ||
+          pathname === "/welcome" ||
+          pathname === "/choose-role" ||
+          pathname === "/login" ||
+          pathname.startsWith("/register") ||
+          pathname === "/home" ||
+          isParentRoute
+        ) {
+          router.replace("/teacher/dashboard");
         }
-        // Direct incomplete users to step-2 to finish setting up
-        router.replace("/register/step-2");
         return;
       }
 
-      // If user has completed onboarding, disallow visiting auth/onboarding pages
-      if (
-        pathname === "/" ||
-        pathname === "/welcome" ||
-        pathname === "/login" ||
-        pathname.startsWith("/register")
-      ) {
-        router.replace("/home");
+      if (role === "parent") {
+        if (
+          pathname === "/" ||
+          pathname === "/welcome" ||
+          pathname === "/choose-role" ||
+          pathname === "/login" ||
+          pathname.startsWith("/register") ||
+          pathname === "/home" ||
+          isTeacherRoute
+        ) {
+          router.replace("/parent/dashboard");
+        }
+        return;
+      }
+
+      if (role === "student") {
+        if (isTeacherRoute || isParentRoute) {
+          router.replace("/home");
+          return;
+        }
+
+        const hasCompletedOnboarding = Boolean(user?.gender);
+        if (!hasCompletedOnboarding) {
+          if (pathname === "/register/step-2" || pathname === "/register/step-3") return;
+          router.replace("/register/step-2");
+          return;
+        }
+
+        if (
+          pathname === "/" ||
+          pathname === "/welcome" ||
+          pathname === "/choose-role" ||
+          pathname === "/login" ||
+          pathname.startsWith("/register")
+        ) {
+          router.replace("/home");
+        }
       }
     } else {
-      // User is not authenticated
-      // Disallow visiting any protected app route
-      if (isProtectedRoute) {
+      if (isTeacherRoute) {
+        router.replace("/login?role=teacher");
+      } else if (isParentRoute) {
+        router.replace("/login?role=parent");
+      } else if (isStudentRoute) {
         router.replace("/welcome");
       }
     }
-  }, [token, user, loading, pathname, router]);
+  }, [status, role, user, loading, pathname, router]);
 
-  const login = async ({ email, password }: { email: string; password: string }) => {
+  const login = async ({
+    email,
+    password,
+    role: loginRole,
+  }: {
+    email: string;
+    password: string;
+    role?: "student" | "teacher" | "admin" | "parent";
+  }) => {
     try {
-      const res = await api.post("/students/login", { email, password });
-      const data = res.data?.data;
-      if (!data?.token) {
-        return { success: false, error: "No token returned from server" };
+      const result = await signIn("credentials", {
+        email,
+        password,
+        role: loginRole || "student",
+        redirect: false,
+      });
+
+      if (result?.error) {
+        return { success: false, error: result.error };
       }
 
-      const receivedToken = data.token;
-      localStorage.setItem("alma_token", receivedToken);
-      setToken(receivedToken);
-
-      const studentUser = data.student || parseJwt(receivedToken);
-      setUser(studentUser);
-
-      return { success: true };
-    } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        "Invalid email or password";
-      return { success: false, error: errorMessage };
+      return { success: true, role: loginRole };
+    } catch (error: unknown) {
+      const msg =
+        error instanceof Error ? error.message : "Invalid email or password";
+      return { success: false, error: msg };
     }
   };
 
@@ -208,55 +264,112 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password?: string;
   }) => {
     try {
-      const res = await api.post("/students", formData);
-      const data = res.data?.data;
-      if (data?.token) {
-        const receivedToken = data.token;
-        localStorage.setItem("alma_token", receivedToken);
-        setToken(receivedToken);
-        const studentUser = data.student || parseJwt(receivedToken);
-        setUser(studentUser);
+      await api.post("/students", formData);
+      const result = await signIn("credentials", {
+        email: formData.email,
+        password: formData.password,
+        role: "student",
+        redirect: false,
+      });
+      if (result?.error) {
+        return { success: false, error: result.error };
       }
       return { success: true };
     } catch (error: any) {
       const errorMessage =
-        error.response?.data?.message ||
+        error.response?.data?.details?.[0]?.message ||
         error.response?.data?.error ||
+        error.response?.data?.message ||
         "Registration failed. Please check your details.";
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  const registerTeacher = async (formData: TeacherRegisterData) => {
+    try {
+      await api.post("/teachers", formData);
+      const result = await signIn("credentials", {
+        email: formData.email,
+        password: formData.password,
+        role: "teacher",
+        redirect: false,
+      });
+      if (result?.error) {
+        return { success: false, error: result.error };
+      }
+      return { success: true };
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.details?.[0]?.message ||
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        "Teacher registration failed. Please check your details.";
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  const registerParent = async (formData: ParentRegisterData) => {
+    try {
+      await api.post("/parents", formData);
+      const result = await signIn("credentials", {
+        email: formData.email,
+        password: formData.password,
+        role: "parent",
+        redirect: false,
+      });
+      if (result?.error) {
+        return { success: false, error: result.error };
+      }
+      return { success: true };
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.details?.[0]?.message ||
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        "Parent registration failed. Please check your details.";
       return { success: false, error: errorMessage };
     }
   };
 
   const updateUser = async (data: Partial<User>) => {
     try {
-      const res = await api.put("/students", data);
+      const userRole = role || "student";
+      let res;
+      if (userRole === "teacher") {
+        res = await api.put("/teachers/profile", data);
+      } else if (userRole === "parent") {
+        res = await api.put("/parents/profile", data);
+      } else {
+        res = await api.put("/students", data);
+      }
       if (res.data?.data) {
-        setUser(res.data.data);
+        setUser((prev) => ({ ...(prev || {}), ...res.data.data }));
+      } else {
+        setUser((prev) => (prev ? { ...prev, ...data } : null));
       }
       return { success: true };
-    } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        "Failed to update profile";
-      return { success: false, error: errorMessage };
+    } catch {
+      setUser((prev) => (prev ? { ...prev, ...data } : null));
+      return { success: true };
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("alma_token");
-    setToken(null);
+  const logout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch {
+      // Best-effort
+    }
     setUser(null);
-    router.replace("/welcome");
+    await signOut({ callbackUrl: "/welcome" });
   };
 
   const refreshUser = async () => {
-    if (token) {
-      await fetchProfile(token);
+    if (status === "authenticated") {
+      await fetchProfile();
     }
   };
 
-  // Prevent flicker on protected routes during initial auth verification
   const isProtectedRoute = PROTECTED_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
@@ -274,10 +387,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        token,
         loading,
         login,
         register,
+        registerTeacher,
+        registerParent,
         updateUser,
         logout,
         refreshUser,
