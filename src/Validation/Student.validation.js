@@ -31,7 +31,13 @@ export const createStudentSchema = z.object({
   current_streak: z.number().int().nonnegative().optional().default(0),
   longest_streak: z.number().int().nonnegative().optional().default(0),
   lessons_completed: z.number().int().nonnegative().optional().default(0),
-  struggling_concepts: z.array(conceptStruggleSchema).optional().default([])
+  struggling_concepts: z.array(conceptStruggleSchema).optional().default([]),
+  following: z.array(z.string()).optional().default([]),
+  followers: z.array(z.string()).optional().default([]),
+  friends: z.array(z.string()).optional().default([]),
+  friend_requests_sent: z.array(z.string()).optional().default([]),
+  friend_requests_received: z.array(z.string()).optional().default([]),
+  bookmarks: z.array(z.string()).optional().default([])
 });
 
 export const loginStudentSchema = z.object({

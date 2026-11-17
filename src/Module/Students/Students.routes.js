@@ -29,6 +29,16 @@ router.put('/', authenticate, validate(updateStudentSchema), studentsController.
 // Authenticated: delete own account
 router.delete('/', authenticate, studentsController.delete);
 
+// Authenticated: Social & Friends
+router.get('/friends/me', authenticate, studentsController.getMyFriends);
+router.post('/:id/follow', authenticate, studentsController.toggleFollow);
+router.put('/:id/follow', authenticate, studentsController.toggleFollow);
+router.post('/:id/friend-request', authenticate, studentsController.sendFriendRequest);
+router.put('/:id/accept-friend', authenticate, studentsController.acceptFriendRequest);
+router.put('/:id/reject-friend', authenticate, studentsController.rejectFriendRequest);
+router.get('/:id/following', studentsController.getFollowing);
+router.get('/:id/followers', studentsController.getFollowers);
+
 // Routes by :id
 router.get('/:id', studentsController.getById);
 router.put('/:id', authenticate, validate(updateStudentSchema), studentsController.update);

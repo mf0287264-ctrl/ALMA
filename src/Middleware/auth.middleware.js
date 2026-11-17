@@ -69,4 +69,47 @@ export const authenticate = async (req, res, next) => {
   }
 };
 
+export const optionalAuthenticate = async (req, res, next) => {
+  try {
+    const authorization = req.headers.authorization || req.headers.authorize;
+    if (!authorization) {
+      return next();
+    }
+
+    const rawToken = extractRawToken(authorization);
+    const blacklisted = await isBlacklisted(rawToken);
+    if (blacklisted) return next();
+
+    const decodedData = verifyToken(authorization);
+    const userId = decodedData.id || decodedData._id;
+    if (!userId) return next();
+
+    req.rawToken = rawToken;
+    req.decodedToken = decodedData;
+
+    let user = null;
+    if (decodedData.role === 'student') {
+      user = await studentsRepository.findById(userId);
+    } else if (decodedData.role === 'teacher') {
+      user = await teachersRepository.findById(userId);
+    } else if (decodedData.role === 'admin') {
+      user = await adminsRepository.findById(userId);
+    } else if (decodedData.role === 'parent') {
+      user = await parentsRepository.findById(userId);
+    } else {
+      user = (await studentsRepository.findById(userId)) ||
+             (await teachersRepository.findById(userId)) ||
+             (await adminsRepository.findById(userId)) ||
+             (await parentsRepository.findById(userId));
+    }
+
+    if (user) {
+      req.authUser = user;
+    }
+  } catch (err) {
+    // Gracefully ignore token errors for optional authentication
+  }
+  next();
+};
+
 export default authenticate;

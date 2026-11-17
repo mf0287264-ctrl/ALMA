@@ -19,6 +19,7 @@ const teacherSchema = new mongoose.Schema(
     phone_number: { type: String, default: null },
     role: { type: String, default: "teacher" },
     is_active: { type: Boolean, default: true },
+    bookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
   },
   {
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },

@@ -55,7 +55,15 @@ const studentSchema = new mongoose.Schema(
     lessons_completed: { type: Number, default: 0 },
 
     // Adaptive tracking for personalized greetings and proactive help
-    struggling_concepts: [conceptStruggleSchema]
+    struggling_concepts: [conceptStruggleSchema],
+
+    // --- Social & Friends / Following ---
+    following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Student' }],
+    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Student' }],
+    friends: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Student' }],
+    friend_requests_sent: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Student' }],
+    friend_requests_received: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Student' }],
+    bookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }]
   },
   {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }

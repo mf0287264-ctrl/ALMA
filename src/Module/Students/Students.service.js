@@ -173,6 +173,168 @@ class StudentsService {
     }
     return result;
   }
+
+  async toggleFollow(currentStudentId, targetStudentId) {
+    if (!targetStudentId) {
+      const error = new Error('Target student ID is required');
+      error.statusCode = 400;
+      throw error;
+    }
+    if (currentStudentId.toString() === targetStudentId.toString()) {
+      const error = new Error('You cannot follow yourself');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const targetStudent = await studentsRepository.findById(targetStudentId);
+    if (!targetStudent) {
+      const error = new Error('Target student not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const currentStudent = await studentsRepository.findById(currentStudentId);
+    const following = (currentStudent.following || []).map(id => id.toString());
+    const isFollowing = following.includes(targetStudentId.toString());
+
+    if (isFollowing) {
+      await studentsRepository.unfollowStudent(currentStudentId, targetStudentId);
+      return {
+        following: false,
+        message: `Unfollowed ${targetStudent.first_name} ${targetStudent.last_name || ''}`.trim()
+      };
+    } else {
+      await studentsRepository.followStudent(currentStudentId, targetStudentId);
+      return {
+        following: true,
+        message: `Now following ${targetStudent.first_name} ${targetStudent.last_name || ''}`.trim()
+      };
+    }
+  }
+
+  async sendFriendRequest(currentStudentId, targetStudentId) {
+    if (!targetStudentId) {
+      const error = new Error('Target student ID is required');
+      error.statusCode = 400;
+      throw error;
+    }
+    if (currentStudentId.toString() === targetStudentId.toString()) {
+      const error = new Error('You cannot send a friend request to yourself');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const targetStudent = await studentsRepository.findById(targetStudentId);
+    if (!targetStudent) {
+      const error = new Error('Target student not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const currentStudent = await studentsRepository.findById(currentStudentId);
+    const friends = (currentStudent.friends || []).map(id => id.toString());
+    if (friends.includes(targetStudentId.toString())) {
+      const error = new Error('You are already friends with this student');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const sent = (currentStudent.friend_requests_sent || []).map(id => id.toString());
+    if (sent.includes(targetStudentId.toString())) {
+      const error = new Error('Friend request already sent');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    await studentsRepository.sendFriendRequest(currentStudentId, targetStudentId);
+    return {
+      message: `Friend request sent to ${targetStudent.first_name} ${targetStudent.last_name || ''}`.trim()
+    };
+  }
+
+  async acceptFriendRequest(currentStudentId, fromStudentId) {
+    if (!fromStudentId) {
+      const error = new Error('Student ID is required');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const currentStudent = await studentsRepository.findById(currentStudentId);
+    const received = (currentStudent.friend_requests_received || []).map(id => id.toString());
+    if (!received.includes(fromStudentId.toString())) {
+      const error = new Error('No pending friend request from this student');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    await studentsRepository.acceptFriendRequest(currentStudentId, fromStudentId);
+    return {
+      message: 'Friend request accepted successfully'
+    };
+  }
+
+  async rejectFriendRequest(currentStudentId, fromStudentId) {
+    if (!fromStudentId) {
+      const error = new Error('Student ID is required');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    await studentsRepository.rejectFriendRequest(currentStudentId, fromStudentId);
+    return {
+      message: 'Friend request rejected'
+    };
+  }
+
+  async getMyFriends(studentId) {
+    const student = await studentsRepository.findById(studentId);
+    if (!student) {
+      const error = new Error('Student not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const [friends, following, followers, requestsSent, requestsReceived] = await Promise.all([
+      studentsRepository.findStudentsByIds(student.friends || []),
+      studentsRepository.findStudentsByIds(student.following || []),
+      studentsRepository.findStudentsByIds(student.followers || []),
+      studentsRepository.findStudentsByIds(student.friend_requests_sent || []),
+      studentsRepository.findStudentsByIds(student.friend_requests_received || [])
+    ]);
+
+    return {
+      friends_count: friends.length,
+      following_count: following.length,
+      followers_count: followers.length,
+      friends,
+      following,
+      followers,
+      friend_requests_sent: requestsSent,
+      friend_requests_received: requestsReceived
+    };
+  }
+
+  async getFollowing(studentId) {
+    const student = await studentsRepository.findById(studentId);
+    if (!student) {
+      const error = new Error('Student not found');
+      error.statusCode = 404;
+      throw error;
+    }
+    const following = await studentsRepository.findStudentsByIds(student.following || []);
+    return { count: following.length, following };
+  }
+
+  async getFollowers(studentId) {
+    const student = await studentsRepository.findById(studentId);
+    if (!student) {
+      const error = new Error('Student not found');
+      error.statusCode = 404;
+      throw error;
+    }
+    const followers = await studentsRepository.findStudentsByIds(student.followers || []);
+    return { count: followers.length, followers };
+  }
 }
 
 export default new StudentsService();

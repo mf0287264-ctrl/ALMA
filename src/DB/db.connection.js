@@ -17,6 +17,8 @@ export const database_connect = async () => {
     await db.collection("parents").createIndex({ email: 1 }, { unique: true });
     await db.collection("parent_messages").createIndex({ from_parent_id: 1 });
     await db.collection("parent_messages").createIndex({ to_teacher_id: 1 });
+    await db.collection("posts").createIndex({ author_id: 1 });
+    await db.collection("posts").createIndex({ created_at: -1 });
   } catch (error) {
     console.log("DB connection error", error);
   }

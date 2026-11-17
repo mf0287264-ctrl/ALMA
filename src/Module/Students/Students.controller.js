@@ -65,6 +65,80 @@ class StudentsController {
       next(error);
     }
   }
+
+  async toggleFollow(req, res, next) {
+    try {
+      const currentStudentId = req.authUser._id;
+      const targetStudentId = req.params.id;
+      const result = await studentsService.toggleFollow(currentStudentId, targetStudentId);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async sendFriendRequest(req, res, next) {
+    try {
+      const currentStudentId = req.authUser._id;
+      const targetStudentId = req.params.id;
+      const result = await studentsService.sendFriendRequest(currentStudentId, targetStudentId);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async acceptFriendRequest(req, res, next) {
+    try {
+      const currentStudentId = req.authUser._id;
+      const fromStudentId = req.params.id;
+      const result = await studentsService.acceptFriendRequest(currentStudentId, fromStudentId);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async rejectFriendRequest(req, res, next) {
+    try {
+      const currentStudentId = req.authUser._id;
+      const fromStudentId = req.params.id;
+      const result = await studentsService.rejectFriendRequest(currentStudentId, fromStudentId);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getMyFriends(req, res, next) {
+    try {
+      const studentId = req.authUser._id;
+      const result = await studentsService.getMyFriends(studentId);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getFollowing(req, res, next) {
+    try {
+      const studentId = req.params.id;
+      const result = await studentsService.getFollowing(studentId);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getFollowers(req, res, next) {
+    try {
+      const studentId = req.params.id;
+      const result = await studentsService.getFollowers(studentId);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new StudentsController();
