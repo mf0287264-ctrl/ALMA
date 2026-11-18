@@ -16,12 +16,15 @@ const router = express.Router();
 router.post('/', validate(createParentSchema), parentsController.create);
 router.post('/login', validate(loginParentSchema), parentsController.login);
 
-// Authenticated: parent profile
+// Authenticated: parent profile & children
 router.get('/profile', authenticate, parentsController.getProfile);
 router.put('/profile', authenticate, validate(updateParentSchema), parentsController.update);
+router.get('/children', authenticate, parentsController.getChildren);
 
-// Authenticated: Link child & view child progress
+// Authenticated: Link & Unlink child & view child progress
 router.post('/link-child', authenticate, validate(linkChildSchema), parentsController.linkChild);
+router.post('/unlink-child', authenticate, parentsController.unlinkChild);
+router.delete('/child/:childId', authenticate, parentsController.unlinkChild);
 router.get('/child/:childId/progress', authenticate, parentsController.getChildProgress);
 
 // Authenticated: Messages to teachers

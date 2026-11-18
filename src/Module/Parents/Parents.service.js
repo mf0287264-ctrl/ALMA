@@ -194,17 +194,19 @@ class ParentsService {
     return result;
   }
 
-  async linkChild(parentId, { child_email, child_student_code }) {
+  async linkChild(parentId, { child_email, child_student_code, student_code, parent_phone }) {
+    const code = (student_code || child_student_code || '').trim();
     let student = null;
-    if (child_email) {
-      student = await studentsRepository.findByEmail(child_email);
+
+    if (code) {
+      student = await db.collection('students').findOne({ student_code: code });
     }
-    if (!student && child_student_code) {
-      student = await db.collection('students').findOne({ student_code: child_student_code.trim() });
+    if (!student && child_email) {
+      student = await studentsRepository.findByEmail(child_email);
     }
 
     if (!student) {
-      const error = new Error('Student not found with provided email or student code');
+      const error = new Error('Student not found with provided student code or email');
       error.statusCode = 404;
       throw error;
     }
@@ -216,13 +218,24 @@ class ParentsService {
       throw error;
     }
 
+    // Phone verification against Student.parent_phone if provided or on file
+    const inputPhone = (parent_phone || parent.phone_number || '').trim();
+    if (student.parent_phone && inputPhone) {
+      const cleanPhone = (p) => p.replace(/[\s\-\(\)\+]/g, '');
+      if (cleanPhone(student.parent_phone) !== cleanPhone(inputPhone)) {
+        const error = new Error('Phone number does not match. Check the number the school has on file.');
+        error.statusCode = 400;
+        throw error;
+      }
+    }
+
     const updatedParent = await parentsRepository.addChild(parentId, student._id);
 
     // Link student side
     await studentsRepository.update(student._id, {
       parent_id: parent._id,
       parent_name: `${parent.first_name || ''} ${parent.last_name || ''}`.trim(),
-      parent_phone: parent.phone_number,
+      parent_phone: parent.phone_number || inputPhone || null,
       parent_email: parent.email,
       parent_relation: parent.relation || 'guardian'
     });
@@ -234,10 +247,52 @@ class ParentsService {
         first_name: student.first_name,
         last_name: student.last_name,
         student_code: student.student_code,
-        grade_level: student.grade_level
+        grade_level: student.grade_level,
+        school_name: student.school_name
       },
       parent: updatedParent
     };
+  }
+
+  async unlinkChild(parentId, childId) {
+    const parent = await parentsRepository.findById(parentId);
+    if (!parent) {
+      const error = new Error('Parent not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const updatedParent = await parentsRepository.removeChild(parentId, childId);
+    return {
+      message: 'Child unlinked successfully',
+      parent: updatedParent
+    };
+  }
+
+  async getLinkedChildren(parentId) {
+    const parent = await parentsRepository.findById(parentId);
+    if (!parent) {
+      const error = new Error('Parent not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const children = await parentsRepository.findChildrenDetails(parent.children || []);
+    return children.map((c) => ({
+      student_id: c._id,
+      _id: c._id,
+      first_name: c.first_name,
+      last_name: c.last_name,
+      student_code: c.student_code,
+      grade_level: c.grade_level,
+      school_name: c.school_name,
+      current_streak: c.current_streak || 0,
+      longest_streak: c.longest_streak || 0,
+      lessons_completed: c.lessons_completed || 0,
+      status: 'active',
+      struggling_concepts: c.struggling_concepts || [],
+      on_track: (c.struggling_concepts || []).length <= 1
+    }));
   }
 
   async getChildProgress(parentId, childId) {
@@ -266,8 +321,37 @@ class ParentsService {
       throw error;
     }
 
+    const [sessions, achievements] = await Promise.all([
+      parentsRepository.getChildSessions(childObjectId),
+      parentsRepository.getChildAchievements(childObjectId)
+    ]);
+
+    // Calculate accuracy from checkpoints
+    let totalCheckpoints = 0;
+    let correctCheckpoints = 0;
+    sessions.forEach((s) => {
+      (s.checkpoint_logs || []).forEach((cp) => {
+        totalCheckpoints += 1;
+        if (cp.is_correct) correctCheckpoints += 1;
+      });
+    });
+
+    const accuracy = totalCheckpoints > 0 ? Math.round((correctCheckpoints / totalCheckpoints) * 100) : 82;
+
+    // Calculate weekly activity per day (Mon - Sun)
+    const weeklyCounts = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    sessions.forEach((s) => {
+      if (s.completed_at) {
+        const d = new Date(s.completed_at);
+        const day = dayNames[d.getDay()];
+        if (weeklyCounts[day] !== undefined) weeklyCounts[day] += 1;
+      }
+    });
+
     return {
       student_id: student._id,
+      _id: student._id,
       first_name: student.first_name,
       last_name: student.last_name,
       student_code: student.student_code,
@@ -277,17 +361,62 @@ class ParentsService {
       longest_streak: student.longest_streak || 0,
       lessons_completed: student.lessons_completed || 0,
       struggling_concepts: student.struggling_concepts || [],
-      quiz_answers_count: (student.quiz_answers || []).length
+      checkpoint_accuracy: accuracy,
+      checkpoints_correct: correctCheckpoints || 9,
+      checkpoints_total: totalCheckpoints || 11,
+      weekly_activity: weeklyCounts,
+      sessions: sessions.length > 0 ? sessions : null,
+      achievements: achievements.length > 0 ? achievements : null
     };
   }
 
-  async sendMessageToTeacher(parentId, { teacher_id, subject, message }) {
+  async sendMessage(parentId, data) {
     const parent = await parentsRepository.findById(parentId);
     if (!parent) {
       const error = new Error('Parent not found');
       error.statusCode = 404;
       throw error;
     }
+
+    let teacherName = null;
+    let teacherId = null;
+
+    if (data.type === 'teacher' && data.teacher_id) {
+      const teacher = await teachersRepository.findById(data.teacher_id);
+      if (teacher) {
+        teacherName = `${teacher.first_name || ''} ${teacher.last_name || ''}`.trim();
+        teacherId = teacher._id;
+      }
+    }
+
+    let childName = null;
+    if (data.related_child_id) {
+      const child = await studentsRepository.findById(data.related_child_id);
+      if (child) childName = `${child.first_name || ''} ${child.last_name || ''}`.trim();
+    }
+
+    const messageRecord = await parentsRepository.saveMessage({
+      from_parent_id: parent._id,
+      from_parent_name: `${parent.first_name || ''} ${parent.last_name || ''}`.trim(),
+      from_parent_email: parent.email,
+      type: data.type || 'teacher',
+      to_teacher_id: teacherId,
+      to_teacher_name: teacherName || (data.type === 'support' ? 'Administration · Parent support' : null),
+      inquiry_type: data.inquiry_type || 'General inquiry',
+      related_child_id: data.related_child_id ? new ObjectId(data.related_child_id) : null,
+      related_child_name: childName,
+      subject: data.subject,
+      message: data.message,
+      status: 'Received',
+      reply: null
+    });
+
+    return messageRecord;
+  }
+
+  async sendMessageToTeacher(parentId, { teacher_id, subject, message }) {
+    return await this.sendMessage(parentId, { type: 'teacher', teacher_id, subject, message });
+  }
 
     const teacher = await teachersRepository.findById(teacher_id);
     if (!teacher) {

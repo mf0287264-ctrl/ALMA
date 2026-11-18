@@ -29,7 +29,19 @@ const parentSchema = new mongoose.Schema(
     ],
     role: { type: String, default: 'parent' },
     is_active: { type: Boolean, default: true },
-    bookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }]
+    bookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
+    privacy_settings: {
+      show_alma_questions: { type: Boolean, default: false },
+      show_session_times: { type: Boolean, default: true },
+      weekly_report_email: { type: Boolean, default: true }
+    },
+    alert_rules: {
+      streak_broken: { type: Boolean, default: true },
+      new_struggling_concept: { type: Boolean, default: true },
+      session_abandoned: { type: Boolean, default: false },
+      new_achievement: { type: Boolean, default: true },
+      delivery_channel: { type: String, enum: ['email', 'sms'], default: 'email' }
+    }
   },
   {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }

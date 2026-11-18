@@ -63,6 +63,57 @@ class ParentsRepository {
     return await this.findById(parentId);
   }
 
+  async removeChild(parentId, childId) {
+    const pId = typeof parentId === 'string' ? new ObjectId(parentId) : parentId;
+    const cId = typeof childId === 'string' ? new ObjectId(childId) : childId;
+    await this.collection.updateOne(
+      { _id: pId },
+      {
+        $pull: { children: cId },
+        $set: { updated_at: new Date() }
+      }
+    );
+    await db.collection('students').updateOne(
+      { _id: cId, parent_id: pId },
+      {
+        $set: {
+          parent_id: null,
+          parent_name: null,
+          parent_phone: null,
+          parent_email: null,
+          parent_relation: null,
+          updated_at: new Date()
+        }
+      }
+    );
+    return await this.findById(parentId);
+  }
+
+  async findChildrenDetails(childrenIds = []) {
+    if (!childrenIds || childrenIds.length === 0) return [];
+    const objectIds = childrenIds.map((id) => (typeof id === 'string' ? new ObjectId(id) : id));
+    return await db.collection('students').find(
+      { _id: { $in: objectIds } },
+      { projection: { password_hash: 0 } }
+    ).toArray();
+  }
+
+  async getChildSessions(studentId) {
+    const sId = typeof studentId === 'string' ? new ObjectId(studentId) : studentId;
+    return await db.collection('student_lesson_sessions')
+      .find({ student_id: sId })
+      .sort({ created_at: -1 })
+      .toArray();
+  }
+
+  async getChildAchievements(studentId) {
+    const sId = typeof studentId === 'string' ? new ObjectId(studentId) : studentId;
+    return await db.collection('achievements')
+      .find({ student_id: sId })
+      .sort({ awarded_at: -1 })
+      .toArray();
+  }
+
   async saveMessage(messageData) {
     const doc = {
       ...messageData,

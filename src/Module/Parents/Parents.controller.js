@@ -75,6 +75,27 @@ class ParentsController {
     }
   }
 
+  async unlinkChild(req, res, next) {
+    try {
+      const parentId = req.authUser?._id;
+      const childId = req.body.child_id || req.params.childId;
+      const result = await parentsService.unlinkChild(parentId, childId);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getChildren(req, res, next) {
+    try {
+      const parentId = req.authUser?._id;
+      const children = await parentsService.getLinkedChildren(parentId);
+      res.status(200).json({ success: true, data: children });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getChildProgress(req, res, next) {
     try {
       const parentId = req.authUser?._id;
@@ -89,7 +110,7 @@ class ParentsController {
   async sendMessage(req, res, next) {
     try {
       const parentId = req.authUser?._id;
-      const message = await parentsService.sendMessageToTeacher(parentId, req.body);
+      const message = await parentsService.sendMessage(parentId, req.body);
       res.status(201).json({ success: true, data: message });
     } catch (error) {
       next(error);
