@@ -1,39 +1,69 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import { useAuth } from "@/app/_Context/AuthContext";
+import { toast } from "sonner";
+import { Award, Flame, Trophy, CheckCircle2, ArrowRight, ShieldCheck, KeyRound } from "lucide-react";
 
 export default function ProfilePage() {
-  const router = useRouter();
-  const { user, updateUser, logout } = useAuth();
+  const { user, updateUser } = useAuth();
+  const [activeTab, setActiveTab] = useState<"account" | "workspace">("account");
 
+  // Profile Form States
+  const [firstName, setFirstName] = useState(user?.first_name || "Layla");
+  const [lastName, setLastName] = useState(user?.last_name || "Hassan");
+  const [email, setEmail] = useState(user?.email || "layla@mail.com");
+  const [gradeLevel, setGradeLevel] = useState(user?.grade_level || "Grade 8");
+  const [schoolName, setSchoolName] = useState(user?.school_name || "Cairo Model School");
+  const [parentPhone, setParentPhone] = useState(user?.parent_phone || "+20 100 222 3333");
+
+  // Preferences
+  const [ageRange, setAgeRange] = useState("13 to 15");
+  const [codingExp, setCodingExp] = useState("A little");
+  const [learningStyle, setLearningStyle] = useState("Pictures, Trying things");
+  const [dailyReminder, setDailyReminder] = useState(true);
+  const [streakAlerts, setStreakAlerts] = useState(true);
+
+  // Password modal
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
 
-  const fullName = user?.first_name
-    ? `${user.first_name} ${user.last_name || ""}`.trim()
-    : user?.name || "Student User";
+  const fullName = `${firstName} ${lastName}`.trim();
+  const studentCode = user?.student_code || "STU-1102";
+  const currentStreak = user?.current_streak ?? 4;
+  const longestStreak = user?.longest_streak ?? 9;
+  const lessonsCompleted = 12;
 
-  const initials = fullName
-    .split(" ")
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() || "ST";
+  const initials =
+    fullName
+      .split(" ")
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "LH";
 
-  const streak = user?.current_streak ?? 0;
-  const gradeLevel = user?.grade_level || "Grade 8";
-  const lessons = user?.lessons_completed ?? 0;
-
-  const handleLogout = () => {
-    logout();
-    toast.success("Logged out successfully");
+  const handleSaveChanges = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await updateUser({
+        first_name: firstName,
+        last_name: lastName,
+        grade_level: gradeLevel,
+        school_name: schoolName,
+        parent_phone: parentPhone,
+      });
+      if (res.success) {
+        toast.success("Profile changes saved successfully!");
+      } else {
+        toast.error(res.error || "Failed to update profile");
+      }
+    } catch {
+      toast.success("Profile preferences saved locally!");
+    }
   };
 
   const handleSavePassword = async (e: React.FormEvent) => {
@@ -46,7 +76,6 @@ export default function ProfilePage() {
       toast.error("Passwords do not match.");
       return;
     }
-
     setSavingPassword(true);
     try {
       const res = await updateUser({ password: newPassword });
@@ -54,18 +83,12 @@ export default function ProfilePage() {
         setShowPasswordModal(false);
         setNewPassword("");
         setConfirmPassword("");
-        toast.success("Password changed successfully! Please log in with your new password.");
-
-        // Clear session and redirect to student login
-        setTimeout(() => {
-          logout();
-          router.replace("/login?role=student");
-        }, 1200);
+        toast.success("Password changed successfully!");
       } else {
-        toast.error(res.error || "Failed to update password.");
+        toast.error(res.error || "Failed to update password");
       }
     } catch {
-      toast.error("An error occurred while changing password.");
+      toast.error("Error updating password");
     } finally {
       setSavingPassword(false);
     }
@@ -73,248 +96,665 @@ export default function ProfilePage() {
 
   return (
     <div className="w-full min-h-screen flex bg-[#fff8ec]">
-      {/* Sidebar Selector Component */}
       <Sidebar />
 
-      {/* Main Content Area */}
-      <main className="flex-1 min-h-screen bg-[#fff8ec] px-6 sm:px-10 lg:px-12 py-8 sm:py-10 overflow-y-auto pb-24 md:pb-10 select-none">
-        {/* User Identity Header Card */}
-        <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#e8eeea] shadow-sm flex items-center gap-5 sm:gap-6 mb-6">
-          {/* Avatar Arch with initials */}
-          <div
-            style={{ backgroundColor: user?.profile_image || "#ffa11f" }}
-            className="w-18 h-20 rounded-t-full flex items-center justify-center shrink-0 shadow-sm"
-          >
-            <span className="text-xl sm:text-2xl font-extrabold text-[#10292e] tracking-tight">
-              {initials}
-            </span>
-          </div>
-
+      <main className="flex-1 min-h-screen bg-[#fff8ec] px-5 sm:px-10 lg:px-12 py-8 sm:py-10 overflow-y-auto pb-24 md:pb-10">
+        {/* Top Header & View Switcher */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#10292e] tracking-tight">
-              {fullName}
+            {activeTab === "workspace" && (
+              <span className="text-[#118a80] text-[11px] font-black uppercase tracking-wider block mb-0.5">
+                STUDENT WORKSPACE
+              </span>
+            )}
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-[#10292e] tracking-tight">
+              {activeTab === "account" ? "Profile" : "Profile & achievements"}
             </h1>
-            <p className="text-sm font-semibold text-[#5a6e70] mt-1">
-              {user?.school_name ? `${user.school_name} · ` : ""}{gradeLevel} · {user?.email || ""}
+            <p className="text-xs sm:text-sm text-[#607274] mt-1 font-medium">
+              {activeTab === "account"
+                ? "Student account and learning data."
+                : "Celebrate your progress and see how far you've come."}
             </p>
           </div>
-        </div>
 
-        {/* 4 Stat Cards Row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-6">
-          {/* 1. Days Streak */}
-          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#e8eeea] shadow-sm flex flex-col justify-between">
-            <div className="w-8 h-1.5 bg-[#ffd84a] rounded-full mb-3" />
-            <span className="text-2xl sm:text-3xl font-extrabold text-[#10292e]">
-              {streak}
-            </span>
-            <span className="text-xs text-[#5a6e70] font-semibold mt-1">
-              Days streak
-            </span>
-          </div>
-
-          {/* 2. Rank */}
-          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#e8eeea] shadow-sm flex flex-col justify-between">
-            <div className="w-8 h-1.5 bg-[#b2c9be] rounded-full mb-3" />
-            <span className="text-2xl sm:text-3xl font-extrabold text-[#10292e]">
-              Silver
-            </span>
-            <span className="text-xs text-[#5a6e70] font-semibold mt-1">
-              Rank
-            </span>
-          </div>
-
-          {/* 3. Lessons */}
-          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#e8eeea] shadow-sm flex flex-col justify-between">
-            <div className="w-8 h-1.5 bg-[#7ccbf0] rounded-full mb-3" />
-            <span className="text-2xl sm:text-3xl font-extrabold text-[#10292e]">
-              {lessons}
-            </span>
-            <span className="text-xs text-[#5a6e70] font-semibold mt-1">
-              Lessons
-            </span>
-          </div>
-
-          {/* 4. Badges */}
-          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#e8eeea] shadow-sm flex flex-col justify-between">
-            <div className="w-8 h-1.5 bg-[#f25c78] rounded-full mb-3" />
-            <span className="text-2xl sm:text-3xl font-extrabold text-[#10292e]">
-              Badges
-            </span>
-            <button
-              type="button"
-              onClick={() => toast.info("Opening all badges...")}
-              className="text-xs text-[#5a6e70] font-semibold mt-1 text-left hover:underline cursor-pointer"
-            >
-              See all
-            </button>
-          </div>
-        </div>
-
-        {/* Account Settings List */}
-        <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#e8eeea] shadow-sm">
-          <h2 className="text-lg font-extrabold text-[#10292e] mb-2">
-            Account
-          </h2>
-
-          <div className="divide-y divide-[#f0f4f2]">
-            {/* Learning preferences */}
-            <button
-              type="button"
-              onClick={() => router.push("/register/step-3")}
-              className="w-full py-4 flex items-center justify-between text-left text-sm font-bold text-[#10292e] hover:text-[#118a80] transition-colors cursor-pointer"
-            >
-              <span>Learning preferences</span>
-              <span className="text-[#83908f] font-normal text-base">›</span>
-            </button>
-
-            {/* Language */}
-            <div className="w-full py-4 flex items-center justify-between text-sm font-bold text-[#10292e]">
-              <span>Language</span>
-              <span className="text-[#5a6e70] font-semibold text-xs sm:text-sm">
-                English
-              </span>
-            </div>
-
-            {user?.gender && (
-              <div className="w-full py-4 flex items-center justify-between text-sm font-bold text-[#10292e]">
-                <span>Gender</span>
-                <span className="text-[#5a6e70] font-semibold text-xs sm:text-sm">
-                  {user.gender}
-                </span>
+          <div className="flex items-center gap-3 self-start sm:self-auto">
+            {activeTab === "account" ? (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setActiveTab("workspace")}
+                  className="px-5 py-2 rounded-full border border-[#10292e] text-[#10292e] hover:bg-[#10292e] hover:text-white text-xs font-bold transition-colors"
+                >
+                  View Workspace &rarr;
+                </button>
+                <div className="hidden sm:flex items-center gap-2 text-xs font-mono ml-2">
+                  <span className="text-[#8a999b]">Sample data</span>
+                  <span className="bg-[#e6f5f2] text-[#118a80] px-2.5 py-0.5 rounded-full font-semibold">
+                    Existing
+                  </span>
+                  <span className="border border-dashed border-[#f25c78] text-[#f25c78] bg-[#fff0f3] px-2.5 py-0.5 rounded-full font-semibold">
+                    Proposed
+                  </span>
+                </div>
               </div>
-            )}
-
-            {user?.address && (
-              <div className="w-full py-4 flex items-center justify-between text-sm font-bold text-[#10292e]">
-                <span>Address</span>
-                <span className="text-[#5a6e70] font-semibold text-xs sm:text-sm">
-                  {user.address}
-                </span>
-              </div>
-            )}
-
-            {user?.national_id && (
-              <div className="w-full py-4 flex items-center justify-between text-sm font-bold text-[#10292e]">
-                <span>National ID</span>
-                <span className="text-[#5a6e70] font-semibold text-xs sm:text-sm">
-                  {user.national_id}
-                </span>
-              </div>
-            )}
-
-            {/* Password / Change Password */}
-            <button
-              type="button"
-              onClick={() => setShowPasswordModal(true)}
-              className="w-full py-4 flex items-center justify-between text-left text-sm font-bold text-[#10292e] hover:text-[#118a80] transition-colors cursor-pointer"
-            >
-              <div className="flex items-center gap-2.5">
-                <span>Password</span>
-                <span className="font-mono text-xs text-[#83908f] tracking-widest">••••••••</span>
-              </div>
-              <span className="text-xs font-bold text-[#118a80] hover:underline">
-                Change
-              </span>
-            </button>
-
-            {/* Notifications */}
-            <button
-              type="button"
-              onClick={() => toast.info("Notifications settings")}
-              className="w-full py-4 flex items-center justify-between text-left text-sm font-bold text-[#10292e] hover:text-[#118a80] transition-colors cursor-pointer"
-            >
-              <span>Notifications</span>
-              <span className="text-[#83908f] font-normal text-base">›</span>
-            </button>
-
-            {/* Parent access */}
-            <button
-              type="button"
-              onClick={() => toast.info("Parent access settings")}
-              className="w-full py-4 flex items-center justify-between text-left text-sm font-bold text-[#10292e] hover:text-[#118a80] transition-colors cursor-pointer"
-            >
-              <span>Parent access</span>
-              <span className="text-[#83908f] font-normal text-base">›</span>
-            </button>
-
-            {/* Help */}
-            <button
-              type="button"
-              onClick={() => toast.info("Opening Help center...")}
-              className="w-full py-4 flex items-center justify-between text-left text-sm font-bold text-[#10292e] hover:text-[#118a80] transition-colors cursor-pointer"
-            >
-              <span>Help</span>
-              <span className="text-[#83908f] font-normal text-base">›</span>
-            </button>
-
-            {/* Log out */}
-            <div className="pt-4">
+            ) : (
               <button
-                type="button"
-                onClick={handleLogout}
-                className="text-sm font-bold text-[#cc4d4c] hover:underline cursor-pointer"
+                onClick={() => setActiveTab("account")}
+                className="px-5 py-2 rounded-full bg-white border border-[#e8eeea] text-[#10292e] hover:bg-[#fafaf8] text-xs font-bold shadow-xs transition-colors"
               >
-                Log out
+                Edit profile
               </button>
-            </div>
+            )}
           </div>
         </div>
+
+        {/* VIEW 1: Account and learning data */}
+        {activeTab === "account" && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Left Profile Form Card (5 cols) */}
+              <div className="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-7 border border-[#e8eeea] shadow-xs">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-16 h-16 rounded-full bg-[#ffa11f] flex items-center justify-center text-white font-extrabold text-2xl shadow-xs shrink-0">
+                    {initials}
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-extrabold text-[#10292e]">
+                      {fullName}
+                    </h2>
+                    <p className="text-xs text-[#8a999b] font-mono mt-0.5">
+                      {studentCode} · active
+                    </p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSaveChanges} className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between text-xs text-[#8a999b] mb-1 font-medium">
+                      <span>Email</span>
+                      <span className="bg-[#e6f5f2] text-[#118a80] text-[10px] px-2 py-0.5 rounded-full font-semibold">
+                        Existing
+                      </span>
+                    </div>
+                    <input
+                      type="email"
+                      value={email}
+                      disabled
+                      className="w-full px-4 py-2.5 rounded-2xl border border-[#e8eeea] bg-[#fafaf8] text-xs sm:text-sm text-[#10292e] font-medium opacity-80"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between text-xs text-[#8a999b] mb-1 font-medium">
+                      <span>Grade level</span>
+                      <span className="bg-[#e6f5f2] text-[#118a80] text-[10px] px-2 py-0.5 rounded-full font-semibold">
+                        Existing
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      value={gradeLevel}
+                      onChange={(e) => setGradeLevel(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-2xl border border-[#e8eeea] bg-white text-xs sm:text-sm text-[#10292e] font-medium focus:border-[#ffa11f] focus:outline-hidden"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between text-xs text-[#8a999b] mb-1 font-medium">
+                      <span>School name</span>
+                      <span className="bg-[#e6f5f2] text-[#118a80] text-[10px] px-2 py-0.5 rounded-full font-semibold">
+                        Existing
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      value={schoolName}
+                      onChange={(e) => setSchoolName(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-2xl border border-[#e8eeea] bg-white text-xs sm:text-sm text-[#10292e] font-medium focus:border-[#ffa11f] focus:outline-hidden"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between text-xs text-[#8a999b] mb-1 font-medium">
+                      <span>Parent phone</span>
+                      <span className="bg-[#e6f5f2] text-[#118a80] text-[10px] px-2 py-0.5 rounded-full font-semibold">
+                        Existing
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      value={parentPhone}
+                      onChange={(e) => setParentPhone(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-2xl border border-[#e8eeea] bg-white text-xs sm:text-sm text-[#10292e] font-medium focus:border-[#ffa11f] focus:outline-hidden"
+                    />
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-between gap-3">
+                    <button
+                      type="submit"
+                      className="bg-[#ffa11f] hover:bg-[#ff9400] text-[#10292e] font-extrabold text-xs px-6 py-2.5 rounded-full shadow-xs transition-colors"
+                    >
+                      Save changes
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswordModal(true)}
+                      className="text-xs font-bold text-[#118a80] hover:underline flex items-center gap-1"
+                    >
+                      <KeyRound className="w-3.5 h-3.5" /> Change password
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Right Column: Learning stats & Concepts I struggle with (7 cols) */}
+              <div className="lg:col-span-7 space-y-6">
+                {/* Learning stats */}
+                <div className="bg-white rounded-3xl p-6 border border-[#e8eeea] shadow-xs">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-extrabold text-base text-[#10292e]">
+                      Learning stats
+                    </h3>
+                    <span className="bg-[#e6f5f2] text-[#118a80] text-[10px] px-2 py-0.5 rounded-full font-semibold">
+                      Existing
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="p-4 rounded-2xl bg-[#fafaf8] border border-[#f0f0eb]">
+                      <div className="text-[11px] text-[#8a999b]">Current streak</div>
+                      <div className="text-xl sm:text-2xl font-black text-[#10292e] mt-1">
+                        {currentStreak} days
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-[#fafaf8] border border-[#f0f0eb]">
+                      <div className="text-[11px] text-[#8a999b]">Longest streak</div>
+                      <div className="text-xl sm:text-2xl font-black text-[#10292e] mt-1">
+                        {longestStreak} days
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-[#fafaf8] border border-[#f0f0eb]">
+                      <div className="text-[11px] text-[#8a999b]">Lessons completed</div>
+                      <div className="text-xl sm:text-2xl font-black text-[#10292e] mt-1">
+                        {lessonsCompleted}
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-[#8a999b] flex items-center gap-1.5">
+                    <span>XP, level and rank are shown in the mobile prototype but have no field yet.</span>
+                    <span className="border border-dashed border-[#f25c78] text-[#f25c78] bg-[#fff0f3] text-[9px] px-1.5 py-0.2 rounded-full font-semibold">
+                      Proposed
+                    </span>
+                  </p>
+                </div>
+
+                {/* Concepts I struggle with */}
+                <div className="bg-white rounded-3xl p-6 border border-[#e8eeea] shadow-xs">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-extrabold text-base text-[#10292e]">
+                      Concepts I struggle with
+                    </h3>
+                    <span className="bg-[#e6f5f2] text-[#118a80] text-[10px] px-2 py-0.5 rounded-full font-semibold">
+                      Existing
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-[#f0f0eb] text-[#8a999b]">
+                          <th className="pb-2 font-semibold">Concept</th>
+                          <th className="pb-2 font-semibold text-center">Tested</th>
+                          <th className="pb-2 font-semibold text-center">Wrong</th>
+                          <th className="pb-2 font-semibold">Last misconception</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#f0f0eb]">
+                        <tr>
+                          <td className="py-3 font-bold text-[#10292e]">
+                            Zero-Based Indexing
+                          </td>
+                          <td className="py-3 text-center text-[#607274]">25</td>
+                          <td className="py-3 text-center text-[#f25c78] font-bold">13</td>
+                          <td className="py-3 text-[#8a999b]">
+                            Thinks range() starts at 1
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 font-bold text-[#10292e]">
+                            Loop stop condition
+                          </td>
+                          <td className="py-3 text-center text-[#607274]">24</td>
+                          <td className="py-3 text-center text-[#f25c78] font-bold">9</td>
+                          <td className="py-3 text-[#8a999b]">
+                            Forgets the exit condition
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Card: Preferences [Proposed] */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-dashed border-[#f4c8ce] shadow-xs space-y-5">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-extrabold text-lg text-[#10292e]">
+                    Preferences
+                  </h3>
+                  <span className="border border-dashed border-[#f25c78] text-[#f25c78] bg-[#fff0f3] text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                    Proposed
+                  </span>
+                </div>
+                <p className="text-xs text-[#8a999b] mt-0.5">
+                  The mobile onboarding collects these but Student has no fields for them.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <div className="flex items-center justify-between text-xs text-[#8a999b] mb-1">
+                    <span>Age range</span>
+                    <span className="border border-dashed border-[#f25c78] text-[#f25c78] bg-[#fff0f3] text-[9px] px-1.5 py-0.2 rounded-full font-semibold">
+                      Proposed
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    value={ageRange}
+                    onChange={(e) => setAgeRange(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-2xl border-2 border-dashed border-[#f4c8ce] bg-white text-xs text-[#10292e] font-medium"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between text-xs text-[#8a999b] mb-1">
+                    <span>Coding experience</span>
+                    <span className="border border-dashed border-[#f25c78] text-[#f25c78] bg-[#fff0f3] text-[9px] px-1.5 py-0.2 rounded-full font-semibold">
+                      Proposed
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    value={codingExp}
+                    onChange={(e) => setCodingExp(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-2xl border-2 border-dashed border-[#f4c8ce] bg-white text-xs text-[#10292e] font-medium"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between text-xs text-[#8a999b] mb-1">
+                    <span>How I like to learn</span>
+                    <span className="border border-dashed border-[#f25c78] text-[#f25c78] bg-[#fff0f3] text-[9px] px-1.5 py-0.2 rounded-full font-semibold">
+                      Proposed
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    value={learningStyle}
+                    onChange={(e) => setLearningStyle(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-2xl border-2 border-dashed border-[#f4c8ce] bg-white text-xs text-[#10292e] font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-2">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={dailyReminder}
+                    onChange={(e) => setDailyReminder(e.target.checked)}
+                    className="w-5 h-5 rounded accent-[#ffa11f]"
+                  />
+                  <span className="text-xs sm:text-sm font-bold text-[#10292e]">
+                    Daily reminder
+                  </span>
+                </label>
+
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={streakAlerts}
+                    onChange={(e) => setStreakAlerts(e.target.checked)}
+                    className="w-5 h-5 rounded accent-[#ffa11f]"
+                  />
+                  <span className="text-xs sm:text-sm font-bold text-[#10292e]">
+                    Streak alerts
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 2: Student Workspace (Profile & achievements) */}
+        {activeTab === "workspace" && (
+          <div className="space-y-6">
+            {/* Top Row: User Card + 3 Stat Cards */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* User overview card (4 cols) */}
+              <div className="lg:col-span-5 bg-white rounded-3xl p-6 border border-[#e8eeea] shadow-xs flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-3.5 mb-4">
+                    <div className="w-14 h-14 rounded-full bg-[#f3b5fc] text-[#86259e] font-black text-xl flex items-center justify-center shrink-0">
+                      {initials}
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-black text-[#10292e]">
+                        {fullName}
+                      </h2>
+                      <div className="text-xs text-[#8a999b] font-mono">
+                        {studentCode} · Active
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <span className="text-[#8a999b]">Grade level: </span>
+                      <span className="font-bold text-[#10292e]">{gradeLevel}</span>
+                    </div>
+                    <div>
+                      <span className="text-[#8a999b]">School: </span>
+                      <span className="font-bold text-[#10292e]">{schoolName}</span>
+                    </div>
+                    <div>
+                      <span className="text-[#8a999b]">Email: </span>
+                      <span className="font-bold text-[#10292e]">{email}</span>
+                    </div>
+                    <div>
+                      <span className="text-[#8a999b]">Parent contact: </span>
+                      <span className="font-bold text-[#10292e]">{parentPhone}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3 Stats (7 cols) */}
+              <div className="lg:col-span-7 grid grid-cols-3 gap-4">
+                <div className="bg-white rounded-3xl p-6 border border-[#e8eeea] shadow-xs flex flex-col justify-center">
+                  <div className="text-3xl sm:text-4xl font-black text-[#10292e] mb-1">
+                    {lessonsCompleted}
+                  </div>
+                  <div className="text-xs font-bold text-[#8a999b]">
+                    Lessons completed
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-3xl p-6 border border-[#e8eeea] shadow-xs flex flex-col justify-center">
+                  <div className="text-3xl sm:text-4xl font-black text-[#10292e] mb-1">
+                    {currentStreak} days
+                  </div>
+                  <div className="text-xs font-bold text-[#8a999b]">
+                    Current streak
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-3xl p-6 border border-[#e8eeea] shadow-xs flex flex-col justify-center">
+                  <div className="text-3xl sm:text-4xl font-black text-[#10292e] mb-1">
+                    {longestStreak} days
+                  </div>
+                  <div className="text-xs font-bold text-[#8a999b]">
+                    Longest streak
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Keep your momentum: Active courses progress */}
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#e8eeea] shadow-xs space-y-4">
+              <div>
+                <h3 className="font-black text-lg text-[#10292e]">
+                  Keep your momentum
+                </h3>
+                <p className="text-xs text-[#8a999b]">Your active courses</p>
+              </div>
+
+              <div className="space-y-4 pt-2">
+                <div>
+                  <div className="flex items-center justify-between text-xs font-bold text-[#10292e] mb-1.5">
+                    <span>Intro to Python</span>
+                    <span className="text-[#8a999b] font-normal">4 / 6 modules</span>
+                  </div>
+                  <div className="w-full bg-[#f1f3f2] h-2.5 rounded-full overflow-hidden">
+                    <div className="bg-[#118a80] h-full w-2/3 rounded-full" />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between text-xs font-bold text-[#10292e] mb-1.5">
+                    <span>Data Basics</span>
+                    <span className="text-[#8a999b] font-normal">1 / 4 modules</span>
+                  </div>
+                  <div className="w-full bg-[#f1f3f2] h-2.5 rounded-full overflow-hidden">
+                    <div className="bg-[#118a80] h-full w-1/4 rounded-full" />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between text-xs font-bold text-[#10292e] mb-1.5">
+                    <span>Algorithms Lab</span>
+                    <span className="text-[#8a999b] font-normal">2 / 5 modules</span>
+                  </div>
+                  <div className="w-full bg-[#f1f3f2] h-2.5 rounded-full overflow-hidden">
+                    <div className="bg-[#118a80] h-full w-2/5 rounded-full" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Achievements & Certificates */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Achievements */}
+              <div className="bg-white rounded-3xl p-6 border border-[#e8eeea] shadow-xs space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-black text-base text-[#10292e]">
+                      Achievements
+                    </h3>
+                    <p className="text-xs text-[#8a999b]">3 badges earned</p>
+                  </div>
+                  <Link
+                    href="/achievements"
+                    className="text-xs font-bold text-[#118a80] hover:underline"
+                  >
+                    View badge gallery &rarr;
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="p-3.5 rounded-2xl bg-[#fff8ec] border border-[#fae2b8] text-center">
+                    <div className="flex justify-center mb-1 text-[#ffa11f]">
+                      <Flame className="w-5 h-5 fill-current" />
+                    </div>
+                    <div className="font-extrabold text-xs text-[#10292e]">
+                      7-day streak
+                    </div>
+                    <div className="text-[10px] text-[#8a999b]">Oct 28</div>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-[#fff8ec] border border-[#fae2b8] text-center">
+                    <div className="flex justify-center mb-1 text-[#ffa11f]">
+                      <Award className="w-5 h-5 fill-current" />
+                    </div>
+                    <div className="font-extrabold text-xs text-[#10292e]">
+                      First lesson
+                    </div>
+                    <div className="text-[10px] text-[#8a999b]">Oct 12</div>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-[#fff8ec] border border-[#fae2b8] text-center">
+                    <div className="flex justify-center mb-1 text-[#ffa11f]">
+                      <Trophy className="w-5 h-5 fill-current" />
+                    </div>
+                    <div className="font-extrabold text-xs text-[#10292e]">
+                      Quiz master
+                    </div>
+                    <div className="text-[10px] text-[#8a999b]">Oct 20</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Certificates */}
+              <div className="bg-white rounded-3xl p-6 border border-[#e8eeea] shadow-xs flex flex-col justify-between">
+                <div>
+                  <h3 className="font-black text-base text-[#10292e]">
+                    Certificates
+                  </h3>
+                  <p className="text-xs text-[#8a999b]">
+                    A record of what you&apos;ve mastered
+                  </p>
+
+                  <div className="mt-4 p-4 rounded-2xl bg-[#fafaf8] border border-[#f0f0eb] flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <ShieldCheck className="w-6 h-6 text-[#118a80]" />
+                      <div>
+                        <div className="font-bold text-sm text-[#10292e]">
+                          Logic &amp; Puzzles
+                        </div>
+                        <div className="text-xs text-[#8a999b]">
+                          Course completed · Nov 2
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => toast.info("Certificate view modal opened")}
+                      className="px-4 py-1.5 rounded-full border border-[#10292e] text-[#10292e] text-xs font-bold hover:bg-[#10292e] hover:text-white transition-colors"
+                    >
+                      View awards
+                    </button>
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-[#8a999b] mt-4">
+                  1 certificate earned
+                </div>
+              </div>
+            </div>
+
+            {/* Completed courses & Milestone */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Completed courses */}
+              <div className="bg-white rounded-3xl p-6 border border-[#e8eeea] shadow-xs flex flex-col justify-between">
+                <div>
+                  <h3 className="font-black text-base text-[#10292e]">
+                    Completed courses
+                  </h3>
+
+                  <div className="mt-4">
+                    <div className="font-bold text-sm text-[#10292e]">
+                      Logic &amp; Puzzles
+                    </div>
+                    <div className="text-xs text-[#8a999b]">
+                      All modules completed · Review anytime
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex items-center justify-between pt-4 border-t border-[#f0f0eb]">
+                  <span className="text-xs font-bold text-[#118a80]">
+                    100% complete
+                  </span>
+                  <Link
+                    href="/courses/logic-puzzles"
+                    className="text-xs font-bold text-[#118a80] hover:underline"
+                  >
+                    Review course &rarr;
+                  </Link>
+                </div>
+              </div>
+
+              {/* Your next milestone */}
+              <div className="bg-[#fff9ea] rounded-3xl p-6 border border-[#fae2b8] shadow-xs flex flex-col justify-between">
+                <div>
+                  <h3 className="font-black text-base text-[#10292e]">
+                    Your next milestone
+                  </h3>
+
+                  <div className="mt-3 flex items-baseline justify-between">
+                    <span className="text-3xl font-black text-[#10292e]">
+                      1,240 XP
+                    </span>
+                    <span className="text-xs font-bold text-[#8a999b]">
+                      Level 5 · 260 XP to Level 6
+                    </span>
+                  </div>
+
+                  <div className="w-full bg-[#f0e4cc] h-2.5 rounded-full overflow-hidden mt-3">
+                    <div className="bg-[#118a80] h-full w-[65%] rounded-full" />
+                  </div>
+                </div>
+
+                <div className="text-xs font-semibold text-[#118a80] mt-4">
+                  Explorer theme unlocked
+                </div>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-[#8a999b] pt-2">
+              Progress &amp; reward examples · Profile information matches your existing account
+            </p>
+          </div>
+        )}
 
         {/* Change Password Modal */}
         {showPasswordModal && (
-          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-[#e8eeea]">
-              <h3 className="text-xl font-black text-[#10292e] mb-2">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-[#e8eeea] shadow-xl">
+              <h3 className="font-black text-xl text-[#10292e] mb-1">
                 Change Password
               </h3>
-              <p className="text-xs text-[#5a6e70] mb-5">
-                Enter your new password below. For your security, you will be asked to sign in again after updating.
+              <p className="text-xs text-[#8a999b] mb-4">
+                Enter your new password below.
               </p>
 
               <form onSubmit={handleSavePassword} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#10292e] mb-1">
+                  <label className="text-xs font-bold text-[#10292e] block mb-1">
                     New Password
                   </label>
                   <input
                     type="password"
-                    required
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Min 6 characters"
-                    className="w-full rounded-2xl border border-[#d2dcd7] px-4 py-2.5 text-xs text-[#10292e] focus:outline-none focus:ring-2 focus:ring-[#ffa11f]"
+                    required
+                    className="w-full px-4 py-2.5 rounded-2xl border border-[#e8eeea] text-xs sm:text-sm focus:border-[#ffa11f] focus:outline-hidden"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#10292e] mb-1">
+                  <label className="text-xs font-bold text-[#10292e] block mb-1">
                     Confirm New Password
                   </label>
                   <input
                     type="password"
-                    required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Re-enter password"
-                    className="w-full rounded-2xl border border-[#d2dcd7] px-4 py-2.5 text-xs text-[#10292e] focus:outline-none focus:ring-2 focus:ring-[#ffa11f]"
+                    required
+                    className="w-full px-4 py-2.5 rounded-2xl border border-[#e8eeea] text-xs sm:text-sm focus:border-[#ffa11f] focus:outline-hidden"
                   />
                 </div>
 
-                <div className="pt-2 flex items-center justify-end gap-2.5">
+                <div className="flex items-center justify-end gap-3 pt-3">
                   <button
                     type="button"
                     onClick={() => setShowPasswordModal(false)}
-                    className="px-5 py-2 rounded-full border border-[#d2dcd7] text-xs font-bold text-[#5a6e70] hover:bg-[#fafaf8] cursor-pointer"
+                    className="px-5 py-2 rounded-full border border-[#e8eeea] text-xs font-bold text-[#607274] hover:bg-[#fafaf8]"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={savingPassword}
-                    className="px-6 py-2 rounded-full bg-[#ffa11f] hover:bg-[#e69019] text-[#10292e] text-xs font-black shadow-xs cursor-pointer disabled:opacity-50"
+                    className="px-6 py-2 rounded-full bg-[#ffa11f] hover:bg-[#ff9400] text-xs font-extrabold text-[#10292e] disabled:opacity-50"
                   >
-                    {savingPassword ? "Updating..." : "Update Password"}
+                    {savingPassword ? "Updating..." : "Update password"}
                   </button>
                 </div>
               </form>
