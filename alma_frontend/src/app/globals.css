@@ -12,19 +12,73 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Smooth page scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background-color: #fff8ec;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Hide scrollbar for Chrome, Safari and Opera */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
+/* ========================================================
+   MODERN, SMOOTH ALMA SCROLLBAR (NO ARROWS)
+   ======================================================== */
+
+/* Webkit browsers (Chrome, Edge, Safari, Opera) */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
 }
 
-/* Hide scrollbar for IE, Edge and Firefox */
+/* Completely remove the top/bottom/left/right scrollbar arrow buttons */
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Transparent, clean track */
+::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px;
+}
+
+/* Sleek, rounded thumb in ALMA neutral tone */
+::-webkit-scrollbar-thumb {
+  background-color: #d8dedb;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.25s ease;
+}
+
+/* Vibrant Mango glow on hover */
+::-webkit-scrollbar-thumb:hover {
+  background-color: #ffa11f;
+}
+
+/* Corner junction */
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox standard scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d8dedb transparent;
+}
+
+/* Utility to completely hide scrollbar where needed (e.g. sidebar) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 .no-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
