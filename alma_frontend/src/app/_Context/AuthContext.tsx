@@ -96,9 +96,14 @@ const PROTECTED_ROUTES = [
   "/home",
   "/profile",
   "/learn",
+  "/my-lessons",
+  "/courses",
+  "/assessments",
   "/compete",
   "/quize",
   "/ai-lesson",
+  "/achievements",
+  "/teachers",
   "/teacher",
   "/parent",
 ];
@@ -156,8 +161,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (loading) return;
 
     const isAuthenticated = status === "authenticated";
-    const isTeacherRoute = pathname.startsWith("/teacher");
-    const isParentRoute = pathname.startsWith("/parent");
+    const isTeacherRoute = pathname === "/teacher" || pathname.startsWith("/teacher/");
+    const isParentRoute = pathname === "/parent" || pathname.startsWith("/parent/");
     const isStudentRoute = PROTECTED_ROUTES.some(
       (route) => (pathname === route || pathname.startsWith(`${route}/`)) && !isTeacherRoute && !isParentRoute
     );
