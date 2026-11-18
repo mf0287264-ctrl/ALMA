@@ -418,26 +418,6 @@ class ParentsService {
     return await this.sendMessage(parentId, { type: 'teacher', teacher_id, subject, message });
   }
 
-    const teacher = await teachersRepository.findById(teacher_id);
-    if (!teacher) {
-      const error = new Error('Teacher not found');
-      error.statusCode = 404;
-      throw error;
-    }
-
-    const messageRecord = await parentsRepository.saveMessage({
-      from_parent_id: parent._id,
-      from_parent_name: `${parent.first_name || ''} ${parent.last_name || ''}`.trim(),
-      from_parent_email: parent.email,
-      to_teacher_id: teacher._id,
-      to_teacher_name: `${teacher.first_name || ''} ${teacher.last_name || ''}`.trim(),
-      subject,
-      message
-    });
-
-    return messageRecord;
-  }
-
   async getMessageHistory(parentId) {
     return await parentsRepository.getMessagesByParent(parentId);
   }
