@@ -154,7 +154,7 @@ export default function TeacherCommunicationPage() {
     <div className="w-full min-h-screen flex bg-[#fff8ec]">
       <Sidebar />
 
-      <main className="flex-1 min-h-screen bg-[#fff8ec] px-5 sm:px-10 lg:px-12 py-8 sm:py-10 overflow-y-auto pb-24 md:pb-10">
+      <main className="flex-1 min-w-0 min-h-screen bg-[#fff8ec] px-5 sm:px-10 lg:px-12 pt-20 lg:pt-10 pb-24 md:pb-10 overflow-y-auto">
         {/* Header */}
         <div className="mb-6">
           <span className="text-[#118a80] text-[11px] font-black uppercase tracking-wider block mb-1">
