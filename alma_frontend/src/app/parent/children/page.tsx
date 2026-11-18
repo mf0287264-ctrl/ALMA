@@ -37,7 +37,7 @@ export default function MyChildrenPage() {
     setLoading(true);
     try {
       const res = await api.get("/parents/children");
-      setChildren(res.data?.data || []);
+      setChildren(Array.isArray(res.data?.data) ? res.data.data : []);
     } catch {
       // Fallback
       setChildren([]);

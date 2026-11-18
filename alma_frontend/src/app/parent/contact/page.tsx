@@ -67,7 +67,7 @@ export default function ParentContactPage() {
     try {
       // 1. Children
       const cRes = await api.get("/parents/children").catch(() => null);
-      const kids = cRes?.data?.data || [];
+      const kids = Array.isArray(cRes?.data?.data) ? cRes.data.data : [];
       setChildren(kids);
       if (kids.length > 0) {
         setTChild(kids[0]._id || kids[0].student_id);
@@ -75,7 +75,7 @@ export default function ParentContactPage() {
 
       // 2. Teachers
       const tRes = await api.get("/teachers").catch(() => null);
-      const tList = tRes?.data?.data || [];
+      const tList = Array.isArray(tRes?.data?.data) ? tRes.data.data : [];
       setTeachers(tList);
       if (tList.length > 0) {
         setTTeacher(tList[0]._id);
@@ -206,12 +206,15 @@ export default function ParentContactPage() {
                 onChange={(e) => setTChild(e.target.value)}
                 className="w-full px-4 py-3 rounded-2xl border border-[#e8eeea] bg-[#fafaf8] text-sm text-[#10292e] focus:outline-hidden focus:border-[#ffa11f] font-medium"
               >
-                {children.map((c) => (
-                  <option key={c._id || c.student_id} value={c._id || c.student_id}>
-                    {c.first_name} {c.last_name}
-                  </option>
-                ))}
-                {children.length === 0 && <option value="">Layla Hassan</option>}
+                {Array.isArray(children) &&
+                  children.map((c) => (
+                    <option key={c._id || c.student_id} value={c._id || c.student_id}>
+                      {c.first_name} {c.last_name}
+                    </option>
+                  ))}
+                {(!Array.isArray(children) || children.length === 0) && (
+                  <option value="">Layla Hassan</option>
+                )}
               </select>
             </div>
 
@@ -222,12 +225,13 @@ export default function ParentContactPage() {
                 onChange={(e) => setTTeacher(e.target.value)}
                 className="w-full px-4 py-3 rounded-2xl border border-[#e8eeea] bg-[#fafaf8] text-sm text-[#10292e] focus:outline-hidden focus:border-[#ffa11f] font-medium"
               >
-                {teachers.map((t) => (
-                  <option key={t._id} value={t._id}>
-                    {t.first_name} {t.last_name} · {t.specialization || "Teacher"}
-                  </option>
-                ))}
-                {teachers.length === 0 && (
+                {Array.isArray(teachers) &&
+                  teachers.map((t) => (
+                    <option key={t._id} value={t._id}>
+                      {t.first_name} {t.last_name} · {t.specialization || "Teacher"}
+                    </option>
+                  ))}
+                {(!Array.isArray(teachers) || teachers.length === 0) && (
                   <option value="default">Sara Ahmed · Class teacher</option>
                 )}
               </select>
@@ -317,11 +321,12 @@ export default function ParentContactPage() {
                 className="w-full px-4 py-3 rounded-2xl border border-[#e8eeea] bg-[#fafaf8] text-sm text-[#10292e] focus:outline-hidden focus:border-[#ffa11f] font-medium"
               >
                 <option value="">Select a child</option>
-                {children.map((c) => (
-                  <option key={c._id || c.student_id} value={c._id || c.student_id}>
-                    {c.first_name} {c.last_name}
-                  </option>
-                ))}
+                {Array.isArray(children) &&
+                  children.map((c) => (
+                    <option key={c._id || c.student_id} value={c._id || c.student_id}>
+                      {c.first_name} {c.last_name}
+                    </option>
+                  ))}
               </select>
             </div>
 
@@ -374,11 +379,12 @@ export default function ParentContactPage() {
         </div>
 
         <div className="space-y-3.5 pt-2">
-          {messages.map((item) => (
-            <div
-              key={item._id}
-              className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 rounded-2xl bg-[#fffcf7] border border-[#f0ede4] gap-4"
-            >
+          {Array.isArray(messages) &&
+            messages.map((item) => (
+              <div
+                key={item._id}
+                className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 rounded-2xl bg-[#fffcf7] border border-[#f0ede4] gap-4"
+              >
               <div className="flex items-start gap-3.5">
                 <div className="w-10 h-10 rounded-2xl bg-[#e6f5f2] text-[#118a80] flex items-center justify-center shrink-0 mt-0.5">
                   {item.type === "support" ? <ShieldCheck size={18} /> : <GraduationCap size={18} />}

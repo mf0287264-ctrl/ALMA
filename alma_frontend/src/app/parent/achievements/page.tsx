@@ -63,7 +63,7 @@ export default function ParentAchievementsPage() {
   const loadChildren = async () => {
     try {
       const res = await api.get("/parents/children");
-      const kids = res.data?.data || [];
+      const kids = Array.isArray(res.data?.data) ? res.data.data : [];
       setChildren(kids);
       if (kids.length > 0) {
         setSelectedChildId(kids[0]._id || kids[0].student_id);

@@ -127,7 +127,7 @@ export default function ParentOverviewPage() {
       </div>
 
       {/* Child Selector Pills */}
-      {children.length > 0 && (
+      {Array.isArray(children) && children.length > 0 && (
         <div className="flex items-center gap-3 flex-wrap">
           <span className="text-xs font-bold text-[#8a999b] uppercase tracking-wider">
             Viewing

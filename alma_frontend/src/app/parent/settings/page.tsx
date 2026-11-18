@@ -48,7 +48,7 @@ export default function ParentSettingsPage() {
 
       // Load children
       const cRes = await api.get("/parents/children").catch(() => null);
-      setChildren(cRes?.data?.data || []);
+      setChildren(Array.isArray(cRes?.data?.data) ? cRes.data.data : []);
     } catch {
       // Default
     }

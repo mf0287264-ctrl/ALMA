@@ -19,13 +19,8 @@ router.get('/profile', authenticate, teachersController.getProfile);
 router.put('/profile', authenticate, validate(updateTeacherSchema), teachersController.update);
 router.put('/', authenticate, validate(updateTeacherSchema), teachersController.update);
 
-// Authenticated or list all
-router.get('/', (req, res, next) => {
-  if (req.headers.authorization || req.headers.authorize) {
-    return authenticate(req, res, () => teachersController.getProfile(req, res, next));
-  }
-  return teachersController.getAll(req, res, next);
-});
+// List all teachers
+router.get('/', teachersController.getAll);
 
 router.get('/:id', teachersController.getById);
 router.put('/:id', authenticate, validate(updateTeacherSchema), teachersController.update);
