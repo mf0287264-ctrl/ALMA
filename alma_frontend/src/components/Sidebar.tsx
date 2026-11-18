@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import MangoIcon from "./MangoIcon";
 import { useAuth } from "@/app/_Context/AuthContext";
+import { useSidebar } from "@/app/_Context/SidebarContext";
 import {
   LayoutGrid,
   BookOpen,
@@ -19,8 +20,6 @@ import {
   Menu,
   X,
   LogOut,
-  ChevronLeft,
-  ChevronRight,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
@@ -68,29 +67,8 @@ const STUDENT_SECTIONS: NavSection[] = [
 export default function Sidebar({ className = "" }: { className?: string }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { isCollapsed, isAnimating, toggleCollapsed } = useSidebar();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("alma_student_sidebar_collapsed");
-      if (saved === "true") {
-        setIsCollapsed(true);
-      }
-    } catch {
-      // ignore SSR or localStorage access errors
-    }
-  }, []);
-
-  const toggleCollapsed = () => {
-    setIsCollapsed((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem("alma_student_sidebar_collapsed", String(next));
-      } catch {}
-      return next;
-    });
-  };
 
   const studentName =
     user?.name ||
@@ -113,7 +91,7 @@ export default function Sidebar({ className = "" }: { className?: string }) {
 
   return (
     <>
-      {/* Mobile Top Header (Fixed on small screens) */}
+      {/* Mobile Top Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-[#e8eeea] flex items-center justify-between px-5 z-50 select-none shadow-xs">
         <Link href="/home" className="flex items-center gap-2">
           <MangoIcon size={28} animated />
@@ -200,16 +178,22 @@ export default function Sidebar({ className = "" }: { className?: string }) {
         </div>
       )}
 
-      {/* Desktop Sticky Collapsible Sidebar */}
+      {/* Desktop Sticky In-Flow Sidebar */}
       <aside
-        className={`hidden lg:flex flex-col justify-between select-none z-30 sticky top-0 h-screen shrink-0 bg-white border-r border-[#e8eeea] transition-all duration-300 no-scrollbar ${
+        className={`hidden lg:flex flex-col justify-between select-none z-30 sticky top-0 h-screen shrink-0 bg-white border-r border-[#e8eeea] ${
+          isAnimating ? "transition-[width] duration-250 ease-in-out" : "transition-none"
+        } no-scrollbar ${
           isCollapsed ? "w-20" : "w-64"
         } ${className}`}
       >
         {/* Top Scrollable Navigation Area (Scrollbar completely hidden) */}
-        <div className="overflow-y-auto flex-1 py-5 px-3 space-y-6 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          {/* Header row with Logo and Collapse Toggle */}
-          <div className={`flex items-center ${isCollapsed ? "flex-col gap-3 justify-center" : "justify-between px-2"} pb-2 border-b border-[#f4f4f2]`}>
+        <div className="overflow-y-auto flex-1 py-5 px-3 space-y-5 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          {/* Header with Logo and Collapse/Expand Toggle */}
+          <div
+            className={`flex items-center ${
+              isCollapsed ? "flex-col gap-3 justify-center" : "justify-between px-2"
+            } pb-3 border-b border-[#f4f4f2]`}
+          >
             <Link
               href="/home"
               className={`flex items-center gap-2 ${isCollapsed ? "justify-center" : ""}`}
@@ -244,7 +228,7 @@ export default function Sidebar({ className = "" }: { className?: string }) {
                 </span>
               )}
               {isCollapsed && (
-                <div className="w-full flex justify-center my-1">
+                <div className="w-full flex justify-center my-1.5">
                   <span className="w-6 h-[1px] bg-[#e8eeea]" />
                 </div>
               )}
@@ -262,7 +246,9 @@ export default function Sidebar({ className = "" }: { className?: string }) {
                         isCollapsed
                           ? "justify-center p-3 rounded-2xl"
                           : "justify-between px-3 py-2.5 rounded-xl"
-                      } text-sm transition-all duration-150 ${
+                      } text-sm ${
+                        isAnimating ? "transition-colors duration-150" : "transition-none"
+                      } ${
                         active
                           ? "bg-[#fff7ee] text-[#10292e] font-extrabold border-l-4 border-[#ffa11f]"
                           : "text-[#607274] hover:text-[#10292e] hover:bg-[#fafaf8] border-l-4 border-transparent font-medium"
@@ -276,9 +262,9 @@ export default function Sidebar({ className = "" }: { className?: string }) {
                         {!isCollapsed && <span>{item.label}</span>}
                       </div>
 
-                      {/* Badge */}
-                      {item.badge && (
-                        isCollapsed ? (
+                      {/* Badge indicator */}
+                      {item.badge &&
+                        (isCollapsed ? (
                           <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-[#ffa11f] text-[#10292e] text-[9px] font-black flex items-center justify-center shadow-xs">
                             {item.badge}
                           </span>
@@ -286,8 +272,7 @@ export default function Sidebar({ className = "" }: { className?: string }) {
                           <span className="w-5 h-5 rounded-full bg-[#ffa11f] text-[#10292e] text-[10px] font-black flex items-center justify-center">
                             {item.badge}
                           </span>
-                        )
-                      )}
+                        ))}
                     </Link>
                   );
                 })}
