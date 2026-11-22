@@ -21,6 +21,8 @@ import assessmentsRoutes from './Module/Assessments/Assessments.routes.js';
 import quizzesRoutes from './Module/Quizzes/Quizzes.routes.js';
 import achievementsRoutes from './Module/Achievements/Achievements.routes.js';
 import postsRoutes from './Module/Posts/Posts.routes.js';
+import messagesRoutes from './Module/Messages/Messages.routes.js';
+import teacherGroupsRoutes from './Module/TeacherGroups/TeacherGroups.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -49,6 +51,8 @@ app.use('/api/v1/assessments', assessmentsRoutes);
 app.use('/api/v1/quizzes', quizzesRoutes);
 app.use('/api/v1/achievements', achievementsRoutes);
 app.use('/api/v1/posts', postsRoutes);
+app.use('/api/v1/messages', messagesRoutes);
+app.use('/api/v1/teacher-groups', teacherGroupsRoutes);
 
 // Health Check Endpoint
 app.get('/api/v1/health', (req, res) => {

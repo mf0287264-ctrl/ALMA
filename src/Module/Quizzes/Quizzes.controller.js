@@ -12,8 +12,38 @@ class QuizzesController {
 
   async getAll(req, res, next) {
     try {
-      const quizzes = await quizzesService.getAllQuizzes(req.query);
+      const quizzes = await quizzesService.getAllQuizzes(req.query, req.authUser);
       res.status(200).json({ success: true, data: quizzes });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async recordAttempt(req, res, next) {
+    try {
+      const studentId = req.authUser?._id;
+      if (!studentId) {
+        const error = new Error('Authentication required');
+        error.statusCode = 401;
+        throw error;
+      }
+      const attempt = await quizzesService.recordAttempt(req.params.id, studentId, req.body);
+      res.status(201).json({ success: true, message: 'Quiz attempt saved', data: attempt });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getMyAttempt(req, res, next) {
+    try {
+      const studentId = req.authUser?._id;
+      if (!studentId) {
+        const error = new Error('Authentication required');
+        error.statusCode = 401;
+        throw error;
+      }
+      const attempt = await quizzesService.getMyAttempt(req.params.id, studentId);
+      res.status(200).json({ success: true, data: attempt });
     } catch (error) {
       next(error);
     }

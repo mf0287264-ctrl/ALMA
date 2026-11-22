@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import { useAuth } from "@/app/_Context/AuthContext";
@@ -25,6 +25,23 @@ export default function ProfilePage() {
   const [learningStyle, setLearningStyle] = useState("Pictures, Trying things");
   const [dailyReminder, setDailyReminder] = useState(true);
   const [streakAlerts, setStreakAlerts] = useState(true);
+
+  // Sync state when user profile is loaded
+  useEffect(() => {
+    if (user) {
+      if (user.first_name) setFirstName(user.first_name);
+      if (user.last_name) setLastName(user.last_name);
+      if (user.email) setEmail(user.email);
+      if (user.grade_level) setGradeLevel(user.grade_level);
+      if (user.school_name) setSchoolName(user.school_name);
+      if (user.parent_phone) setParentPhone(user.parent_phone);
+      if (user.age_group) setAgeRange(user.age_group);
+      if (user.coding_experience) setCodingExp(user.coding_experience);
+      if (user.learning_styles && user.learning_styles.length > 0) {
+        setLearningStyle(user.learning_styles.join(", "));
+      }
+    }
+  }, [user]);
 
   // Password modal
   const [showPasswordModal, setShowPasswordModal] = useState(false);

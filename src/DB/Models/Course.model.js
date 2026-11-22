@@ -8,8 +8,8 @@ const courseSchema = new mongoose.Schema(
     grade_level: { type: String, required: true },
     curriculum: { type: String, default: 'General' },
     language: { type: String, default: 'en' },
-    status: { type: String, enum: ['draft', 'published', 'archived'], default: 'draft' },
-    created_by: { type: mongoose.Schema.Types.ObjectId, required: true },
+    status: { type: String, enum: ['draft', 'published', 'archived'], default: 'published' },
+    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher', default: null },
     course_image: { type: String, default: null }
   },
   {
@@ -17,4 +17,4 @@ const courseSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model('Course', courseSchema);
+export default mongoose.models.Course || mongoose.model('Course', courseSchema);

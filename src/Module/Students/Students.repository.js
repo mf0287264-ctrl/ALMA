@@ -62,6 +62,33 @@ class StudentsRepository {
     ).toArray();
   }
 
+  async searchStudents(query, excludeId) {
+    const exclId = typeof excludeId === 'string' ? new ObjectId(excludeId) : excludeId;
+    const filter = { _id: { $ne: exclId } };
+    if (query && query.trim()) {
+      const q = query.trim();
+      const regex = new RegExp(q, 'i');
+      filter.$or = [
+        { first_name: regex },
+        { last_name: regex },
+        { student_code: regex },
+        { email: regex }
+      ];
+    }
+    return await this.collection.find(filter, {
+      projection: {
+        first_name: 1,
+        last_name: 1,
+        email: 1,
+        student_code: 1,
+        grade_level: 1,
+        profile_image: 1,
+        current_streak: 1,
+        role: 1
+      }
+    }).limit(20).toArray();
+  }
+
   async followStudent(currentId, targetId) {
     const cId = typeof currentId === 'string' ? new ObjectId(currentId) : currentId;
     const tId = typeof targetId === 'string' ? new ObjectId(targetId) : targetId;
@@ -160,6 +187,39 @@ class StudentsRepository {
       { _id: sId },
       { $pull: { bookmarks: pId }, $set: { updated_at: new Date() } }
     );
+  }
+
+  async enrollCourse(studentId, courseId) {
+    const sId = typeof studentId === 'string' ? new ObjectId(studentId) : studentId;
+    const cId = typeof courseId === 'string' && ObjectId.isValid(courseId) ? new ObjectId(courseId) : courseId;
+    await this.collection.updateOne(
+      { _id: sId },
+      { $addToSet: { enrolled_courses: cId }, $set: { updated_at: new Date() } }
+    );
+    return await this.findById(sId);
+  }
+
+  async unenrollCourse(studentId, courseId) {
+    const sId = typeof studentId === 'string' ? new ObjectId(studentId) : studentId;
+    const cId = typeof courseId === 'string' && ObjectId.isValid(courseId) ? new ObjectId(courseId) : courseId;
+    await this.collection.updateOne(
+      { _id: sId },
+      { $pull: { enrolled_courses: cId }, $set: { updated_at: new Date() } }
+    );
+    return await this.findById(sId);
+  }
+
+  async isEnrolled(studentId, courseId) {
+    const sId = typeof studentId === 'string' ? new ObjectId(studentId) : studentId;
+    const cId = typeof courseId === 'string' && ObjectId.isValid(courseId) ? new ObjectId(courseId) : courseId;
+    const student = await this.collection.findOne({
+      _id: sId,
+      $or: [
+        { enrolled_courses: cId },
+        { enrolled_courses: typeof courseId === 'string' ? courseId : courseId.toString() }
+      ]
+    });
+    return Boolean(student);
   }
 }
 

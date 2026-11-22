@@ -157,7 +157,7 @@ export default function TeacherSettingsPage() {
     <div className="w-full min-h-screen bg-[#fff8ec] flex">
       <TeacherSidebar />
 
-      <main className="flex-1 lg:ml-64 p-6 sm:p-10 lg:p-12 pt-20 lg:pt-10 overflow-y-auto">
+      <main className="flex-1 min-w-0 p-6 sm:p-10 lg:p-12 pt-20 lg:pt-10 overflow-y-auto">
         {/* Header & Badges Legend */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>

@@ -20,22 +20,50 @@ class CoursesRepository {
   }
 
   async findById(id) {
-    const queryId = typeof id === 'string' ? new ObjectId(id) : id;
-    return await this.collection.findOne({ _id: queryId });
+    if (!id) return null;
+
+    // 1. Try finding by ObjectId
+    if (typeof id === 'string' && ObjectId.isValid(id) && String(new ObjectId(id)) === id) {
+      const found = await this.collection.findOne({ _id: new ObjectId(id) });
+      if (found) return found;
+    } else if (id instanceof ObjectId) {
+      const found = await this.collection.findOne({ _id: id });
+      if (found) return found;
+    }
+
+    // 2. Try finding by title slug (e.g. "intro-to-python" -> regex for "intro.*python")
+    if (typeof id === 'string') {
+      const slugPattern = id.replace(/[-_]/g, '.*');
+      const foundByTitle = await this.collection.findOne({
+        title: { $regex: new RegExp(`^${slugPattern}$`, 'i') }
+      });
+      if (foundByTitle) return foundByTitle;
+
+      // Relaxed match
+      return await this.collection.findOne({
+        title: { $regex: new RegExp(slugPattern, 'i') }
+      });
+    }
+
+    return null;
   }
 
   async update(id, data) {
-    const queryId = typeof id === 'string' ? new ObjectId(id) : id;
+    const existing = await this.findById(id);
+    if (!existing) return null;
+
     await this.collection.updateOne(
-      { _id: queryId },
+      { _id: existing._id },
       { $set: { ...data, updated_at: new Date() } }
     );
-    return await this.findById(id);
+    return await this.findById(existing._id);
   }
 
   async delete(id) {
-    const queryId = typeof id === 'string' ? new ObjectId(id) : id;
-    return await this.collection.deleteOne({ _id: queryId });
+    const existing = await this.findById(id);
+    if (!existing) return null;
+
+    return await this.collection.deleteOne({ _id: existing._id });
   }
 }
 

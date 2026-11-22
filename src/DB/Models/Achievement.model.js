@@ -2,11 +2,13 @@ import mongoose from 'mongoose';
 
 const achievementSchema = new mongoose.Schema(
   {
-    student_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true },
+    student_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true, index: true },
+    course_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', default: null },
     title: { type: String, required: true, trim: true },
     description: { type: String, default: '' },
-    badge_icon: { type: String, default: null },
-    category: { type: String, default: 'General' },
+    badge_icon: { type: String, default: 'trophy' },
+    badge_color: { type: String, default: 'bg-[#ffa11f]' },
+    category: { type: String, default: 'Course Completion' },
     awarded_at: { type: Date, default: Date.now }
   },
   {

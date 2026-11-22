@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { signIn, signOut, useSession } from "next-auth/react";
 import api from "@/services/api";
@@ -108,9 +108,92 @@ const PROTECTED_ROUTES = [
   "/parent",
 ];
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+/**
+ * Route protection and path-dependent redirection inside Suspense.
+ * Next.js requires hooks reading URL data (usePathname, useSearchParams) to be
+ * contained within a Suspense boundary when rendered in the RootLayout tree.
+ */
+function AuthRouteGuard() {
   const router = useRouter();
   const pathname = usePathname();
+  const { data: session, status } = useSession();
+  const loading = status === "loading";
+  const role = (session?.role as string | undefined) || null;
+
+  useEffect(() => {
+    if (loading) return;
+
+    const isAuthenticated = status === "authenticated";
+    const isTeacherRoute = pathname === "/teacher" || pathname.startsWith("/teacher/");
+    const isParentRoute = pathname === "/parent" || pathname.startsWith("/parent/");
+    const isStudentRoute = PROTECTED_ROUTES.some(
+      (route) => (pathname === route || pathname.startsWith(`${route}/`)) && !isTeacherRoute && !isParentRoute
+    );
+
+    // Guest auth routes where already-logged-in users should be sent to their role dashboard
+    const isGuestAuthRoute =
+      pathname === "/" ||
+      pathname === "/welcome" ||
+      pathname === "/choose-role" ||
+      pathname === "/login" ||
+      pathname === "/register";
+
+    if (isAuthenticated) {
+      if (role === "teacher") {
+        if (isGuestAuthRoute || pathname === "/home" || isParentRoute) {
+          router.replace("/teacher/dashboard");
+        }
+        return;
+      }
+
+      if (role === "parent") {
+        if (isGuestAuthRoute || pathname === "/home" || isTeacherRoute) {
+          router.replace("/parent/dashboard");
+        }
+        return;
+      }
+
+      // Student or general authenticated user
+      if (role === "student" || !role) {
+        if (isTeacherRoute || isParentRoute) {
+          router.replace("/home");
+          return;
+        }
+
+        if (isGuestAuthRoute) {
+          router.replace("/home");
+          return;
+        }
+      }
+    } else {
+      // Unauthenticated visitor trying to access protected dashboards
+      if (isTeacherRoute) {
+        router.replace("/login?role=teacher");
+      } else if (isParentRoute) {
+        router.replace("/login?role=parent");
+      } else if (isStudentRoute) {
+        router.replace("/welcome");
+      }
+    }
+  }, [status, role, loading, pathname, router]);
+
+  const isProtectedRoute = PROTECTED_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
+
+  if (loading && isProtectedRoute) {
+    return (
+      <div className="fixed inset-0 z-50 bg-[#fff8ec] flex flex-col items-center justify-center">
+        <MangoIcon size={120} animated className="drop-shadow-md animate-pulse" />
+        <p className="mt-4 text-sm font-bold text-[#10292e]">Loading ALMA...</p>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
 
   const [user, setUser] = useState<User | null>(null);
@@ -152,85 +235,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Handle refresh error — force re-login
   useEffect(() => {
     if (session?.error === "RefreshAccessTokenError") {
-      signOut({ callbackUrl: "/login" });
+      signOut({ callbackUrl: "/welcome" });
     }
   }, [session?.error]);
-
-  // Route Protection Guard
-  useEffect(() => {
-    if (loading) return;
-
-    const isAuthenticated = status === "authenticated";
-    const isTeacherRoute = pathname === "/teacher" || pathname.startsWith("/teacher/");
-    const isParentRoute = pathname === "/parent" || pathname.startsWith("/parent/");
-    const isStudentRoute = PROTECTED_ROUTES.some(
-      (route) => (pathname === route || pathname.startsWith(`${route}/`)) && !isTeacherRoute && !isParentRoute
-    );
-
-    if (isAuthenticated) {
-      if (role === "teacher") {
-        if (
-          pathname === "/" ||
-          pathname === "/welcome" ||
-          pathname === "/choose-role" ||
-          pathname === "/login" ||
-          pathname.startsWith("/register") ||
-          pathname === "/home" ||
-          isParentRoute
-        ) {
-          router.replace("/teacher/dashboard");
-        }
-        return;
-      }
-
-      if (role === "parent") {
-        if (
-          pathname === "/" ||
-          pathname === "/welcome" ||
-          pathname === "/choose-role" ||
-          pathname === "/login" ||
-          pathname.startsWith("/register") ||
-          pathname === "/home" ||
-          isTeacherRoute
-        ) {
-          router.replace("/parent/dashboard");
-        }
-        return;
-      }
-
-      if (role === "student") {
-        if (isTeacherRoute || isParentRoute) {
-          router.replace("/home");
-          return;
-        }
-
-        const hasCompletedOnboarding = Boolean(user?.gender);
-        if (!hasCompletedOnboarding) {
-          if (pathname === "/register/step-2" || pathname === "/register/step-3") return;
-          router.replace("/register/step-2");
-          return;
-        }
-
-        if (
-          pathname === "/" ||
-          pathname === "/welcome" ||
-          pathname === "/choose-role" ||
-          pathname === "/login" ||
-          pathname.startsWith("/register")
-        ) {
-          router.replace("/home");
-        }
-      }
-    } else {
-      if (isTeacherRoute) {
-        router.replace("/login?role=teacher");
-      } else if (isParentRoute) {
-        router.replace("/login?role=parent");
-      } else if (isStudentRoute) {
-        router.replace("/welcome");
-      }
-    }
-  }, [status, role, user, loading, pathname, router]);
 
   const login = async ({
     email,
@@ -365,6 +372,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // Best-effort
     }
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch (e) {
+        console.warn("Error clearing browser storage:", e);
+      }
+    }
     setUser(null);
     await signOut({ callbackUrl: "/welcome" });
   };
@@ -374,19 +389,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await fetchProfile();
     }
   };
-
-  const isProtectedRoute = PROTECTED_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
-  );
-
-  if (loading && isProtectedRoute) {
-    return (
-      <div className="min-h-screen w-full bg-[#fff8ec] flex flex-col items-center justify-center">
-        <MangoIcon size={120} animated className="drop-shadow-md animate-pulse" />
-        <p className="mt-4 text-sm font-bold text-[#10292e]">Loading ALMA...</p>
-      </div>
-    );
-  }
 
   return (
     <AuthContext.Provider
@@ -402,6 +404,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refreshUser,
       }}
     >
+      <Suspense fallback={null}>
+        <AuthRouteGuard />
+      </Suspense>
       {children}
     </AuthContext.Provider>
   );

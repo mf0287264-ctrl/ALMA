@@ -71,7 +71,7 @@ body {
   scrollbar-color: #d8dedb transparent;
 }
 
-/* Utility to completely hide scrollbar where needed (e.g. sidebar) */
+/* Utility to completely hide scrollbar where needed */
 .no-scrollbar::-webkit-scrollbar {
   display: none !important;
   width: 0 !important;
@@ -81,4 +81,36 @@ body {
 .no-scrollbar {
   -ms-overflow-style: none !important;
   scrollbar-width: none !important;
+}
+
+/* Elegant, slim scroll slider for sidebar navigation tabs */
+.sidebar-tabs-slider {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #d8dedb transparent;
+}
+
+.sidebar-tabs-slider::-webkit-scrollbar {
+  width: 5px;
+}
+
+.sidebar-tabs-slider::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 6px 0;
+}
+
+.sidebar-tabs-slider::-webkit-scrollbar-thumb {
+  background-color: #d8dedb;
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-tabs-slider:hover::-webkit-scrollbar-thumb {
+  background-color: #c0ccc8;
+}
+
+.sidebar-tabs-slider::-webkit-scrollbar-thumb:hover {
+  background-color: #ffa11f;
 }

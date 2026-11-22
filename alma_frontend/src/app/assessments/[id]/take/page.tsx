@@ -1,89 +1,31 @@
 "use client";
 
-import React, { useState, use } from "react";
+import React, { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
+import api from "@/services/api";
+import { Loader2, AlertCircle, ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 
-const QUESTIONS = [
-  {
-    id: 1,
-    points: 10,
-    tag: "mcq",
-    question: "What keyword is used to start a loop in Python?",
-    code: "",
-    options: ["loop", "for", "iterate", "repeat"],
-    correct: 1,
-  },
-  {
-    id: 2,
-    points: 10,
-    tag: "mcq",
-    question: "How many times does range(4) execute?",
-    code: "for i in range(4):\n    pass",
-    options: ["3 times", "4 times", "5 times", "Infinite"],
-    correct: 1,
-  },
-  {
-    id: 3,
-    points: 10,
-    tag: "mcq",
-    question: "What does range(3) produce?",
-    code: "print(list(range(3)))",
-    options: ["1  2  3", "0  1  2", "0  1  2  3", "1  2"],
-    correct: 1,
-  },
-  {
-    id: 4,
-    points: 15,
-    tag: "coding",
-    question: "Write a loop that prints numbers from 1 to 5.",
-    code: "for i in range(1, 6):\n    print(i)",
-    options: ["range(1, 5)", "range(1, 6)", "range(0, 5)", "range(5)"],
-    correct: 1,
-  },
-  {
-    id: 5,
-    points: 10,
-    tag: "mcq",
-    question: "What is the starting index in Python range() by default?",
-    code: "",
-    options: ["0", "1", "-1", "Depends on list length"],
-    correct: 0,
-  },
-  {
-    id: 6,
-    points: 15,
-    tag: "short_answer",
-    question: "Why does a loop need an exit condition?",
-    code: "",
-    options: [
-      "To prevent infinite loops and memory leaks",
-      "To make code faster",
-      "Because Python requires it syntactically",
-      "To allow nesting",
-    ],
-    correct: 0,
-  },
-  {
-    id: 7,
-    points: 15,
-    tag: "coding",
-    question: "What is the output of range(2, 8, 2)?",
-    code: "print(list(range(2, 8, 2)))",
-    options: ["[2, 4, 6, 8]", "[2, 4, 6]", "[2, 3, 4, 5, 6, 7]", "[4, 6, 8]"],
-    correct: 1,
-  },
-  {
-    id: 8,
-    points: 15,
-    tag: "mcq",
-    question: "Which function converts a range object into a displayable list?",
-    code: "",
-    options: ["to_list()", "list()", "array()", "enumerate()"],
-    correct: 1,
-  },
-];
+interface AssessmentQuestion {
+  _id: string;
+  question_text: string;
+  question_type: string;
+  options: string[];
+  correct_answer: string;
+  points: number;
+  explanation?: string;
+}
+
+interface AssessmentDetail {
+  _id: string;
+  title: string;
+  course_title?: string;
+  total_points: number;
+  passing_score: number;
+  questions: AssessmentQuestion[];
+}
 
 export default function AssessmentTakePage({
   params,
@@ -94,38 +36,138 @@ export default function AssessmentTakePage({
   const assessmentId = resolvedParams.id;
   const router = useRouter();
 
-  const [currentIndex, setCurrentIndex] = useState(2); // Question 3 (0-indexed 2)
-  const [answers, setAnswers] = useState<Record<number, number>>({
-    0: 1,
-    1: 1,
-    2: 1,
-  });
+  const [assessment, setAssessment] = useState<AssessmentDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const currentQ = QUESTIONS[currentIndex];
-  const totalQuestions = QUESTIONS.length;
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    async function loadAssessment() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await api.get(`/assessments/${assessmentId}`);
+        if (res.data?.data) {
+          const data = res.data.data;
+          setAssessment(data);
+          // If questions exist, set initial index to 0
+          setCurrentIndex(0);
+        } else {
+          setError("Assessment not found in database.");
+        }
+      } catch (err: any) {
+        console.error("Failed to load assessment for taking:", err);
+        setError("Could not load assessment questions from database.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (assessmentId) {
+      loadAssessment();
+    }
+  }, [assessmentId]);
+
+  const questions = assessment?.questions || [];
+  const currentQ = questions[currentIndex] || null;
+
+  const handleSelectOption = (opt: string) => {
+    setAnswers((prev) => ({ ...prev, [currentIndex]: opt }));
+  };
+
+  const handleSubmit = async () => {
+    if (!assessment) return;
+
+    setIsSubmitting(true);
+
+    // Calculate score
+    let earnedPoints = 0;
+    let correctCount = 0;
+    const questionsBreakdown = questions.map((q, idx) => {
+      const selected = answers[idx];
+      const isCorrect = selected === q.correct_answer;
+      if (isCorrect) {
+        earnedPoints += q.points || 10;
+        correctCount += 1;
+      }
+      return {
+        question_text: q.question_text,
+        selected_answer: selected || "Not answered",
+        correct_answer: q.correct_answer,
+        is_correct: isCorrect,
+        points: q.points || 10,
+        explanation: q.explanation || "",
+      };
+    });
+
+    const totalPossible = assessment.total_points || questions.reduce((s, q) => s + (q.points || 10), 0);
+    const scorePercent = Math.round((earnedPoints / totalPossible) * 100);
+    const passed = scorePercent >= (assessment.passing_score || 60);
+
+    const resultPayload = {
+      assessment_id: assessment._id,
+      title: assessment.title,
+      course_title: assessment.course_title,
+      earned_points: earnedPoints,
+      total_points: totalPossible,
+      score_percent: scorePercent,
+      correct_count: correctCount,
+      total_questions: questions.length,
+      passing_score: assessment.passing_score,
+      passed,
+      submitted_at: new Date().toISOString(),
+      breakdown: questionsBreakdown,
+    };
+
+    try {
+      // Save directly to MongoDB connected to the logged-in student
+      await api.post(`/assessments/${assessment._id}/submit`, resultPayload);
+    } catch (apiErr) {
+      console.warn("Could not save submission to API, saving to local cache:", apiErr);
+      try {
+        localStorage.setItem(`assessment_result_${assessment._id}`, JSON.stringify(resultPayload));
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    toast.success("Assessment submitted successfully!");
+    router.push(`/assessments/${assessment._id}/result`);
+  };
+
+  if (loading) {
+    return (
+      <div className="w-full min-h-screen flex items-center justify-center bg-[#fff8ec]">
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 text-[#118a80] animate-spin mx-auto mb-3" />
+          <p className="text-sm font-bold text-[#10292e]">Loading assessment questions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !assessment || questions.length === 0) {
+    return (
+      <div className="w-full min-h-screen flex items-center justify-center bg-[#fff8ec] p-6">
+        <div className="bg-white rounded-3xl p-8 border border-red-200 text-center max-w-md w-full">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
+          <h2 className="text-base font-black text-[#10292e] mb-2">Assessment Unavailable</h2>
+          <p className="text-xs text-red-600 mb-6">{error || "No questions found for this assessment."}</p>
+          <Link
+            href="/assessments"
+            className="inline-block px-5 py-2.5 bg-[#ffa11f] text-[#10292e] rounded-full text-xs font-bold"
+          >
+            &larr; Back to Assessments
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const answeredCount = Object.keys(answers).length;
-  const leftCount = totalQuestions - answeredCount;
-
-  const handleSelectOption = (optIdx: number) => {
-    setAnswers((prev) => ({ ...prev, [currentIndex]: optIdx }));
-  };
-
-  const handleNext = () => {
-    if (currentIndex < totalQuestions - 1) {
-      setCurrentIndex((prev) => prev + 1);
-    }
-  };
-
-  const handlePrev = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex((prev) => prev - 1);
-    }
-  };
-
-  const handleSubmit = () => {
-    router.push(`/assessments/${assessmentId}/result`);
-  };
 
   return (
     <div className="w-full min-h-screen flex bg-[#fff8ec]">
@@ -133,140 +175,160 @@ export default function AssessmentTakePage({
 
       <main className="flex-1 min-w-0 min-h-screen bg-[#fff8ec] px-5 sm:px-10 lg:px-12 pt-20 lg:pt-10 pb-24 md:pb-10 overflow-y-auto">
         {/* Top Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-[#10292e] tracking-tight">
-              Loops checkpoint
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#10292e] tracking-tight">
+              {assessment.title}
             </h1>
-            <p className="text-xs sm:text-sm text-[#607274] mt-1 font-medium">
-              Question {currentIndex + 1} of {totalQuestions}
+            <p className="text-xs text-[#8a999b] mt-0.5">
+              {assessment.course_title} · Question {currentIndex + 1} of {questions.length} ·{" "}
+              {answeredCount} of {questions.length} answered
             </p>
           </div>
 
-          <span className="bg-[#fff3db] border border-[#fae2b8] text-[#10292e] font-extrabold text-xs px-3.5 py-1.5 rounded-full">
-            {currentQ.points} pts
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="px-6 py-2 bg-[#118a80] hover:bg-[#0e746b] text-white rounded-full text-xs font-bold shadow-xs transition-colors cursor-pointer disabled:opacity-60"
+            >
+              Submit Assessment
+            </button>
+            <Link
+              href={`/assessments/${assessment._id}/instructions`}
+              className="px-4 py-2 rounded-full border border-[#10292e] text-[#10292e] hover:bg-[#10292e] hover:text-white text-xs font-bold transition-colors"
+            >
+              Exit
+            </Link>
+          </div>
         </div>
 
         {/* 2 Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Main Question Area (8 cols) */}
-          <div className="lg:col-span-8 bg-white rounded-3xl p-6 sm:p-8 border border-[#e8eeea] shadow-xs space-y-6">
-            {/* Progress bar */}
-            <div>
-              <div className="flex items-center justify-between text-xs text-[#8a999b] font-medium mb-1.5">
-                <span className="bg-[#e9f4fb] text-[#2b88d8] text-[10px] font-mono px-2 py-0.5 rounded-md font-semibold">
-                  {currentQ.tag}
-                </span>
-                <span>{currentIndex + 1} / {totalQuestions}</span>
-              </div>
-              <div className="w-full bg-[#f1f3f2] h-2.5 rounded-full overflow-hidden">
-                <div
-                  className="bg-[#ffa11f] h-full rounded-full transition-all"
-                  style={{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }}
-                />
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start max-w-6xl">
+          {/* Left Column: Questions Navigator (4 cols) */}
+          <div className="lg:col-span-4 bg-white rounded-3xl p-6 border border-[#e8eeea] shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold text-base text-[#10292e]">Questions</h3>
+              <span className="text-xs text-[#8a999b] font-medium">
+                {answeredCount}/{questions.length} done
+              </span>
             </div>
 
-            {/* Question Text */}
-            <h2 className="text-xl sm:text-2xl font-extrabold text-[#10292e]">
-              {currentQ.question}
-            </h2>
+            <div className="space-y-2">
+              {questions.map((q, idx) => {
+                const isSelected = idx === currentIndex;
+                const isAnswered = answers[idx] !== undefined;
 
-            {/* Code Block if any */}
-            {currentQ.code && (
-              <div className="bg-[#0b1a1c] text-[#a4efb3] font-mono text-xs sm:text-sm p-4 rounded-2xl">
-                <pre>{currentQ.code}</pre>
-              </div>
-            )}
-
-            {/* Radio Options */}
-            <div className="space-y-3">
-              {currentQ.options.map((option, idx) => {
-                const isSelected = answers[currentIndex] === idx;
                 return (
                   <button
-                    key={idx}
-                    onClick={() => handleSelectOption(idx)}
-                    className={`w-full text-left p-4 rounded-2xl font-semibold text-xs sm:text-sm flex items-center gap-3 transition-all ${
+                    key={q._id || idx}
+                    onClick={() => setCurrentIndex(idx)}
+                    className={`w-full text-left p-3 rounded-2xl flex items-center justify-between transition-all cursor-pointer ${
                       isSelected
-                        ? "border-2 border-[#ffa11f] bg-[#fffcf7] text-[#10292e]"
-                        : "border border-[#e8eeea] bg-white hover:bg-[#fafaf8] text-[#607274]"
+                        ? "border-2 border-[#ffa11f] bg-[#fffcf7]"
+                        : "border border-[#e8eeea] bg-[#fafaf8] hover:bg-white"
                     }`}
                   >
-                    <div
-                      className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
-                        isSelected
-                          ? "bg-[#ffa11f]"
-                          : "border border-[#d0d0cb]"
-                      }`}
-                    >
-                      {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                          isAnswered
+                            ? "bg-[#118a80] text-white"
+                            : isSelected
+                            ? "bg-[#ffa11f] text-[#10292e]"
+                            : "bg-[#e8eeea] text-[#607274]"
+                        }`}
+                      >
+                        {idx + 1}
+                      </span>
+                      <span className="text-xs font-bold text-[#10292e] truncate max-w-[160px]">
+                        {q.question_text}
+                      </span>
                     </div>
-                    <span>{option}</span>
+
+                    <span className="text-[10px] text-[#8a999b] font-mono shrink-0">
+                      {q.points || 10} pts
+                    </span>
                   </button>
                 );
               })}
-            </div>
-
-            {/* Navigation Buttons */}
-            <div className="flex items-center gap-3 pt-4">
-              <button
-                onClick={handlePrev}
-                disabled={currentIndex === 0}
-                className="px-6 py-2.5 rounded-full border border-[#10292e] text-[#10292e] hover:bg-[#10292e] hover:text-white font-bold text-xs disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#10292e] transition-colors"
-              >
-                Previous
-              </button>
-
-              <button
-                onClick={handleNext}
-                disabled={currentIndex === totalQuestions - 1}
-                className="px-7 py-2.5 rounded-full bg-[#ffa11f] hover:bg-[#ff9400] text-[#10292e] font-extrabold text-xs shadow-xs disabled:opacity-40 transition-colors"
-              >
-                Next
-              </button>
             </div>
           </div>
 
-          {/* Right Column: Questions Grid & Submit (4 cols) */}
-          <div className="lg:col-span-4 bg-white rounded-3xl p-6 sm:p-7 border border-[#e8eeea] shadow-xs space-y-6">
-            <h3 className="font-extrabold text-lg text-[#10292e]">Questions</h3>
+          {/* Right Column: Question Content & Options (8 cols) */}
+          <div className="lg:col-span-8 bg-white rounded-3xl p-6 sm:p-8 border border-[#e8eeea] shadow-xs space-y-6">
+            {currentQ && (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="bg-[#e6f5f2] text-[#118a80] text-xs font-bold px-3 py-1 rounded-full uppercase">
+                    Question {currentIndex + 1} · {currentQ.question_type || "MCQ"}
+                  </span>
+                  <span className="text-xs text-[#8a999b] font-mono">
+                    Worth {currentQ.points || 10} points
+                  </span>
+                </div>
 
-            {/* Number circles */}
-            <div className="grid grid-cols-5 gap-2.5">
-              {QUESTIONS.map((_, i) => {
-                const isAnswered = answers[i] !== undefined;
-                const isActive = i === currentIndex;
+                <h2 className="text-lg sm:text-xl font-extrabold text-[#10292e] leading-snug">
+                  {currentQ.question_text}
+                </h2>
 
-                return (
+                {/* Options List */}
+                <div className="space-y-3 pt-2">
+                  {currentQ.options?.map((opt, oIdx) => {
+                    const isChecked = answers[currentIndex] === opt;
+                    return (
+                      <button
+                        key={oIdx}
+                        onClick={() => handleSelectOption(opt)}
+                        className={`w-full text-left p-4 rounded-2xl text-xs sm:text-sm font-semibold transition-all cursor-pointer flex items-center justify-between ${
+                          isChecked
+                            ? "border-2 border-[#ffa11f] bg-[#fffcf7] text-[#10292e] shadow-2xs"
+                            : "border border-[#e8eeea] bg-[#fafaf8] hover:bg-white text-[#607274]"
+                        }`}
+                      >
+                        <span>{opt}</span>
+                        {isChecked && (
+                          <div className="w-5 h-5 rounded-full bg-[#ffa11f] flex items-center justify-center text-[#10292e] shrink-0">
+                            <div className="w-2 h-2 rounded-full bg-[#10292e]" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Navigation Buttons */}
+                <div className="pt-6 border-t border-[#f0f0eb] flex items-center justify-between">
                   <button
-                    key={i}
-                    onClick={() => setCurrentIndex(i)}
-                    className={`w-10 h-10 rounded-full font-bold text-xs flex items-center justify-center transition-all ${
-                      isActive
-                        ? "bg-[#ffa11f] text-[#10292e] ring-2 ring-[#ffa11f] ring-offset-2"
-                        : isAnswered
-                        ? "bg-[#118a80] text-white"
-                        : "bg-[#f1f3f2] text-[#8a999b] hover:bg-[#e4e7e6]"
-                    }`}
+                    onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
+                    disabled={currentIndex === 0}
+                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full border border-[#e8eeea] text-[#10292e] font-bold text-xs hover:bg-[#fafaf8] disabled:opacity-40 cursor-pointer"
                   >
-                    {i + 1}
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Previous</span>
                   </button>
-                );
-              })}
-            </div>
 
-            <div className="text-xs text-[#8a999b] font-medium">
-              {answeredCount} answered · {leftCount} left
-            </div>
-
-            <button
-              onClick={handleSubmit}
-              className="w-full py-3 rounded-full bg-[#118a80] hover:bg-[#0f756d] text-white font-extrabold text-sm shadow-xs transition-colors"
-            >
-              Submit
-            </button>
+                  {currentIndex < questions.length - 1 ? (
+                    <button
+                      onClick={() => setCurrentIndex((prev) => Math.min(questions.length - 1, prev + 1))}
+                      className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full bg-[#10292e] hover:bg-[#1b3438] text-white font-extrabold text-xs transition-colors cursor-pointer"
+                    >
+                      <span>Next Question</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleSubmit}
+                      disabled={isSubmitting}
+                      className="inline-flex items-center gap-1.5 px-7 py-2.5 rounded-full bg-[#ffa11f] hover:bg-[#ff9400] text-[#10292e] font-extrabold text-xs shadow-xs transition-colors cursor-pointer"
+                    >
+                      <span>Finish &amp; View Result</span>
+                      <CheckCircle2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </main>

@@ -26,4 +26,4 @@ const assessmentSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model('Assessment', assessmentSchema);
+export default mongoose.models.Assessment || mongoose.model('Assessment', assessmentSchema);

@@ -9,10 +9,12 @@ const quizItemSchema = new mongoose.Schema({
 
 const quizSchema = new mongoose.Schema(
   {
-    lesson_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Lesson', required: true },
+    course_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', default: null },
+    lesson_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Lesson', default: null },
     title: { type: String, required: true, trim: true },
+    description: { type: String, default: '' },
     questions: [quizItemSchema],
-    status: { type: String, enum: ['draft', 'published', 'archived'], default: 'draft' },
+    status: { type: String, enum: ['draft', 'published', 'archived'], default: 'published' },
     generated_by_ai: { type: Boolean, default: true }
   },
   {
@@ -20,4 +22,4 @@ const quizSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model('Quiz', quizSchema);
+export default mongoose.models.Quiz || mongoose.model('Quiz', quizSchema);
