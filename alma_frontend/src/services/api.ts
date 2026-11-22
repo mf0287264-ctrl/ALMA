@@ -40,20 +40,27 @@ api.interceptors.request.use(
 
 /**
  * Response interceptor:
- * Handles 401 Unauthorized globally.
+ * Handles 401 Unauthorized globally without causing infinite redirect loops.
  */
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (typeof window !== "undefined" && error.response?.status === 401) {
       const requestUrl: string = error.config?.url || "";
-      if (!requestUrl.includes("/login") && !requestUrl.includes("/refresh-token")) {
-        if (
-          !window.location.pathname.startsWith("/login") &&
-          !window.location.pathname.startsWith("/welcome")
-        ) {
-          window.location.href = "/login";
-        }
+      // Only trigger sign out if not an auth attempt endpoint
+      if (
+        !requestUrl.includes("/login") &&
+        !requestUrl.includes("/refresh-token") &&
+        !window.location.pathname.startsWith("/login") &&
+        !window.location.pathname.startsWith("/welcome")
+      ) {
+        import("next-auth/react")
+          .then(({ signOut }) => {
+            signOut({ callbackUrl: "/welcome" });
+          })
+          .catch(() => {
+            window.location.href = "/welcome";
+          });
       }
     }
     return Promise.reject(error);

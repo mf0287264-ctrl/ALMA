@@ -1,6 +1,15 @@
 import lessonsService from './Lessons.service.js';
 
 class LessonsController {
+  async getMyLessons(req, res, next) {
+    try {
+      const data = await lessonsService.getMyLessons(req.authUser);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async create(req, res, next) {
     try {
       const lesson = await lessonsService.createLesson(req.body);

@@ -1,3 +1,5 @@
+import { ObjectId } from 'mongodb';
+import { db } from '../../DB/db.connection.js';
 import studentsRepository from './Students.repository.js';
 import { hashPassword, verifyPassword } from '../../Utils/argon2.util.js';
 import { generateToken, generateRefreshToken } from '../../Utils/jwt.util.js';
@@ -334,6 +336,186 @@ class StudentsService {
     }
     const followers = await studentsRepository.findStudentsByIds(student.followers || []);
     return { count: followers.length, followers };
+  }
+
+  async searchStudents(currentStudentId, query) {
+    const students = await studentsRepository.searchStudents(query, currentStudentId);
+    const currentStudent = await studentsRepository.findById(currentStudentId);
+    const friends = (currentStudent?.friends || []).map(id => id.toString());
+    const sent = (currentStudent?.friend_requests_sent || []).map(id => id.toString());
+    const received = (currentStudent?.friend_requests_received || []).map(id => id.toString());
+
+    return students.map(s => {
+      const sIdStr = s._id.toString();
+      let friendship_status = 'none';
+      if (friends.includes(sIdStr)) friendship_status = 'friend';
+      else if (sent.includes(sIdStr)) friendship_status = 'sent';
+      else if (received.includes(sIdStr)) friendship_status = 'received';
+
+      return {
+        ...s,
+        friendship_status
+      };
+    });
+  }
+
+  async getDashboardSummary(studentId) {
+    const student = await studentsRepository.findById(studentId);
+    if (!student) {
+      const error = new Error('Student not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const sId = new ObjectId(student._id);
+
+    // 1. Continue Learning: active session or first enrolled course lesson
+    let continueLearning = await db.collection('student_lesson_sessions').findOne(
+      { student_id: sId, status: 'active' },
+      { sort: { updated_at: -1 } }
+    );
+
+    if (!continueLearning && student.enrolled_courses && student.enrolled_courses.length > 0) {
+      const courseIds = student.enrolled_courses.map(id => typeof id === 'string' ? new ObjectId(id) : id);
+      const firstCourse = await db.collection('courses').findOne({ _id: { $in: courseIds } });
+      const firstLesson = await db.collection('lessons').findOne({ course_id: { $in: courseIds } });
+      if (firstLesson) {
+        continueLearning = {
+          _id: firstLesson._id,
+          lesson_id: firstLesson._id.toString(),
+          lesson_title: firstLesson.topic || firstLesson.title || 'Lesson',
+          course_name: firstCourse?.title || 'Enrolled Course',
+          current_section_order: 1,
+          total_sections: (firstLesson.sections && firstLesson.sections.length) ? firstLesson.sections.length : 4,
+          status: 'available',
+          course_id: firstLesson.course_id?.toString() || ''
+        };
+      }
+    }
+
+    // 2. Daily Goal & Activity
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const [todaySessions, todayQuizzes, todayAssessments] = await Promise.all([
+      db.collection('student_lesson_sessions').countDocuments({
+        student_id: sId,
+        completed_at: { $gte: startOfDay }
+      }),
+      db.collection('quiz_attempts').countDocuments({
+        student_id: sId,
+        completed_at: { $gte: startOfDay }
+      }),
+      db.collection('assessment_submissions').countDocuments({
+        student_id: sId,
+        submitted_at: { $gte: startOfDay }
+      })
+    ]);
+
+    const completedToday = todaySessions + todayQuizzes + todayAssessments;
+    const dailyGoal = {
+      target: 2,
+      completed_today: completedToday
+    };
+
+    // 3. XP and Level
+    const totalQuizAttempts = await db.collection('quiz_attempts').countDocuments({ student_id: sId });
+    const totalAssessmentSubs = await db.collection('assessment_submissions').countDocuments({ student_id: sId });
+    const lessonsCompletedCount = student.lessons_completed || 0;
+    const xp = (lessonsCompletedCount * 50) + (totalQuizAttempts * 25) + (totalAssessmentSubs * 50);
+    const level = Math.max(1, Math.floor(xp / 100) + 1);
+
+    // 4. Recent Achievements
+    const studentAchievements = student.achievements || [];
+    const recentAchievements = studentAchievements.length > 0
+      ? [...studentAchievements].reverse().slice(0, 4)
+      : await db.collection('achievements')
+          .find({ student_id: sId })
+          .sort({ awarded_at: -1 })
+          .limit(4)
+          .toArray();
+
+    // 5. Recent Sessions / Activity
+    const [recentLessonSessions, recentQuizAttempts, recentAssessments] = await Promise.all([
+      db.collection('student_lesson_sessions')
+        .find({ student_id: sId })
+        .sort({ updated_at: -1, created_at: -1 })
+        .limit(5)
+        .toArray(),
+      db.collection('quiz_attempts')
+        .find({ student_id: sId })
+        .sort({ completed_at: -1 })
+        .limit(5)
+        .toArray(),
+      db.collection('assessment_submissions')
+        .find({ student_id: sId })
+        .sort({ submitted_at: -1 })
+        .limit(5)
+        .toArray()
+    ]);
+
+    const unifiedSessions = [
+      ...recentLessonSessions.map(s => ({
+        id: s._id.toString(),
+        title: s.lesson_title || 'Lesson Session',
+        course_name: s.course_name || 'Coding',
+        status: s.status,
+        type: 'lesson',
+        date: s.completed_at || s.created_at || new Date(),
+        detail: `Section ${s.current_section_order || 1} of ${s.total_sections || 4}`
+      })),
+      ...recentQuizAttempts.map(q => ({
+        id: q._id.toString(),
+        title: q.quiz_title || 'Diagnostic Quiz',
+        course_name: 'Quiz',
+        status: 'completed',
+        type: 'quiz',
+        date: q.completed_at || new Date(),
+        detail: `Score: ${q.score}/${q.total_questions || 10}`
+      })),
+      ...recentAssessments.map(a => ({
+        id: a._id.toString(),
+        title: a.assessment_title || 'Course Assessment',
+        course_name: 'Assessment',
+        status: 'completed',
+        type: 'assessment',
+        date: a.submitted_at || new Date(),
+        detail: `Score: ${a.score}% (${a.passed ? 'Passed' : 'Needs Review'})`
+      }))
+    ]
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 5);
+
+    // 6. Personalized greeting
+    let greeting = `Welcome back, ${student.first_name}!`;
+    if (student.current_streak > 0) {
+      greeting = `You're on a ${student.current_streak}-day streak! Keep up the momentum.`;
+    } else if (continueLearning) {
+      greeting = `Ready to pick up with ${continueLearning.lesson_title}? Let's dive in.`;
+    } else {
+      greeting = `Ready to start your learning journey today? Explore your courses below.`;
+    }
+
+    return {
+      student: {
+        _id: student._id,
+        first_name: student.first_name,
+        last_name: student.last_name,
+        student_code: student.student_code,
+        grade_level: student.grade_level,
+        current_streak: student.current_streak || 0,
+        longest_streak: student.longest_streak || 0,
+        lessons_completed: lessonsCompletedCount,
+        xp,
+        level,
+        personalized_greeting: greeting
+      },
+      continue_learning: continueLearning,
+      daily_goal: dailyGoal,
+      struggling_concepts: student.struggling_concepts || [],
+      recent_achievements: recentAchievements,
+      recent_sessions: unifiedSessions
+    };
   }
 }
 

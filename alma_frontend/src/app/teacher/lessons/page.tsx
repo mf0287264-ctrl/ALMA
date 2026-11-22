@@ -252,7 +252,7 @@ function LessonsContent() {
       <TeacherSidebar />
 
       {/* Main Content Area */}
-      <main className="flex-1 lg:ml-64 p-6 sm:p-10 lg:p-12 pt-20 lg:pt-10 overflow-y-auto">
+      <main className="flex-1 min-w-0 p-6 sm:p-10 lg:p-12 pt-20 lg:pt-10 overflow-y-auto">
         {/* Top Header Row */}
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-4">
           <div>

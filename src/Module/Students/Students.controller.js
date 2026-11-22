@@ -139,6 +139,27 @@ class StudentsController {
       next(error);
     }
   }
+
+  async searchStudents(req, res, next) {
+    try {
+      const currentStudentId = req.authUser._id;
+      const query = req.query.q || '';
+      const result = await studentsService.searchStudents(currentStudentId, query);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getDashboardSummary(req, res, next) {
+    try {
+      const currentStudentId = req.authUser._id;
+      const result = await studentsService.getDashboardSummary(currentStudentId);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new StudentsController();

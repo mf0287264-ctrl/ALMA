@@ -12,6 +12,18 @@ const conceptStruggleSchema = new mongoose.Schema({
   last_diagnosed_misconception: { type: String, default: null }
 }, { _id: false });
 
+const earnedAchievementSchema = new mongoose.Schema({
+  achievement_id: { type: String, required: true },
+  course_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', default: null },
+  course_title: { type: String, required: true },
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  badge_icon: { type: String, default: 'trophy' },
+  badge_color: { type: String, default: 'bg-[#ffa11f]' },
+  category: { type: String, default: 'Course Completion' },
+  awarded_at: { type: Date, default: Date.now }
+}, { _id: false });
+
 
 // ---------------------------------------------------------------------------
 // Student Profile Schema (UPDATED)
@@ -56,6 +68,15 @@ const studentSchema = new mongoose.Schema(
 
     // Adaptive tracking for personalized greetings and proactive help
     struggling_concepts: [conceptStruggleSchema],
+
+    // --- Course Enrollments & Teacher Linking ---
+    enrolled_courses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
+    completed_courses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
+    completed_lessons: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Lesson' }],
+    enrolled_groups: [{ type: mongoose.Schema.Types.ObjectId, ref: 'TeacherGroup' }],
+    achievements: [earnedAchievementSchema],
+    teacher_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher', default: null },
+    class_name: { type: String, default: null },
 
     // --- Social & Friends / Following ---
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Student' }],

@@ -1,6 +1,43 @@
 import achievementsService from './Achievements.service.js';
 
 class AchievementsController {
+  async getMyAchievements(req, res, next) {
+    try {
+      const user = req.authUser;
+      const data = await achievementsService.getMyAchievements(user);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async triggerCourseCompletion(req, res, next) {
+    try {
+      const studentId = req.authUser._id;
+      const courseId = req.params.courseId;
+      const force = req.body?.force === true;
+      const result = await achievementsService.checkAndAwardCourseCompletion(
+        studentId,
+        courseId,
+        force
+      );
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async completeLesson(req, res, next) {
+    try {
+      const studentId = req.authUser._id;
+      const lessonId = req.params.lessonId;
+      const result = await achievementsService.completeLesson(studentId, lessonId);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async create(req, res, next) {
     try {
       const achievement = await achievementsService.createAchievement(req.body);
@@ -12,6 +49,10 @@ class AchievementsController {
 
   async getAll(req, res, next) {
     try {
+      if (req.authUser) {
+        const data = await achievementsService.getMyAchievements(req.authUser);
+        return res.status(200).json({ success: true, data });
+      }
       const achievements = await achievementsService.getAllAchievements(req.query);
       res.status(200).json({ success: true, data: achievements });
     } catch (error) {

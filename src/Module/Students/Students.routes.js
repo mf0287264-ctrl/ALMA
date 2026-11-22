@@ -29,12 +29,17 @@ router.put('/', authenticate, validate(updateStudentSchema), studentsController.
 // Authenticated: delete own account
 router.delete('/', authenticate, studentsController.delete);
 
+// Authenticated: Dashboard Summary
+router.get('/dashboard-summary', authenticate, studentsController.getDashboardSummary);
+
 // Authenticated: Social & Friends
 router.get('/friends/me', authenticate, studentsController.getMyFriends);
-router.post('/:id/follow', authenticate, studentsController.toggleFollow);
-router.put('/:id/follow', authenticate, studentsController.toggleFollow);
+router.get('/search', authenticate, studentsController.searchStudents);
+router.post('/friend-request/:id', authenticate, studentsController.sendFriendRequest);
 router.post('/:id/friend-request', authenticate, studentsController.sendFriendRequest);
+router.post('/accept-friend-request/:id', authenticate, studentsController.acceptFriendRequest);
 router.put('/:id/accept-friend', authenticate, studentsController.acceptFriendRequest);
+router.post('/reject-friend-request/:id', authenticate, studentsController.rejectFriendRequest);
 router.put('/:id/reject-friend', authenticate, studentsController.rejectFriendRequest);
 router.get('/:id/following', studentsController.getFollowing);
 router.get('/:id/followers', studentsController.getFollowers);
