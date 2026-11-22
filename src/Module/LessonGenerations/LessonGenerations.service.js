@@ -1,8 +1,10 @@
 import crypto from 'crypto';
 import lessonGenerationsRepository from './LessonGenerations.repository.js';
+import { WHITEBOARD_GENERATION_DEFAULTS } from '../../Whiteboard/generationDefaults.js';
 
 class LessonGenerationsService {
   async createGenerationRequest(data) {
+    data = { ...data, whiteboard_generation: { ...structuredClone(WHITEBOARD_GENERATION_DEFAULTS), ...data?.whiteboard_generation } };
     data.job_id = data.job_id || `job_${crypto.randomBytes(5).toString('hex')}`;
     data.status = data.status || 'pending';
     data.current_step = data.current_step || 'queued';

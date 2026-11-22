@@ -1,0 +1,316 @@
+/*
+ * Whiteboard animations.
+ *
+ * Rule: the normal (base) style of every element is its FINAL look. The
+ * animations below only describe how an element arrives. So when the student
+ * seeks, Whiteboard.tsx adds `.wb-instant` and everything simply shows up.
+ */
+
+/* ---- scene entrance (class set on the wrapper of each scene) ---- */
+
+.wb-in {
+  animation-duration: calc(700ms / var(--wb-rate, 1));
+  animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
+  animation-fill-mode: backwards;
+}
+
+/* Handwriting: text and equations are revealed from left to right. */
+.wb-in-write {
+  animation-name: wb-write;
+  animation-duration: calc(900ms / var(--wb-rate, 1));
+  animation-timing-function: ease-out;
+}
+
+/* Shapes pop in from slightly smaller. */
+.wb-in-pop {
+  animation-name: wb-pop;
+  animation-duration: calc(550ms / var(--wb-rate, 1));
+  animation-timing-function: cubic-bezier(0.34, 1.35, 0.64, 1);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Big figures (code, tables, charts) rise gently. */
+.wb-in-rise {
+  animation-name: wb-rise;
+}
+
+.wb-instant,
+.wb-instant * {
+  animation: none !important;
+}
+
+@keyframes wb-write {
+  from { clip-path: inset(-8px 100% -8px -8px); }
+  to   { clip-path: inset(-8px -8px -8px -8px); }
+}
+
+@keyframes wb-pop {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes wb-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes wb-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes wb-draw {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
+}
+
+/* ---- pieces inside a scene ---- */
+
+/* Lines and arrows draw themselves (their length is normalised to 1). */
+.wb-stroke {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: wb-draw calc(800ms / var(--wb-rate, 1)) ease-out backwards;
+}
+
+/* Arrow tips and dashed lines appear once the line is (nearly) drawn. */
+.wb-head {
+  animation: wb-fade 0.25s ease-out 0.55s backwards;
+}
+
+.wb-fade {
+  animation: wb-fade 0.6s ease-out backwards;
+}
+
+/* Items of a figure (nodes, rows, bars) can arrive one by one with --d. */
+.wb-item {
+  animation: wb-pop calc(500ms / var(--wb-rate, 1)) cubic-bezier(0.34, 1.35, 0.64, 1) backwards;
+  animation-delay: calc(var(--d, 0s) / var(--wb-rate, 1));
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Table rows slide in from the left. */
+.wb-slide {
+  animation: wb-slide calc(450ms / var(--wb-rate, 1)) ease-out backwards;
+  animation-delay: calc(var(--d, 0s) / var(--wb-rate, 1));
+}
+
+/* Chart bars grow up from the axis. */
+.wb-grow {
+  animation: wb-grow calc(600ms / var(--wb-rate, 1)) cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
+  animation-delay: calc(var(--d, 0s) / var(--wb-rate, 1));
+  transform-box: fill-box;
+  transform-origin: bottom;
+}
+
+@keyframes wb-slide {
+  from { opacity: 0; transform: translateX(-14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes wb-grow {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+
+/* ---- teacher mascot while a sentence is spoken ---- */
+
+.wb-talk {
+  animation: wb-talk 0.9s ease-in-out infinite;
+}
+
+/* The mascot hops once whenever a new sentence starts. */
+.wb-hop {
+  animation: wb-hop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes wb-talk {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-3px) rotate(2deg); }
+}
+
+@keyframes wb-hop {
+  0%   { transform: translateY(6px) scale(0.9); }
+  45%  { transform: translateY(-8px) scale(1.12); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+/* ---- what is being explained right now ---- */
+
+/* Ink drawn during the current sentence glows softly, then settles. */
+.wb-current {
+  animation: wb-glow 1.8s ease-in-out infinite;
+}
+
+@keyframes wb-glow {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(255, 161, 31, 0)); }
+  50%      { filter: drop-shadow(0 0 7px rgba(255, 161, 31, 0.75)); }
+}
+
+/* The pen moves to wherever new ink appears. */
+.wb-pen {
+  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease;
+  pointer-events: none;
+}
+
+/* ---- player extras ---- */
+
+/* Play / pause flash when the board is clicked. */
+.wb-flash {
+  animation: wb-flash 0.7s ease-out forwards;
+}
+
+@keyframes wb-flash {
+  from { opacity: 0.95; transform: scale(0.7); }
+  to   { opacity: 0; transform: scale(1.5); }
+}
+
+/* Panels (like the "your turn" card) slide up into place. */
+.wb-panel-in {
+  animation: wb-panel-in 0.45s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@keyframes wb-panel-in {
+  from { opacity: 0; transform: translateY(18px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* A wrong answer shakes. */
+.wb-shake {
+  animation: wb-shake 0.45s ease-in-out;
+}
+
+@keyframes wb-shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-8px); }
+  40%      { transform: translateX(7px); }
+  60%      { transform: translateX(-5px); }
+  80%      { transform: translateX(3px); }
+}
+
+/* A right answer: confetti falls from the top of its container. */
+.wb-confetti {
+  position: absolute;
+  top: -12px;
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: wb-confetti 1.9s ease-in forwards;
+  animation-delay: calc(var(--d, 0s) / var(--wb-rate, 1));
+  pointer-events: none;
+}
+
+@keyframes wb-confetti {
+  0%   { opacity: 1; transform: translateY(0) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(var(--fall, 260px)) translateX(var(--drift, 0px)) rotate(var(--spin, 540deg)); }
+}
+
+/* ---- seek bar ---- */
+
+.wb-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+
+.wb-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #ffa11f;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(16, 41, 46, 0.3);
+}
+
+.wb-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #ffa11f;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(16, 41, 46, 0.3);
+}
+
+.wb-range:focus-visible {
+  outline: 2px solid #ffa11f;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-in,
+  .wb-in *,
+  .wb-stroke,
+  .wb-head,
+  .wb-fade,
+  .wb-item,
+  .wb-slide,
+  .wb-grow,
+  .wb-talk,
+  .wb-hop,
+  .wb-current,
+  .wb-flash,
+  .wb-panel-in,
+  .wb-shake,
+  .wb-confetti {
+    animation: none !important;
+  }
+
+  .wb-pen {
+    transition: none;
+  }
+}
+
+/* Default motion layers: outlines, labels, icons, pages and teacher feedback. */
+.wb-outline {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: wb-draw calc(850ms / var(--wb-rate, 1)) ease-out backwards,
+    wb-ink-fill calc(700ms / var(--wb-rate, 1)) ease-out backwards;
+}
+.wb-label { animation: wb-fade calc(350ms / var(--wb-rate, 1)) ease-out calc(250ms / var(--wb-rate, 1)) backwards; }
+.wb-icon-arrive { animation: wb-icon-arrive 700ms cubic-bezier(0.34, 1.35, 0.64, 1) backwards; transform-box: fill-box; transform-origin: center; }
+.wb-gear-turn { animation: wb-gear-turn 1400ms ease-out backwards; transform-box: fill-box; transform-origin: center; }
+.wb-page-in { animation: wb-page-in 450ms ease-out backwards; }
+.wb-success-pop { animation: wb-pop 650ms cubic-bezier(0.34, 1.35, 0.64, 1) backwards; }
+.wb-pen-scribble { animation: wb-pen-scribble 300ms ease-in-out infinite; }
+.wb-pen-ripple { animation: wb-pen-ripple 1100ms ease-out infinite; transform-box: fill-box; transform-origin: center; }
+.wb-play-beacon { animation: wb-play-beacon 2200ms ease-out infinite; }
+.wb-camera { transition: transform 600ms cubic-bezier(0.4, 0, 0.2, 1); }
+.wb-player button:focus-visible,
+.wb-player select:focus-visible { outline: 2px solid #ffa11f; outline-offset: 3px; }
+.wb-player button:disabled { cursor: default; opacity: 0.5; }
+.wb-range { width: 100%; }
+.wb-board.wb-paused .wb-in,
+.wb-board.wb-paused .wb-in *,
+.wb-board.wb-paused .wb-page-in,
+.wb-board.wb-paused .wb-current,
+.wb-board.wb-paused .wb-pen * { animation-play-state: paused !important; }
+.wb-motion-off *,
+.wb-motion-off *::before,
+.wb-motion-off *::after { animation: none !important; transition: none !important; }
+.wb-motion-off .wb-flash { opacity: 0; }
+
+@keyframes wb-ink-fill { from { fill-opacity: 0; } to { fill-opacity: 1; } }
+@keyframes wb-icon-arrive { from { opacity: 0; transform: scale(0.65) rotate(-12deg); } to { opacity: 1; transform: none; } }
+@keyframes wb-gear-turn { from { opacity: 0; transform: rotate(-100deg); } to { opacity: 1; transform: none; } }
+@keyframes wb-page-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes wb-pen-scribble { 0%, 100% { transform: rotate(-4deg); } 50% { transform: translate(2px, -1px) rotate(4deg); } }
+@keyframes wb-pen-ripple { from { opacity: 0.7; transform: scale(0.6); } to { opacity: 0; transform: scale(1.8); } }
+@keyframes wb-play-beacon { 0% { opacity: 0.6; transform: scale(1); } 75%, 100% { opacity: 0; transform: scale(1.65); } }
+
+/* Every motion layer also respects the operating system preference. */
+@media (prefers-reduced-motion: reduce) {
+  .wb-player *, .wb-board * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .wb-flash { opacity: 0; }
+}
+.wb-pendulum { transform-box: view-box; }
+.wb-paused .wb-pendulum { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .wb-pendulum { animation: none !important; } }

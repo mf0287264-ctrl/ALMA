@@ -15,8 +15,13 @@ class LessonsRepository {
     return await this.findById(result.insertedId);
   }
 
-  async findAll(filter = {}) {
-    return await this.collection.find(filter).toArray();
+  async findAll(filter = {}, { summary = false } = {}) {
+    // Whiteboard scenes are large. List screens only need the lesson outline,
+    // so `summary` leaves the scenes and plans out of the response.
+    const projection = summary
+      ? { 'versions.sections.whiteboard.scenes': 0, 'versions.sections.whiteboard.plan': 0 }
+      : {};
+    return await this.collection.find(filter, { projection }).toArray();
   }
 
   async findById(id) {

@@ -12,7 +12,11 @@ class LessonsController {
 
   async getAll(req, res, next) {
     try {
-      const lessons = await lessonsService.getAllLessons(req.query);
+      // ?summary=true returns the outline without whiteboard scenes (fast list screens)
+      const { summary, ...filter } = req.query;
+      const lessons = await lessonsService.getAllLessons(filter, {
+        summary: summary === 'true' || summary === '1'
+      });
       res.status(200).json({ success: true, data: lessons });
     } catch (error) {
       next(error);

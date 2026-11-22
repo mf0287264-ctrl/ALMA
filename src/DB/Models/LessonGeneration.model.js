@@ -18,6 +18,8 @@ const lessonGenerationSchema = new mongoose.Schema(
     programming_language: { type: String, default: 'Python' },
     grade_level: { type: String, default: 'Grade 8' },
     model: { type: String, default: 'gemini-3.5-flash-lite' },
+    // Explanatory animation contract supplied to generation workers.
+    whiteboard_generation: { type: mongoose.Schema.Types.Mixed, default: null },
 
     status: {
       type: String,

@@ -49,8 +49,31 @@ const diagnosticCheckSchema = new mongoose.Schema({
 
 
 // ---------------------------------------------------------------------------
-// 3. Section Schema (UPDATED)
-// Holds modular blocks, diagnostic check, and targeted remediation.
+// 3. Whiteboard (NEW)
+// The animated board that teaches one section. `scenes` is the timeline the
+// student player draws (time_offset, action_type, payload on an 800x500 board).
+// `plan` is the readable source the scenes were built from
+// (see src/Whiteboard/buildWhiteboard.js), kept so lessons stay editable.
+// ---------------------------------------------------------------------------
+const sceneSchema = new mongoose.Schema({
+  id: { type: String, required: true },
+  time_offset: { type: Number, required: true },
+  action_type: { type: String, required: true },
+  payload: { type: mongoose.Schema.Types.Mixed, default: {} }
+}, { _id: false });
+
+const whiteboardSchema = new mongoose.Schema({
+  narration: { type: String, default: null },
+  audio_url: { type: String, default: null },
+  duration_seconds: { type: Number, required: true },
+  scenes: [sceneSchema],
+  plan: { type: mongoose.Schema.Types.Mixed, default: null }
+}, { _id: false });
+
+
+// ---------------------------------------------------------------------------
+// 4. Section Schema (UPDATED)
+// Holds modular blocks, diagnostic check, whiteboard and targeted remediation.
 // ---------------------------------------------------------------------------
 const sectionSchema = new mongoose.Schema({
   order: { type: Number, required: true },
@@ -61,6 +84,9 @@ const sectionSchema = new mongoose.Schema({
   // Primary teaching content
   blocks: [blockSchema],
 
+  // Animated whiteboard that teaches this section (optional)
+  whiteboard: { type: whiteboardSchema, default: null },
+
   // In-lesson interactive check
   diagnostic_check: { type: diagnosticCheckSchema, default: null },
 
@@ -70,7 +96,7 @@ const sectionSchema = new mongoose.Schema({
 
 
 // ---------------------------------------------------------------------------
-// 4. Speech Narration Segments (NEW)
+// 5. Speech Narration Segments (NEW)
 // ~45-60 second chunks for mobile/web TTS audio playback.
 // ---------------------------------------------------------------------------
 const speechSegmentSchema = new mongoose.Schema({
@@ -83,7 +109,7 @@ const speechSegmentSchema = new mongoose.Schema({
 
 
 // ---------------------------------------------------------------------------
-// 5. Immutable Lesson Version (NEW)
+// 6. Immutable Lesson Version (NEW)
 // Preserves v1, v2, v3 when teachers edit lessons.
 // ---------------------------------------------------------------------------
 const lessonVersionSchema = new mongoose.Schema({
@@ -104,7 +130,7 @@ const lessonVersionSchema = new mongoose.Schema({
 
 
 // ---------------------------------------------------------------------------
-// 6. Main Lesson Document
+// 7. Main Lesson Document
 // ---------------------------------------------------------------------------
 const lessonSchema = new mongoose.Schema(
   {
