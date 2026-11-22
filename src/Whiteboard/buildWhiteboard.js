@@ -41,6 +41,7 @@ function checkPlan(plan) {
       if (typeof step?.say !== 'string' || !step.say.trim()) throw new Error(`${where}, step ${s + 1}: every step needs a "say" sentence`);
     });
     if (beat.layout === 'algorithm') {
+      if (beat.step_seconds != null && (typeof beat.step_seconds !== 'number' || !Number.isFinite(beat.step_seconds) || beat.step_seconds <= 0)) throw new Error(`${where}: step_seconds must be a positive finite number`);
       const limits = { loop: 8, search: 10, sort: 7, stack: 6, queue: 6 };
       if (!Object.hasOwn(limits, beat.algorithm)) throw new Error(`${where}: unknown algorithm "${beat.algorithm}"`);
       if (!Array.isArray(beat.values) || beat.values.length > limits[beat.algorithm]) throw new Error(`${where}: provide at most ${limits[beat.algorithm]} values`);

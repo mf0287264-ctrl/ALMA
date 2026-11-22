@@ -136,7 +136,8 @@ function Player({
 
   const jumpTo = (time: number) => {
     seek(time);
-    start();
+    onPlay?.();
+    play();
   };
 
   /** Previous / next sentence. "Previous" first restarts the sentence you are in. */
