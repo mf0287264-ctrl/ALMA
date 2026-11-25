@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use, useState, useEffect } from "react";
+import React, { use, useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
@@ -37,7 +37,7 @@ interface CourseDetail {
   is_enrolled?: boolean;
 }
 
-export default function CourseDetailPage({
+function CourseDetailContent({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -366,5 +366,23 @@ export default function CourseDetailPage({
         )}
       </main>
     </div>
+  );
+}
+
+export default function CourseDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[#fafaf8]">
+          <Loader2 className="w-8 h-8 animate-spin text-[#118a80]" />
+        </div>
+      }
+    >
+      <CourseDetailContent params={params} />
+    </Suspense>
   );
 }

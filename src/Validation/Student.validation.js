@@ -14,7 +14,7 @@ export const createStudentSchema = z.object({
   last_name: z.string().optional().default('User'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters long').optional(),
-  student_code: z.string().optional().default(() => `STU-${Math.floor(1000 + Math.random() * 9000)}`),
+  student_code: z.string().optional(),
   grade_level: z.string().optional().default('Grade 8'),
   school_name: z.string().optional().nullable(),
   profile_image: z.string().optional().nullable(),
@@ -45,4 +45,34 @@ export const loginStudentSchema = z.object({
   password: z.string().min(1, 'Password is required')
 });
 
-export const updateStudentSchema = createStudentSchema.partial();
+export const updateStudentSchema = z.object({
+  name: z.string().optional(),
+  first_name: z.string().optional(),
+  last_name: z.string().optional(),
+  email: z.string().email('Invalid email address').optional(),
+  password: z.string().min(6).optional(),
+  grade_level: z.string().optional(),
+  school_name: z.string().optional().nullable(),
+  profile_image: z.string().optional().nullable(),
+  profileImage: z.string().optional().nullable(),
+  is_active: z.boolean().optional(),
+  national_id: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
+  parent_phone: z.string().optional().nullable(),
+  learning_for: z.string().optional(),
+  age_group: z.string().optional().nullable(),
+  coding_experience: z.string().optional().nullable(),
+  learning_styles: z.array(z.string()).optional(),
+  gender: z.string().optional().nullable(),
+  quiz_answers: z.array(z.any()).optional(),
+  current_streak: z.number().int().nonnegative().optional(),
+  longest_streak: z.number().int().nonnegative().optional(),
+  lessons_completed: z.number().int().nonnegative().optional(),
+  struggling_concepts: z.array(conceptStruggleSchema).optional(),
+  following: z.array(z.string()).optional(),
+  followers: z.array(z.string()).optional(),
+  friends: z.array(z.string()).optional(),
+  friend_requests_sent: z.array(z.string()).optional(),
+  friend_requests_received: z.array(z.string()).optional(),
+  bookmarks: z.array(z.string()).optional()
+}).partial();

@@ -61,6 +61,10 @@ export const authenticate = async (req, res, next) => {
       throw error;
     }
 
+    if (!user.role) {
+      user.role = decodedData.role || 'student';
+    }
+
     req.authUser = user;
     next();
   } catch (error) {
@@ -104,12 +108,32 @@ export const optionalAuthenticate = async (req, res, next) => {
     }
 
     if (user) {
+      if (!user.role) {
+        user.role = decodedData.role || 'student';
+      }
       req.authUser = user;
     }
   } catch (err) {
     // Gracefully ignore token errors for optional authentication
   }
   next();
+};
+
+export const requireRole = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.authUser) {
+      const error = new Error('Authentication required');
+      error.statusCode = 401;
+      return next(error);
+    }
+    const userRole = req.authUser.role || req.decodedToken?.role;
+    if (!allowedRoles.includes(userRole)) {
+      const error = new Error(`Forbidden: Access denied. Role '${userRole}' cannot access this resource.`);
+      error.statusCode = 403;
+      return next(error);
+    }
+    next();
+  };
 };
 
 export default authenticate;

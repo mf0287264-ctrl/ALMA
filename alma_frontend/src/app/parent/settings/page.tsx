@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import api from "@/services/api";
-import { useAuth } from "@/app/_Context/AuthContext";
+import { useAuth, getProfileImageUrl } from "@/app/_Context/AuthContext";
 import { toast } from "sonner";
-import { Loader2, LogOut, Check } from "lucide-react";
+import { Loader2, LogOut, Check, Camera, Trash2 } from "lucide-react";
 
 interface LinkedChild {
   _id: string;
@@ -14,12 +14,14 @@ interface LinkedChild {
 }
 
 export default function ParentSettingsPage() {
-  const { user, logout, refreshUser } = useAuth();
+  const { user, updateUser, uploadProfilePicture, updateName, logout, refreshUser } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
-  const [firstName, setFirstName] = useState("Mona");
-  const [lastName, setLastName] = useState("Hassan");
-  const [email, setEmail] = useState("mona.h@mail.com");
-  const [phone, setPhone] = useState("+20 100 222 3333");
+  const [firstName, setFirstName] = useState(user?.first_name || "");
+  const [lastName, setLastName] = useState(user?.last_name || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [phone, setPhone] = useState(user?.phone_number || "");
   const [saving, setSaving] = useState(false);
 
   const [children, setChildren] = useState<LinkedChild[]>([]);
@@ -58,10 +60,60 @@ export default function ParentSettingsPage() {
     loadProfile();
   }, []);
 
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.match(/^image\/(png|jpe?g|webp)$/i) && !file.name.match(/\.(png|jpe?g|webp)$/i)) {
+      toast.error("Please upload a valid image file (PNG, JPG, JPEG, or WebP).");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image size exceeds 10MB limit.");
+      return;
+    }
+
+    setUploadingPhoto(true);
+    try {
+      const res = await uploadProfilePicture(file);
+      if (res.success) {
+        toast.success("Profile photo uploaded successfully!");
+      } else {
+        toast.error(res.error || "Failed to upload photo");
+      }
+    } catch {
+      toast.error("Failed to upload photo");
+    } finally {
+      setUploadingPhoto(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    try {
+      await updateUser({ profile_image: null });
+      toast.info("Profile photo removed");
+    } catch {
+      toast.error("Failed to remove photo");
+    }
+  };
+
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!firstName.trim() || !lastName.trim()) {
+      toast.error("First name and last name cannot be empty.");
+      return;
+    }
     setSaving(true);
     try {
+      const nameRes = await updateName(firstName, lastName);
+      if (!nameRes.success) {
+        toast.error(nameRes.error || "Failed to update name");
+        setSaving(false);
+        return;
+      }
+
       await api.put("/parents/profile", {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
@@ -152,6 +204,65 @@ export default function ParentSettingsPage() {
           </div>
 
           <form onSubmit={handleSaveProfile} className="space-y-4">
+            {/* Photo Upload Section */}
+            <div className="flex items-center gap-4 p-4 rounded-2xl bg-[#fafaf8] border border-[#f0ede4]">
+              <div className="relative group shrink-0">
+                <div className="w-16 h-16 rounded-full overflow-hidden bg-[#ffa11f] flex items-center justify-center text-white font-extrabold text-xl shadow-xs border-2 border-white ring-2 ring-[#ffa11f]/30">
+                  {user?.profile_image ? (
+                    <img
+                      src={getProfileImageUrl(user.profile_image)}
+                      alt={`${firstName} ${lastName}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>{firstName?.[0] || 'P'}{lastName?.[0] || 'H'}</span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingPhoto}
+                  title="Upload photo"
+                  className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-[#10292e] text-white hover:bg-[#ffa11f] transition-colors shadow-sm cursor-pointer"
+                >
+                  {uploadingPhoto ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png, image/jpeg, image/jpg"
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-extrabold text-sm text-[#10292e]">Parent Profile Photo</h3>
+                <p className="text-xs text-[#8a999b] mt-0.5">Upload a portrait photo (PNG, JPG, JPEG up to 10MB)</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingPhoto}
+                    className="text-xs font-bold text-[#118a80] hover:underline cursor-pointer"
+                  >
+                    {uploadingPhoto ? "Uploading..." : "Upload photo"}
+                  </button>
+                  {user?.profile_image && (
+                    <>
+                      <span className="text-[#c2cbcc] text-xs">·</span>
+                      <button
+                        type="button"
+                        onClick={handleRemovePhoto}
+                        className="text-xs font-bold text-red-500 hover:underline cursor-pointer"
+                      >
+                        Remove
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <div className="flex items-center justify-between mb-1.5">
@@ -255,11 +366,7 @@ export default function ParentSettingsPage() {
                   >
                     <div className="flex items-center gap-3">
                       <div
-                        className={`w-9 h-9 rounded-full flex items-center justify-center font-black text-xs shrink-0 ${
-                          child.first_name === "Layla"
-                            ? "bg-[#f3e8ff] text-[#9333ea]"
-                            : "bg-[#e2f7ed] text-[#118a80]"
-                        }`}
+                        className="w-9 h-9 rounded-full flex items-center justify-center font-black text-xs shrink-0 bg-[#e2f7ed] text-[#118a80]"
                       >
                         {initials(child.first_name, child.last_name)}
                       </div>

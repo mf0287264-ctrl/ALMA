@@ -19,6 +19,7 @@ import {
   Flame,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getProfileImageUrl } from "@/app/_Context/AuthContext";
 
 interface StudentCard {
   _id: string;
@@ -255,9 +256,19 @@ export default function FriendsSearchPage() {
                     className="bg-white rounded-3xl p-5 border border-[#e8eeea] shadow-xs flex flex-col justify-between hover:shadow-md transition-all"
                   >
                     <div className="flex items-start gap-3.5 mb-4">
-                      <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-[#118a80] to-[#0f5953] text-white flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
-                        {friend.first_name[0]}
-                        {friend.last_name ? friend.last_name[0] : ""}
+                      <div className="w-12 h-12 rounded-2xl overflow-hidden bg-linear-to-br from-[#118a80] to-[#0f5953] text-white flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
+                        {friend.profile_image ? (
+                          <img
+                            src={getProfileImageUrl(friend.profile_image)}
+                            alt={fullName}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <>
+                            {friend.first_name[0]}
+                            {friend.last_name ? friend.last_name[0] : ""}
+                          </>
+                        )}
                       </div>
 
                       <div className="min-w-0 flex-1">
@@ -311,9 +322,19 @@ export default function FriendsSearchPage() {
                     className="bg-white rounded-3xl p-5 border border-[#e8eeea] shadow-xs flex flex-col justify-between"
                   >
                     <div className="flex items-start gap-3.5 mb-4">
-                      <div className="w-12 h-12 rounded-2xl bg-[#ffa11f]/20 text-[#ffa11f] flex items-center justify-center font-bold text-sm shrink-0">
-                        {req.first_name[0]}
-                        {req.last_name ? req.last_name[0] : ""}
+                      <div className="w-12 h-12 rounded-2xl overflow-hidden bg-[#ffa11f]/20 text-[#ffa11f] flex items-center justify-center font-bold text-sm shrink-0">
+                        {req.profile_image ? (
+                          <img
+                            src={getProfileImageUrl(req.profile_image)}
+                            alt={fullName}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <>
+                            {req.first_name[0]}
+                            {req.last_name ? req.last_name[0] : ""}
+                          </>
+                        )}
                       </div>
 
                       <div className="min-w-0 flex-1">
@@ -377,9 +398,19 @@ export default function FriendsSearchPage() {
                     <div>
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-2xl bg-[#f3e8ff] text-[#9333ea] flex items-center justify-center font-bold text-sm shrink-0 border border-[#e9d5ff]">
-                            {student.first_name[0]}
-                            {student.last_name ? student.last_name[0] : ""}
+                          <div className="w-12 h-12 rounded-2xl overflow-hidden bg-[#f3e8ff] text-[#9333ea] flex items-center justify-center font-bold text-sm shrink-0 border border-[#e9d5ff]">
+                            {student.profile_image ? (
+                              <img
+                                src={getProfileImageUrl(student.profile_image)}
+                                alt={fullName}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <>
+                                {student.first_name[0]}
+                                {student.last_name ? student.last_name[0] : ""}
+                              </>
+                            )}
                           </div>
                           <div className="min-w-0">
                             <h4 className="text-sm font-extrabold text-[#10292e] truncate">{fullName}</h4>

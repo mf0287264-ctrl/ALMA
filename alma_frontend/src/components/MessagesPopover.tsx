@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, Plus, Loader2, X, MessageSquare, Check, CheckCheck } from "lucide-react";
 import api from "@/services/api";
+import { getProfileImageUrl } from "@/app/_Context/AuthContext";
 
 interface MessageThread {
   partner: {
@@ -224,9 +225,19 @@ export default function MessagesPopover({
                 className="flex items-center gap-3 p-3 hover:bg-[#fafaf8] transition-colors cursor-pointer group"
               >
                 <div className="relative shrink-0">
-                  <div className="w-9 h-9 rounded-full bg-linear-to-br from-[#118a80] to-[#0f5953] text-white flex items-center justify-center font-bold text-xs shadow-2xs">
-                    {partner.first_name[0]}
-                    {partner.last_name ? partner.last_name[0] : ""}
+                  <div className="w-9 h-9 rounded-full overflow-hidden bg-linear-to-br from-[#118a80] to-[#0f5953] text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+                    {partner.profile_image ? (
+                      <img
+                        src={getProfileImageUrl(partner.profile_image)}
+                        alt={partnerName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <>
+                        {partner.first_name[0]}
+                        {partner.last_name ? partner.last_name[0] : ""}
+                      </>
+                    )}
                   </div>
                   <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
                 </div>

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import api from "@/services/api";
 import { toast } from "sonner";
+import { getProfileImageUrl } from "@/app/_Context/AuthContext";
 
 interface StudentFriend {
   _id: string;
@@ -312,10 +313,20 @@ export default function FriendsPopover({
                     className="flex items-center justify-between p-2 rounded-xl hover:bg-[#fafaf8] transition-colors"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="relative">
-                        <div className="w-8 h-8 rounded-full bg-[#f3e8ff] text-[#9333ea] flex items-center justify-center font-bold text-xs border border-[#e9d5ff]">
-                          {student.first_name[0]}
-                          {student.last_name ? student.last_name[0] : ""}
+                      <div className="relative shrink-0">
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-[#f3e8ff] text-[#9333ea] flex items-center justify-center font-bold text-xs border border-[#e9d5ff]">
+                          {student.profile_image ? (
+                            <img
+                              src={getProfileImageUrl(student.profile_image)}
+                              alt={fullName}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <>
+                              {student.first_name[0]}
+                              {student.last_name ? student.last_name[0] : ""}
+                            </>
+                          )}
                         </div>
                         <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 border border-white" />
                       </div>
@@ -394,9 +405,19 @@ export default function FriendsPopover({
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="relative shrink-0">
-                        <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#118a80] to-[#0f5953] text-white flex items-center justify-center font-bold text-xs shadow-2xs">
-                          {friend.first_name[0]}
-                          {friend.last_name ? friend.last_name[0] : ""}
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-linear-to-br from-[#118a80] to-[#0f5953] text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+                          {friend.profile_image ? (
+                            <img
+                              src={getProfileImageUrl(friend.profile_image)}
+                              alt={fullName}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <>
+                              {friend.first_name[0]}
+                              {friend.last_name ? friend.last_name[0] : ""}
+                            </>
+                          )}
                         </div>
                         <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#22c55e] border-2 border-white" />
                       </div>
@@ -460,9 +481,19 @@ export default function FriendsPopover({
                     className="flex items-center justify-between p-2 rounded-xl bg-[#fafaf8] border border-[#f0ede4]"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-8 h-8 rounded-full bg-[#ffa11f]/20 text-[#ffa11f] flex items-center justify-center font-bold text-xs shrink-0">
-                        {reqStudent.first_name[0]}
-                        {reqStudent.last_name ? reqStudent.last_name[0] : ""}
+                      <div className="w-8 h-8 rounded-full overflow-hidden bg-[#ffa11f]/20 text-[#ffa11f] flex items-center justify-center font-bold text-xs shrink-0">
+                        {reqStudent.profile_image ? (
+                          <img
+                            src={getProfileImageUrl(reqStudent.profile_image)}
+                            alt={fullName}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <>
+                            {reqStudent.first_name[0]}
+                            {reqStudent.last_name ? reqStudent.last_name[0] : ""}
+                          </>
+                        )}
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-[#10292e] truncate">{fullName}</p>

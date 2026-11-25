@@ -18,47 +18,8 @@ export default function ParentAchievementsPage() {
   const [children, setChildren] = useState<any[]>([]);
   const [selectedChildId, setSelectedChildId] = useState<string>("");
   const [achievements, setAchievements] = useState<AchievementItem[]>([]);
-  const [stats, setStats] = useState({ earned: 7, current_streak: 4, longest_streak: 9 });
+  const [stats, setStats] = useState({ earned: 0, current_streak: 0, longest_streak: 0 });
   const [sendingWellDone, setSendingWellDone] = useState(false);
-
-  const defaultAchievements: AchievementItem[] = [
-    {
-      title: "First lesson",
-      badge_icon: "orange",
-      category: "learning",
-      awarded_at: "Oct 12",
-    },
-    {
-      title: "7-day streak",
-      badge_icon: "blue",
-      category: "streak",
-      awarded_at: "Oct 28",
-    },
-    {
-      title: "Quiz master",
-      badge_icon: "pink",
-      category: "quiz",
-      awarded_at: "Oct 20",
-    },
-    {
-      title: "Loop explorer",
-      badge_icon: "yellow",
-      category: "learning",
-      awarded_at: "Nov 2",
-    },
-    {
-      title: "Curious mind",
-      badge_icon: "teal",
-      category: "General",
-      awarded_at: "Nov 4",
-    },
-    {
-      title: "Comeback",
-      badge_icon: "orange",
-      category: "streak",
-      awarded_at: "Nov 6",
-    },
-  ];
 
   const loadChildren = async () => {
     try {
@@ -79,9 +40,9 @@ export default function ParentAchievementsPage() {
       const childData = res.data?.data;
       if (childData) {
         setStats({
-          earned: (childData.achievements || []).length || 7,
-          current_streak: childData.current_streak ?? 4,
-          longest_streak: childData.longest_streak ?? 9,
+          earned: (childData.achievements || []).length || 0,
+          current_streak: childData.current_streak ?? 0,
+          longest_streak: childData.longest_streak ?? 0,
         });
 
         if (Array.isArray(childData.achievements) && childData.achievements.length > 0) {
@@ -93,11 +54,11 @@ export default function ParentAchievementsPage() {
           }));
           setAchievements(mapped);
         } else {
-          setAchievements(defaultAchievements);
+          setAchievements([]);
         }
       }
     } catch {
-      setAchievements(defaultAchievements);
+      setAchievements([]);
     }
   };
 
@@ -116,7 +77,7 @@ export default function ParentAchievementsPage() {
 
   const childName = activeChild
     ? `${activeChild.first_name} ${activeChild.last_name}`
-    : "Layla Hassan";
+    : "Your child";
 
   const initials = (first?: string, last?: string) =>
     `${(first || "S")[0]}${(last || "K")[0]}`.toUpperCase();
@@ -188,13 +149,7 @@ export default function ParentAchievementsPage() {
                     : "bg-white text-[#607274] border border-[#e8eeea] hover:border-[#ffa11f]/60"
                 }`}
               >
-                <span
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${
-                    child.first_name === "Layla"
-                      ? "bg-[#f3e8ff] text-[#9333ea]"
-                      : "bg-[#e2f7ed] text-[#118a80]"
-                  }`}
-                >
+                <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black bg-[#e2f7ed] text-[#118a80]">
                   {initials(child.first_name, child.last_name)}
                 </span>
                 <span>
@@ -209,24 +164,14 @@ export default function ParentAchievementsPage() {
       {/* Top 3 Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div className="bg-white rounded-3xl p-6 md:p-7 border border-[#ece8de] shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#7f9092]">Earned</span>
-            <span className="bg-[#e6f5f2] text-[#118a80] text-[10px] font-bold px-2 py-0.5 rounded-full">
-              Existing
-            </span>
-          </div>
+          <span className="text-xs font-semibold text-[#7f9092]">Earned</span>
           <div className="mt-4">
             <span className="text-4xl font-extrabold text-[#10292e]">{stats.earned}</span>
           </div>
         </div>
 
         <div className="bg-white rounded-3xl p-6 md:p-7 border border-[#ece8de] shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#7f9092]">Current streak</span>
-            <span className="bg-[#e6f5f2] text-[#118a80] text-[10px] font-bold px-2 py-0.5 rounded-full">
-              Existing
-            </span>
-          </div>
+          <span className="text-xs font-semibold text-[#7f9092]">Current streak</span>
           <div className="mt-4 flex items-baseline gap-2">
             <span className="text-4xl font-extrabold text-[#10292e]">{stats.current_streak}</span>
             <span className="text-sm font-bold text-[#10292e]">days</span>
@@ -234,12 +179,7 @@ export default function ParentAchievementsPage() {
         </div>
 
         <div className="bg-white rounded-3xl p-6 md:p-7 border border-[#ece8de] shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#7f9092]">Longest streak</span>
-            <span className="bg-[#e6f5f2] text-[#118a80] text-[10px] font-bold px-2 py-0.5 rounded-full">
-              Existing
-            </span>
-          </div>
+          <span className="text-xs font-semibold text-[#7f9092]">Longest streak</span>
           <div className="mt-4 flex items-baseline gap-2">
             <span className="text-4xl font-extrabold text-[#10292e]">{stats.longest_streak}</span>
             <span className="text-sm font-bold text-[#10292e]">days</span>
@@ -247,37 +187,46 @@ export default function ParentAchievementsPage() {
         </div>
       </div>
 
-      {/* Grid of Achievement Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {achievements.map((item, idx) => (
-          <div
-            key={item.title + idx}
-            className="bg-white rounded-3xl p-5 md:p-6 border border-[#ece8de] shadow-2xs flex items-center gap-4 hover:border-[#ffa11f]/60 transition-colors"
-          >
-            {/* Arch-shaped badge container */}
+      {/* Grid of Achievement Cards or Empty State */}
+      {achievements.length === 0 ? (
+        <div className="bg-white rounded-3xl p-8 border border-[#ece8de] text-center">
+          <Trophy className="w-10 h-10 text-[#ffa11f] mx-auto mb-3 opacity-60" />
+          <h3 className="font-extrabold text-base text-[#10292e]">No achievements unlocked yet</h3>
+          <p className="text-xs text-[#7f9092] mt-1 max-w-sm mx-auto">
+            As {childName} completes lessons, masters coding concepts, and keeps up their daily streak, badges will be recorded here automatically from the database.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {achievements.map((item, idx) => (
             <div
-              className={`w-12 h-16 rounded-t-full rounded-b-md ${getArchColor(
-                item.badge_icon,
-                idx
-              )} border-2 flex items-center justify-center text-white shrink-0 shadow-xs`}
+              key={item.title + idx}
+              className="bg-white rounded-3xl p-5 md:p-6 border border-[#ece8de] shadow-2xs flex items-center gap-4 hover:border-[#ffa11f]/60 transition-colors"
             >
-              <Trophy size={20} />
-            </div>
+              <div
+                className={`w-12 h-16 rounded-t-full rounded-b-md ${getArchColor(
+                  item.badge_icon,
+                  idx
+                )} border-2 flex items-center justify-center text-white shrink-0 shadow-xs`}
+              >
+                <Trophy size={20} />
+              </div>
 
-            <div className="flex-1 min-w-0">
-              <h3 className="font-extrabold text-sm text-[#10292e] truncate">{item.title}</h3>
-              <p className="text-[11px] text-[#8a999b] mt-0.5">
-                awarded_at {item.awarded_at}
-              </p>
-              <div className="mt-2.5">
-                <span className="bg-[#e6f5f2] text-[#118a80] text-[10px] font-bold px-2.5 py-0.5 rounded-full">
-                  {item.category}
-                </span>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-extrabold text-sm text-[#10292e] truncate">{item.title}</h3>
+                <p className="text-[11px] text-[#8a999b] mt-0.5">
+                  awarded_at {item.awarded_at}
+                </p>
+                <div className="mt-2.5">
+                  <span className="bg-[#e6f5f2] text-[#118a80] text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                    {item.category}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Bottom Card: Celebrate Together */}
       <div className="bg-white rounded-3xl p-6 md:p-8 border border-dashed border-[#f7a4b8] shadow-2xs space-y-4">

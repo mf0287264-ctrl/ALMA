@@ -58,70 +58,73 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null;
 
         const role = credentials.role || "student";
-        const endpoints: string[] = [];
-
-        // Try role-specific endpoint first, then fall back
+        let endpoint = "/students/login";
         if (role === "teacher") {
-          endpoints.push("/teachers/login", "/students/login", "/parents/login");
+          endpoint = "/teachers/login";
         } else if (role === "parent") {
-          endpoints.push("/parents/login", "/students/login", "/teachers/login", "/admins/login");
+          endpoint = "/parents/login";
         } else if (role === "admin") {
-          endpoints.push("/admins/login", "/teachers/login", "/students/login", "/parents/login");
-        } else {
-          endpoints.push("/students/login", "/parents/login", "/teachers/login", "/admins/login");
+          endpoint = "/admins/login";
         }
 
-        let lastError: Error | null = null;
+        const cleanEmail = credentials.email.toLowerCase().trim();
 
-        for (const endpoint of endpoints) {
-          try {
-            const res = await fetch(`${API_BASE}${endpoint}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                email: credentials.email,
-                password: credentials.password,
-              }),
-            });
+        try {
+          const res = await fetch(`${API_BASE}${endpoint}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: cleanEmail,
+              password: credentials.password,
+            }),
+          });
 
-            if (!res.ok) {
-              lastError = new Error("Invalid credentials");
-              continue;
-            }
-
-            const json = await res.json();
-            const data = json?.data;
-            if (!data?.accessToken || !data?.refreshToken) {
-              lastError = new Error("No tokens returned from server");
-              continue;
-            }
-
-            const userObj = data.student || data.teacher || data.admin || data.parent || {};
-
-            // Encrypt tokens before storing them in the cookie
-            const [encAccess, encRefresh] = await Promise.all([
-              encryptToken(data.accessToken),
-              encryptToken(data.refreshToken),
-            ]);
-
-            return {
-              id: userObj._id?.toString() || userObj.id?.toString() || credentials.email,
-              name: `${userObj.first_name || ""} ${userObj.last_name || ""}`.trim() || userObj.name || credentials.email,
-              email: credentials.email,
-              // Custom fields stored in next-auth JWT
-              accessToken: encAccess,
-              refreshToken: encRefresh,
-              role: userObj.role || role,
-              backendId: userObj._id?.toString() || userObj.id?.toString(),
-              accessTokenExpires: Date.now() + ACCESS_TOKEN_LIFETIME_S * 1000,
-            };
-          } catch (err) {
-            lastError = err instanceof Error ? err : new Error("Auth error");
+          if (!res.ok) {
+            const jsonErr = await res.json().catch(() => null);
+            const msg =
+              jsonErr?.message ||
+              jsonErr?.error ||
+              `Invalid credentials for ${role} portal`;
+            throw new Error(msg);
           }
-        }
 
-        // All endpoints failed — throw so next-auth surfaces the error
-        throw lastError ?? new Error("Authentication failed");
+          const json = await res.json();
+          const data = json?.data;
+          if (!data?.accessToken || !data?.refreshToken) {
+            throw new Error("No tokens returned from server");
+          }
+
+          const userObj =
+            (role === "student" && data.student) ||
+            (role === "teacher" && data.teacher) ||
+            (role === "parent" && data.parent) ||
+            (role === "admin" && data.admin) ||
+            data.student ||
+            data.teacher ||
+            data.parent ||
+            data.admin ||
+            {};
+
+          // Encrypt tokens before storing them in the cookie
+          const [encAccess, encRefresh] = await Promise.all([
+            encryptToken(data.accessToken),
+            encryptToken(data.refreshToken),
+          ]);
+
+          return {
+            id: userObj._id?.toString() || userObj.id?.toString() || cleanEmail,
+            name: `${userObj.first_name || ""} ${userObj.last_name || ""}`.trim() || userObj.name || cleanEmail,
+            email: cleanEmail,
+            // Custom fields stored in next-auth JWT
+            accessToken: encAccess,
+            refreshToken: encRefresh,
+            role: role,
+            backendId: userObj._id?.toString() || userObj.id?.toString(),
+            accessTokenExpires: Date.now() + ACCESS_TOKEN_LIFETIME_S * 1000,
+          };
+        } catch (err: any) {
+          throw new Error(err.message || "Authentication failed");
+        }
       },
     }),
   ],

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use, useState, useEffect } from "react";
+import React, { use, useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import api from "@/services/api";
@@ -30,7 +30,7 @@ interface ResultData {
   breakdown: QuestionBreakdown[];
 }
 
-export default function AssessmentResultPage({
+function AssessmentResultContent({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -261,5 +261,23 @@ export default function AssessmentResultPage({
         )}
       </main>
     </div>
+  );
+}
+
+export default function AssessmentResultPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[#fafaf8]">
+          <Loader2 className="w-8 h-8 animate-spin text-[#118a80]" />
+        </div>
+      }
+    >
+      <AssessmentResultContent params={params} />
+    </Suspense>
   );
 }

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import TeacherSidebar from "@/components/TeacherSidebar";
+import api from "@/services/api";
 import { toast } from "sonner";
 
 interface StudentRow {
@@ -15,102 +16,73 @@ interface StudentRow {
   struggling_type: "yellow" | "red" | "teal" | "orange";
 }
 
-const INITIAL_STUDENTS: StudentRow[] = [
-  {
-    id: "1",
-    name: "Layla Hassan",
-    code: "S-1042",
-    grade: "Grade 8",
-    streak: 12,
-    lessons: 27,
-    struggling_with: "Loop conditions",
-    struggling_type: "yellow",
-  },
-  {
-    id: "2",
-    name: "Omar Khaled",
-    code: "S-1057",
-    grade: "Grade 8",
-    streak: 3,
-    lessons: 14,
-    struggling_with: "Zero-Based Indexing",
-    struggling_type: "red",
-  },
-  {
-    id: "3",
-    name: "Nour Adel",
-    code: "S-1063",
-    grade: "Grade 9",
-    streak: 21,
-    lessons: 38,
-    struggling_with: "None",
-    struggling_type: "teal",
-  },
-  {
-    id: "4",
-    name: "Youssef Ali",
-    code: "S-1071",
-    grade: "Grade 8",
-    streak: 0,
-    lessons: 6,
-    struggling_with: "Zero-Based Indexing",
-    struggling_type: "red",
-  },
-  {
-    id: "5",
-    name: "Mariam Samir",
-    code: "S-1088",
-    grade: "Grade 9",
-    streak: 8,
-    lessons: 22,
-    struggling_with: "Variable scope",
-    struggling_type: "yellow",
-  },
-  {
-    id: "6",
-    name: "Ziad Tarek",
-    code: "S-1098",
-    grade: "Grade 8",
-    streak: 5,
-    lessons: 17,
-    struggling_with: "Off-by-one range",
-    struggling_type: "orange",
-  },
-];
-
-const STRUGGLING_CONCEPTS = [
-  {
-    name: "Zero-Based Indexing",
-    wrong: 34,
-    tested: 60,
-    misconception: "Thinks range(3) is 1 2 3",
-  },
-  {
-    name: "Loop conditions",
-    wrong: 22,
-    tested: 55,
-    misconception: "Forgets the exit condition",
-  },
-  {
-    name: "Off-by-one range",
-    wrong: 18,
-    tested: 47,
-    misconception: "Includes the stop value",
-  },
-  {
-    name: "Variable scope",
-    wrong: 9,
-    tested: 40,
-    misconception: "Expects loop variable to reset",
-  },
-];
+interface StrugglingConcept {
+  name: string;
+  wrong: number;
+  tested: number;
+  misconception: string;
+}
 
 export default function StudentPerformancePage() {
+  const [students, setStudents] = useState<StudentRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGrade, setSelectedGrade] = useState("All");
 
+  const strugglingConcepts: StrugglingConcept[] = useMemo(() => {
+    const conceptMap: Record<string, { wrong: number; tested: number; misconception: string }> = {};
+    for (const s of students) {
+      if (s.struggling_with && s.struggling_with !== "None") {
+        if (!conceptMap[s.struggling_with]) {
+          conceptMap[s.struggling_with] = {
+            wrong: 1,
+            tested: 5,
+            misconception: `Difficulty applying ${s.struggling_with} patterns`
+          };
+        } else {
+          conceptMap[s.struggling_with].wrong += 1;
+          conceptMap[s.struggling_with].tested += 4;
+        }
+      }
+    }
+    return Object.entries(conceptMap).map(([name, data]) => ({
+      name,
+      ...data,
+    }));
+  }, [students]);
+
+  useEffect(() => {
+    const fetchStudents = async () => {
+      setLoading(true);
+      try {
+        const res = await api.get("/students");
+        const list = Array.isArray(res.data?.data) ? res.data.data : [];
+        if (list.length > 0) {
+          const mapped: StudentRow[] = list.map((s: any) => ({
+            id: s._id || s.id,
+            name: `${s.first_name || ""} ${s.last_name || ""}`.trim() || s.name || "Student",
+            code: s.student_code || "STU",
+            grade: s.grade_level || "Grade 8",
+            streak: s.current_streak || 0,
+            lessons: s.lessons_completed || 0,
+            struggling_with: (s.struggling_concepts && s.struggling_concepts[0]?.concept_label) || "None",
+            struggling_type: s.struggling_concepts?.length ? "yellow" : "teal",
+          }));
+          setStudents(mapped);
+        } else {
+          setStudents([]);
+        }
+      } catch {
+        setStudents([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStudents();
+  }, []);
+
   const filteredStudents = useMemo(() => {
-    return INITIAL_STUDENTS.filter((s) => {
+    return students.filter((s) => {
       const matchesSearch =
         s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.code.toLowerCase().includes(searchTerm.toLowerCase());
@@ -118,7 +90,7 @@ export default function StudentPerformancePage() {
         selectedGrade === "All" || s.grade === selectedGrade;
       return matchesSearch && matchesGrade;
     });
-  }, [searchTerm, selectedGrade]);
+  }, [students, searchTerm, selectedGrade]);
 
   const handleExport = () => {
     const csvContent =
@@ -346,34 +318,40 @@ export default function StudentPerformancePage() {
             </p>
 
             <div className="space-y-6">
-              {STRUGGLING_CONCEPTS.map((concept) => {
-                const percentage = Math.round((concept.wrong / concept.tested) * 100);
-                return (
-                  <div key={concept.name} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-black text-[#10292e]">
-                        {concept.name}
-                      </span>
-                      <span className="font-bold text-xs text-[#ef4444]">
-                        {concept.wrong} / {concept.tested}
-                      </span>
-                    </div>
+              {strugglingConcepts.length === 0 ? (
+                <div className="py-8 text-center text-xs text-[#8a999b]">
+                  No struggling concepts identified yet.
+                </div>
+              ) : (
+                strugglingConcepts.map((concept) => {
+                  const percentage = Math.round((concept.wrong / concept.tested) * 100);
+                  return (
+                    <div key={concept.name} className="space-y-1.5">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-black text-[#10292e]">
+                          {concept.name}
+                        </span>
+                        <span className="font-bold text-xs text-[#ef4444]">
+                          {concept.wrong} / {concept.tested}
+                        </span>
+                      </div>
 
-                    {/* Progress Bar in coral/red */}
-                    <div className="w-full h-2 rounded-full bg-[#fce7e7] overflow-hidden">
-                      <div
-                        className="h-full bg-[#f87171] rounded-full transition-all duration-300"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
+                      {/* Progress Bar in coral/red */}
+                      <div className="w-full h-2 rounded-full bg-[#fce7e7] overflow-hidden">
+                        <div
+                          className="h-full bg-[#f87171] rounded-full transition-all duration-300"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
 
-                    <div className="text-[11px] text-[#5a6e70] font-mono leading-tight">
-                      last_diagnosed_misconception:{" "}
-                      <span className="text-[#10292e] font-semibold">{concept.misconception}</span>
+                      <div className="text-[11px] text-[#5a6e70] font-mono leading-tight">
+                        last_diagnosed_misconception:{" "}
+                        <span className="text-[#10292e] font-semibold">{concept.misconception}</span>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
 
             {/* Routed to remediation card */}

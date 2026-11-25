@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { Clock } from "lucide-react";
 import api from "@/services/api";
 
 interface SessionItem {
@@ -22,57 +23,6 @@ export default function ParentActivityPage() {
   const [filter, setFilter] = useState<"all" | "active" | "completed" | "abandoned">("all");
   const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const defaultSessions: SessionItem[] = [
-    {
-      session_id: "ses-1",
-      lesson_title: "Python for loops",
-      course_name: "Python Basics · Loops",
-      status: "active",
-      current_section_order: 2,
-      total_sections: 4,
-      date_label: "Today",
-      checkpoints_correct: 1,
-      checkpoints_total: 2,
-      questions_asked: 2,
-    },
-    {
-      session_id: "ses-2",
-      lesson_title: "If statements",
-      course_name: "Python Basics · Loops",
-      status: "completed",
-      current_section_order: 4,
-      total_sections: 4,
-      date_label: "Completed Oct 28",
-      checkpoints_correct: 4,
-      checkpoints_total: 4,
-      questions_asked: 1,
-    },
-    {
-      session_id: "ses-3",
-      lesson_title: "Lists and indexing",
-      course_name: "Intro to Lists",
-      status: "abandoned",
-      current_section_order: 1,
-      total_sections: 4,
-      date_label: "Oct 20",
-      checkpoints_correct: 1,
-      checkpoints_total: 2,
-      questions_asked: 0,
-    },
-    {
-      session_id: "ses-4",
-      lesson_title: "Variables",
-      course_name: "Python Basics",
-      status: "completed",
-      current_section_order: 3,
-      total_sections: 3,
-      date_label: "Completed Oct 12",
-      checkpoints_correct: 3,
-      checkpoints_total: 4,
-      questions_asked: 3,
-    },
-  ];
 
   const loadChildren = async () => {
     try {
@@ -117,10 +67,10 @@ export default function ParentActivityPage() {
         });
         setSessions(mapped);
       } else {
-        setSessions(defaultSessions);
+        setSessions([]);
       }
     } catch {
-      setSessions(defaultSessions);
+      setSessions([]);
     } finally {
       setLoading(false);
     }
@@ -141,7 +91,7 @@ export default function ParentActivityPage() {
 
   const childName = activeChild
     ? `${activeChild.first_name} ${activeChild.last_name}`
-    : "Layla Hassan";
+    : "Your child";
 
   const initials = (first?: string, last?: string) =>
     `${(first || "S")[0]}${(last || "K")[0]}`.toUpperCase();
@@ -194,13 +144,7 @@ export default function ParentActivityPage() {
                     : "bg-white text-[#607274] border border-[#e8eeea] hover:border-[#ffa11f]/60"
                 }`}
               >
-                <span
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${
-                    child.first_name === "Layla"
-                      ? "bg-[#f3e8ff] text-[#9333ea]"
-                      : "bg-[#e2f7ed] text-[#118a80]"
-                  }`}
-                >
+                <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black bg-[#e2f7ed] text-[#118a80]">
                   {initials(child.first_name, child.last_name)}
                 </span>
                 <span>
@@ -231,7 +175,22 @@ export default function ParentActivityPage() {
 
       {/* Session Cards List */}
       <div className="space-y-4">
-        {filteredSessions.map((session) => {
+        {loading ? (
+          <div className="bg-white rounded-3xl p-10 text-center border border-[#ece8de]">
+            <p className="text-sm font-bold text-[#10292e]">Loading session records...</p>
+          </div>
+        ) : filteredSessions.length === 0 ? (
+          <div className="bg-white rounded-3xl p-10 text-center border border-[#ece8de]">
+            <Clock className="w-10 h-10 text-[#ffa11f] mx-auto mb-3 opacity-60" />
+            <h3 className="font-extrabold text-base text-[#10292e]">No activity sessions found</h3>
+            <p className="text-xs text-[#7f9092] mt-1 max-w-sm mx-auto">
+              {sessions.length === 0
+                ? `${childName} has not completed any learning sessions yet. When they start their interactive coding lessons, details will appear here.`
+                : `No sessions match the selected filter (${filter}).`}
+            </p>
+          </div>
+        ) : (
+          filteredSessions.map((session) => {
           const totalSec = session.total_sections || 4;
           const currSec = session.current_section_order || 1;
           const progressPercent = Math.min(100, Math.round((currSec / totalSec) * 100));
@@ -300,7 +259,8 @@ export default function ParentActivityPage() {
               </div>
             </div>
           );
-        })}
+          })
+        )}
       </div>
     </div>
   );

@@ -38,31 +38,6 @@ export default function ParentContactPage() {
   const [sMessage, setSMessage] = useState("");
   const [sendingSupport, setSendingSupport] = useState(false);
 
-  const defaultMessages: HistoryMessage[] = [
-    {
-      _id: "m-1",
-      type: "teacher",
-      to_teacher_name: "Sara Ahmed",
-      related_child_name: "Layla Hassan",
-      subject: "Reading practice",
-      message: "Hello Ms. Sara, could you share extra loop practice exercises for Layla?",
-      status: "1 new reply",
-      reply: "Thanks! I'll share a few activities for home.",
-      created_at: "Today, 10:24 AM",
-    },
-    {
-      _id: "m-2",
-      type: "support",
-      to_teacher_name: "Administration · Parent support",
-      inquiry_type: "General inquiry",
-      subject: "Parent portal access",
-      message: "How can I connect our second child?",
-      status: "Received",
-      reply: "Your inquiry has been received. We'll be in touch.",
-      created_at: "Yesterday, 2:10 PM",
-    },
-  ];
-
   const loadInitialData = async () => {
     try {
       // 1. Children
@@ -83,13 +58,13 @@ export default function ParentContactPage() {
 
       // 3. Messages History
       const mRes = await api.get("/parents/messages").catch(() => null);
-      if (Array.isArray(mRes?.data?.data) && mRes.data.data.length > 0) {
+      if (Array.isArray(mRes?.data?.data)) {
         setMessages(mRes.data.data);
       } else {
-        setMessages(defaultMessages);
+        setMessages([]);
       }
     } catch {
-      setMessages(defaultMessages);
+      setMessages([]);
     }
   };
 
@@ -192,9 +167,15 @@ export default function ParentContactPage() {
           {/* Teacher Banner */}
           <div className="p-4 rounded-2xl bg-[#fffcf7] border border-[#f0ede4]">
             <p className="font-extrabold text-xs text-[#10292e]">
-              Sara Ahmed · Layla&apos;s class teacher
+              {teachers.find((t) => t._id === tTeacher)
+                ? `${teachers.find((t) => t._id === tTeacher)?.first_name} ${teachers.find((t) => t._id === tTeacher)?.last_name} · ${teachers.find((t) => t._id === tTeacher)?.specialization || "Educator"}`
+                : "Select an educator below to send your message"}
             </p>
-            <p className="text-[11px] text-[#7f9092] mt-0.5">sara.ahmed@school.example</p>
+            {teachers.find((t) => t._id === tTeacher)?.email && (
+              <p className="text-[11px] text-[#7f9092] mt-0.5">
+                {teachers.find((t) => t._id === tTeacher)?.email}
+              </p>
+            )}
             <p className="text-[11px] text-[#8a999b] mt-0.5">Usually replies within 1 school day</p>
           </div>
 
@@ -213,7 +194,7 @@ export default function ParentContactPage() {
                     </option>
                   ))}
                 {(!Array.isArray(children) || children.length === 0) && (
-                  <option value="">Layla Hassan</option>
+                  <option value="">No children connected</option>
                 )}
               </select>
             </div>
@@ -232,7 +213,7 @@ export default function ParentContactPage() {
                     </option>
                   ))}
                 {(!Array.isArray(teachers) || teachers.length === 0) && (
-                  <option value="default">Sara Ahmed · Class teacher</option>
+                  <option value="">No teachers available</option>
                 )}
               </select>
             </div>
@@ -379,7 +360,15 @@ export default function ParentContactPage() {
         </div>
 
         <div className="space-y-3.5 pt-2">
-          {Array.isArray(messages) &&
+          {(!Array.isArray(messages) || messages.length === 0) ? (
+            <div className="p-8 rounded-2xl bg-[#faf8f5] border border-dashed border-[#e8eeea] text-center">
+              <MessageSquare className="w-8 h-8 text-[#ffa11f] mx-auto mb-2 opacity-60" />
+              <p className="font-extrabold text-sm text-[#10292e]">No messages sent yet</p>
+              <p className="text-xs text-[#7f9092] mt-1">
+                When you send a question or inquiry to teachers or support, the history and replies will appear here.
+              </p>
+            </div>
+          ) : (
             messages.map((item) => (
               <div
                 key={item._id}
@@ -424,8 +413,9 @@ export default function ParentContactPage() {
                 </button>
               </div>
             </div>
-          ))}
-        </div>
+          ))
+        )}
+      </div>
       </div>
     </div>
   );

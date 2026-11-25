@@ -1,10 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import { useParams } from "next/navigation";
 import MessagesClient from "../MessagesClient";
 
-export default function MessageUsernamePage() {
+function MessageUsernameContent() {
   const params = useParams();
   const username =
     typeof params?.username === "string"
@@ -14,4 +14,12 @@ export default function MessageUsernamePage() {
       : undefined;
 
   return <MessagesClient initialPartnerId={username} />;
+}
+
+export default function MessageUsernamePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#fafaf8]" />}>
+      <MessageUsernameContent />
+    </Suspense>
+  );
 }

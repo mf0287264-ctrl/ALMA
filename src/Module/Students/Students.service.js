@@ -3,6 +3,7 @@ import { db } from '../../DB/db.connection.js';
 import studentsRepository from './Students.repository.js';
 import { hashPassword, verifyPassword } from '../../Utils/argon2.util.js';
 import { generateToken, generateRefreshToken } from '../../Utils/jwt.util.js';
+import { generateUniqueStudentCode, addStudentCodeToRedis } from '../../Utils/redis.util.js';
 
 class StudentsService {
   async createStudent(data) {
@@ -14,7 +15,9 @@ class StudentsService {
     delete data.name;
 
     if (!data.student_code) {
-      data.student_code = `STU-${Math.floor(1000 + Math.random() * 9000)}`;
+      data.student_code = await generateUniqueStudentCode(db);
+    } else {
+      await addStudentCodeToRedis(data.student_code);
     }
     if (!data.grade_level) {
       data.grade_level = 'Grade 8';
@@ -144,6 +147,10 @@ class StudentsService {
   }
 
   async updateStudent(id, data) {
+    // The student code is immutable once created and must remain fixed across all updates
+    delete data.student_code;
+    delete data.studentCode;
+
     if (data.email) {
       const existingStudent = await studentsRepository.findByEmail(data.email);
       if (existingStudent && existingStudent._id.toString() !== id.toString()) {

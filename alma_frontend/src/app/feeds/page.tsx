@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TeacherSidebar from "@/components/TeacherSidebar";
 import ParentSidebar from "@/components/ParentSidebar";
@@ -94,7 +95,16 @@ const PRESET_TAGS = [
 ];
 
 export default function FeedsPage() {
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, role } = useAuth();
+
+  const effectiveRole = role || user?.role || "student";
+
+  useEffect(() => {
+    if (effectiveRole === "parent") {
+      router.replace("/parent/feeds");
+    }
+  }, [effectiveRole, router]);
 
   const [posts, setPosts] = useState<PostItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,8 +133,8 @@ export default function FeedsPage() {
 
   // Render appropriate sidebar based on role
   const renderRoleSidebar = () => {
-    if (user?.role === "teacher") return <TeacherSidebar />;
-    if (user?.role === "parent") return <ParentSidebar />;
+    if (effectiveRole === "teacher") return <TeacherSidebar />;
+    if (effectiveRole === "parent") return <ParentSidebar />;
     return <Sidebar />;
   };
 

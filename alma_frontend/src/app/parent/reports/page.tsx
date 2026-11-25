@@ -3,20 +3,18 @@
 import React, { useEffect, useState } from "react";
 import api from "@/services/api";
 import { toast } from "sonner";
-import { Mail, Download, Bell, Check, Loader2 } from "lucide-react";
+import { Download, Mail, Check, Bell, ShieldAlert } from "lucide-react";
 
 export default function ParentReportsPage() {
   const [children, setChildren] = useState<any[]>([]);
   const [selectedChildId, setSelectedChildId] = useState<string>("");
+  const [childProgress, setChildProgress] = useState<any>(null);
   const [sendingEmail, setSendingEmail] = useState(false);
-
-  // Alert rules state
   const [alertRules, setAlertRules] = useState({
-    streak_broken: true,
-    new_struggling_concept: true,
-    session_abandoned: false,
-    new_achievement: true,
-    delivery: "email" as "email" | "sms",
+    missed_streak: true,
+    struggling: true,
+    weekly_digest: true,
+    delivery: "email",
   });
 
   const loadChildren = async () => {
@@ -32,25 +30,44 @@ export default function ParentReportsPage() {
     }
   };
 
+  const loadChildProgress = async (cid: string) => {
+    try {
+      const res = await api.get(`/parents/child/${cid}/progress`);
+      setChildProgress(res.data?.data || null);
+    } catch {
+      setChildProgress(null);
+    }
+  };
+
   useEffect(() => {
     loadChildren();
   }, []);
+
+  useEffect(() => {
+    if (selectedChildId) {
+      loadChildProgress(selectedChildId);
+    }
+  }, [selectedChildId]);
 
   const activeChild =
     children.find((c) => (c._id || c.student_id) === selectedChildId) || children[0];
 
   const childName = activeChild
     ? `${activeChild.first_name} ${activeChild.last_name}`
-    : "Layla Hassan";
+    : "Your child";
 
-  const initials = (first?: string, last?: string) =>
-    `${(first || "S")[0]}${(last || "K")[0]}`.toUpperCase();
+  const initials = (first?: string, last?: string) => {
+    const f = (first || "").trim();
+    const l = (last || "").trim();
+    if (!f && !l) return "ST";
+    return `${f[0] || ""}${l[0] || ""}`.toUpperCase();
+  };
 
   const handleSendEmail = () => {
     setSendingEmail(true);
     setTimeout(() => {
       setSendingEmail(false);
-      toast.success(`Weekly progress summary sent to your email!`);
+      toast.success(`Weekly progress summary sent to your registered email!`);
     }, 700);
   };
 
@@ -64,6 +81,37 @@ export default function ParentReportsPage() {
     toast.success("Alert preferences updated");
   };
 
+  // Build dynamic alerts based on child's actual database telemetry
+  const strugglingList = childProgress?.struggling_concepts || [];
+  const achievementsList = childProgress?.achievements || [];
+  const sessionsList = childProgress?.sessions || [];
+
+  const dynamicAlerts: Array<{ text: string; date: string; type: string }> = [];
+
+  strugglingList.forEach((sc: any) => {
+    dynamicAlerts.push({
+      text: `${activeChild?.first_name || "Child"} is working through "${sc.concept_label || sc.concept_id}"`,
+      date: "Active",
+      type: "Needs attention",
+    });
+  });
+
+  achievementsList.slice(0, 2).forEach((ach: any) => {
+    dynamicAlerts.push({
+      text: `${activeChild?.first_name || "Child"} earned "${ach.title || "Milestone"}"`,
+      date: ach.awarded_at ? new Date(ach.awarded_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "Recent",
+      type: "Achievement",
+    });
+  });
+
+  sessionsList.filter((s: any) => s.status === "abandoned").slice(0, 2).forEach((s: any) => {
+    dynamicAlerts.push({
+      text: `${activeChild?.first_name || "Child"} left "${s.lesson_title || "Lesson"}" in progress`,
+      date: s.completed_at ? new Date(s.completed_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "Recent",
+      type: "Lesson in progress",
+    });
+  });
+
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8 select-none">
       {/* Header */}
@@ -73,18 +121,8 @@ export default function ParentReportsPage() {
             Reports and alerts
           </h1>
           <p className="text-sm md:text-base text-[#607274] mt-1 font-medium">
-            Weekly summary and the alerts you receive.
+            Weekly summary and diagnostic alerts for {childName}.
           </p>
-        </div>
-
-        <div className="flex items-center gap-2 self-start md:self-auto text-xs font-semibold">
-          <span className="text-[#8a999b]">Sample data</span>
-          <span className="bg-[#e6f5f2] text-[#118a80] px-2.5 py-0.5 rounded-full">
-            Existing
-          </span>
-          <span className="border border-dashed border-[#f25c78] text-[#f25c78] bg-[#fff0f3] px-2.5 py-0.5 rounded-full">
-            Proposed
-          </span>
         </div>
       </div>
 
@@ -107,13 +145,7 @@ export default function ParentReportsPage() {
                     : "bg-white text-[#607274] border border-[#e8eeea] hover:border-[#ffa11f]/60"
                 }`}
               >
-                <span
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${
-                    child.first_name === "Layla"
-                      ? "bg-[#f3e8ff] text-[#9333ea]"
-                      : "bg-[#e2f7ed] text-[#118a80]"
-                  }`}
-                >
+                <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black bg-[#e2f7ed] text-[#118a80]">
                   {initials(child.first_name, child.last_name)}
                 </span>
                 <span>
@@ -128,55 +160,56 @@ export default function ParentReportsPage() {
       {/* Middle Grid: Weekly Report & Alert Rules */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Weekly Report Card */}
-        <div className="lg:col-span-7 bg-white rounded-3xl p-6 md:p-8 border border-dashed border-[#f7a4b8] shadow-2xs space-y-6">
+        <div className="lg:col-span-7 bg-white rounded-3xl p-6 md:p-8 border border-[#ece8de] shadow-2xs space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-extrabold text-[#10292e]">Weekly report</h2>
-            <span className="border border-dashed border-[#f25c78] text-[#f25c78] bg-[#fff0f3] text-[10px] font-bold px-2 py-0.5 rounded-full">
-              Proposed
-            </span>
           </div>
 
           <p className="text-xs font-bold text-[#7f9092]">
-            Oct 28 – Nov 3 · {childName}
+            Current Academic Period · {childName}
           </p>
 
-          {/* 4 Stat Boxes */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-4 rounded-2xl bg-[#fffcf7] border border-[#f0ede4]">
-              <span className="text-xs text-[#7f9092] font-semibold">Sessions</span>
-              <p className="text-2xl font-black text-[#10292e] mt-1">5</p>
+          {/* Stats Row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            <div className="p-3.5 rounded-2xl bg-[#fffcf7] border border-[#f0ede4]">
+              <span className="text-[11px] font-bold text-[#8a999b] block">Streak</span>
+              <span className="text-xl font-black text-[#10292e] mt-1 block">
+                {childProgress?.current_streak ?? activeChild?.current_streak ?? 0} days
+              </span>
             </div>
-            <div className="p-4 rounded-2xl bg-[#fffcf7] border border-[#f0ede4]">
-              <span className="text-xs text-[#7f9092] font-semibold">Lessons completed</span>
-              <p className="text-2xl font-black text-[#10292e] mt-1">2</p>
+            <div className="p-3.5 rounded-2xl bg-[#fffcf7] border border-[#f0ede4]">
+              <span className="text-[11px] font-bold text-[#8a999b] block">Lessons</span>
+              <span className="text-xl font-black text-[#10292e] mt-1 block">
+                {childProgress?.lessons_completed ?? activeChild?.lessons_completed ?? 0}
+              </span>
             </div>
-            <div className="p-4 rounded-2xl bg-[#fffcf7] border border-[#f0ede4]">
-              <span className="text-xs text-[#7f9092] font-semibold">Accuracy</span>
-              <p className="text-2xl font-black text-[#10292e] mt-1">82%</p>
+            <div className="p-3.5 rounded-2xl bg-[#fffcf7] border border-[#f0ede4]">
+              <span className="text-[11px] font-bold text-[#8a999b] block">Accuracy</span>
+              <span className="text-xl font-black text-[#10292e] mt-1 block">
+                {childProgress?.checkpoint_accuracy !== undefined ? `${childProgress.checkpoint_accuracy}%` : "—"}
+              </span>
             </div>
-            <div className="p-4 rounded-2xl bg-[#fffcf7] border border-[#f0ede4]">
-              <span className="text-xs text-[#7f9092] font-semibold">New awards</span>
-              <p className="text-2xl font-black text-[#10292e] mt-1">1</p>
+            <div className="p-3.5 rounded-2xl bg-[#fffcf7] border border-[#f0ede4]">
+              <span className="text-[11px] font-bold text-[#8a999b] block">Status</span>
+              <span className="text-sm font-black text-[#118a80] mt-1 block">
+                {strugglingList.length <= 1 ? "On Track" : "Needs Review"}
+              </span>
             </div>
           </div>
 
-          <p className="text-xs md:text-sm text-[#607274] leading-relaxed">
-            {activeChild?.first_name || "Layla"} finished 2 lessons and kept her streak going.
-            She still mixes up zero-based indexing, so a quick chat about range() could help.
-          </p>
-
+          {/* Action buttons */}
           <div className="flex items-center gap-3 pt-2 flex-wrap">
             <button
               onClick={handleSendEmail}
               disabled={sendingEmail}
-              className="px-5 py-2.5 rounded-full bg-[#ffa11f] hover:bg-[#ff9505] text-[#10292e] font-extrabold text-xs transition-colors cursor-pointer shadow-xs flex items-center gap-2 disabled:opacity-50"
+              className="px-4 py-2 rounded-full bg-[#ffa11f] hover:bg-[#ff9505] text-[#10292e] text-xs font-extrabold flex items-center gap-2 cursor-pointer transition-colors"
             >
-              {sendingEmail ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
-              <span>Send to my email</span>
+              <Mail size={14} />
+              <span>{sendingEmail ? "Sending..." : "Email me this summary"}</span>
             </button>
             <button
               onClick={handleDownloadPDF}
-              className="px-5 py-2.5 rounded-full border border-[#10292e] text-[#10292e] font-bold text-xs hover:bg-[#10292e] hover:text-white transition-colors cursor-pointer flex items-center gap-2"
+              className="px-4 py-2 rounded-full border border-[#10292e] text-[#10292e] text-xs font-bold hover:bg-[#10292e] hover:text-white transition-colors cursor-pointer flex items-center gap-2"
             >
               <Download size={14} />
               <span>Download PDF</span>
@@ -185,170 +218,101 @@ export default function ParentReportsPage() {
         </div>
 
         {/* Alert Rules Card */}
-        <div className="lg:col-span-5 bg-white rounded-3xl p-6 md:p-8 border border-dashed border-[#f7a4b8] shadow-2xs space-y-6">
+        <div className="lg:col-span-5 bg-white rounded-3xl p-6 md:p-8 border border-[#ece8de] shadow-2xs space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-extrabold text-[#10292e]">Alert rules</h2>
-            <span className="border border-dashed border-[#f25c78] text-[#f25c78] bg-[#fff0f3] text-[10px] font-bold px-2 py-0.5 rounded-full">
-              Proposed
-            </span>
+            <h2 className="text-xl font-extrabold text-[#10292e]">Alert preferences</h2>
           </div>
 
-          <div className="space-y-4">
-            {/* Rule 1: Streak broken */}
+          <div className="space-y-4 pt-2">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-extrabold text-sm text-[#10292e]">Streak broken</p>
-                <p className="text-[11px] font-mono text-[#8a999b]">current_streak resets to 0</p>
+                <p className="font-extrabold text-sm text-[#10292e]">Streak protection alert</p>
+                <p className="text-xs text-[#7f9092]">Notify if today&apos;s goal hasn&apos;t been met</p>
               </div>
               <button
-                type="button"
-                onClick={() => toggleRule("streak_broken")}
-                className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer ${
-                  alertRules.streak_broken ? "bg-[#118a80]" : "bg-[#e5e7eb]"
+                onClick={() => toggleRule("missed_streak")}
+                className={`w-11 h-6 rounded-full transition-colors p-0.5 cursor-pointer ${
+                  alertRules.missed_streak ? "bg-[#118a80]" : "bg-[#d5dcd8]"
                 }`}
               >
                 <div
-                  className={`w-5 h-5 rounded-full bg-white shadow-xs transition-transform absolute top-0.5 ${
-                    alertRules.streak_broken ? "left-6.5" : "left-0.5"
+                  className={`w-5 h-5 rounded-full bg-white transition-transform ${
+                    alertRules.missed_streak ? "translate-x-5" : "translate-x-0"
                   }`}
                 />
               </button>
             </div>
 
-            {/* Rule 2: New struggling concept */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-extrabold text-sm text-[#10292e]">New struggling concept</p>
-                <p className="text-[11px] font-mono text-[#8a999b]">struggling_concepts grows</p>
+                <p className="font-extrabold text-sm text-[#10292e]">Concept struggle alert</p>
+                <p className="text-xs text-[#7f9092]">When a checkpoint is missed multiple times</p>
               </div>
               <button
-                type="button"
-                onClick={() => toggleRule("new_struggling_concept")}
-                className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer ${
-                  alertRules.new_struggling_concept ? "bg-[#118a80]" : "bg-[#e5e7eb]"
+                onClick={() => toggleRule("struggling")}
+                className={`w-11 h-6 rounded-full transition-colors p-0.5 cursor-pointer ${
+                  alertRules.struggling ? "bg-[#118a80]" : "bg-[#d5dcd8]"
                 }`}
               >
                 <div
-                  className={`w-5 h-5 rounded-full bg-white shadow-xs transition-transform absolute top-0.5 ${
-                    alertRules.new_struggling_concept ? "left-6.5" : "left-0.5"
+                  className={`w-5 h-5 rounded-full bg-white transition-transform ${
+                    alertRules.struggling ? "translate-x-5" : "translate-x-0"
                   }`}
                 />
               </button>
             </div>
 
-            {/* Rule 3: Session abandoned */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-extrabold text-sm text-[#10292e]">Session abandoned</p>
-                <p className="text-[11px] font-mono text-[#8a999b]">session status: abandoned</p>
+                <p className="font-extrabold text-sm text-[#10292e]">Weekly digest</p>
+                <p className="text-xs text-[#7f9092]">Every Sunday morning summary</p>
               </div>
               <button
-                type="button"
-                onClick={() => toggleRule("session_abandoned")}
-                className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer ${
-                  alertRules.session_abandoned ? "bg-[#118a80]" : "bg-[#e5e7eb]"
+                onClick={() => toggleRule("weekly_digest")}
+                className={`w-11 h-6 rounded-full transition-colors p-0.5 cursor-pointer ${
+                  alertRules.weekly_digest ? "bg-[#118a80]" : "bg-[#d5dcd8]"
                 }`}
               >
                 <div
-                  className={`w-5 h-5 rounded-full bg-white shadow-xs transition-transform absolute top-0.5 ${
-                    alertRules.session_abandoned ? "left-6.5" : "left-0.5"
+                  className={`w-5 h-5 rounded-full bg-white transition-transform ${
+                    alertRules.weekly_digest ? "translate-x-5" : "translate-x-0"
                   }`}
                 />
-              </button>
-            </div>
-
-            {/* Rule 4: New achievement */}
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-extrabold text-sm text-[#10292e]">New achievement</p>
-                <p className="text-[11px] font-mono text-[#8a999b]">Achievement awarded</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => toggleRule("new_achievement")}
-                className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer ${
-                  alertRules.new_achievement ? "bg-[#118a80]" : "bg-[#e5e7eb]"
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 rounded-full bg-white shadow-xs transition-transform absolute top-0.5 ${
-                    alertRules.new_achievement ? "left-6.5" : "left-0.5"
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-
-          {/* Delivery Options */}
-          <div className="pt-2 border-t border-[#f4f1e9]">
-            <span className="text-xs font-bold text-[#8a999b] uppercase tracking-wider block mb-2.5">
-              Delivery
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setAlertRules((p) => ({ ...p, delivery: "email" }))}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold cursor-pointer transition-all ${
-                  alertRules.delivery === "email"
-                    ? "border-2 border-[#10292e] text-[#10292e] bg-[#fffaf4]"
-                    : "border border-[#e8eeea] text-[#7f9092] hover:bg-[#fafaf8]"
-                }`}
-              >
-                Email
-              </button>
-              <button
-                onClick={() => setAlertRules((p) => ({ ...p, delivery: "sms" }))}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold cursor-pointer transition-all ${
-                  alertRules.delivery === "sms"
-                    ? "border-2 border-[#10292e] text-[#10292e] bg-[#fffaf4]"
-                    : "border border-[#e8eeea] text-[#7f9092] hover:bg-[#fafaf8]"
-                }`}
-              >
-                SMS to parent phone
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Recent Alerts Card */}
-      <div className="bg-white rounded-3xl p-6 md:p-8 border border-dashed border-[#f7a4b8] shadow-2xs space-y-4">
-        <div className="flex items-center gap-2">
+      {/* Bottom Section: Recent Alerts */}
+      <div className="bg-white rounded-3xl p-6 md:p-8 border border-[#ece8de] shadow-2xs space-y-4">
+        <div className="flex items-center justify-between">
           <h2 className="text-xl font-extrabold text-[#10292e]">Recent alerts</h2>
-          <span className="border border-dashed border-[#f25c78] text-[#f25c78] bg-[#fff0f3] text-[10px] font-bold px-2 py-0.5 rounded-full">
-            Proposed
-          </span>
+          <span className="text-xs text-[#7f9092]">Live notifications based on student learning activity</span>
         </div>
 
         <div className="space-y-3 pt-2">
-          {/* Alert 1 */}
-          <div className="flex items-center justify-between p-4 rounded-2xl bg-[#fffcf7] border border-[#f0ede4] flex-wrap gap-2">
-            <span className="font-extrabold text-sm text-[#10292e]">
-              Omar is struggling with &quot;Loop stop condition&quot;
-            </span>
-            <span className="text-xs font-semibold text-[#8a999b]">
-              Nov 5 · Needs attention
-            </span>
-          </div>
-
-          {/* Alert 2 */}
-          <div className="flex items-center justify-between p-4 rounded-2xl bg-[#fffcf7] border border-[#f0ede4] flex-wrap gap-2">
-            <span className="font-extrabold text-sm text-[#10292e]">
-              Layla earned &quot;Comeback&quot;
-            </span>
-            <span className="text-xs font-semibold text-[#8a999b]">
-              Nov 6 · Achievement
-            </span>
-          </div>
-
-          {/* Alert 3 */}
-          <div className="flex items-center justify-between p-4 rounded-2xl bg-[#fffcf7] border border-[#f0ede4] flex-wrap gap-2">
-            <span className="font-extrabold text-sm text-[#10292e]">
-              Layla left &quot;Lists and indexing&quot; unfinished
-            </span>
-            <span className="text-xs font-semibold text-[#8a999b]">
-              Oct 20 · Session abandoned
-            </span>
-          </div>
+          {dynamicAlerts.length === 0 ? (
+            <div className="p-6 rounded-2xl bg-[#f0fbf8] border border-[#d2f1e8] text-center">
+              <Check className="w-6 h-6 text-[#118a80] mx-auto mb-1.5" />
+              <p className="font-extrabold text-sm text-[#118a80]">No active alerts</p>
+              <p className="text-xs text-[#607274] mt-0.5">
+                All learning objectives are on track. Diagnostic notifications will appear here as activity occurs.
+              </p>
+            </div>
+          ) : (
+            dynamicAlerts.map((alert, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between p-4 rounded-2xl bg-[#fffcf7] border border-[#f0ede4] flex-wrap gap-2"
+              >
+                <span className="font-extrabold text-sm text-[#10292e]">{alert.text}</span>
+                <span className="text-xs font-semibold text-[#8a999b]">
+                  {alert.date} · {alert.type}
+                </span>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

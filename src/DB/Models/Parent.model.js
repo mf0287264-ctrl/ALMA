@@ -16,6 +16,7 @@ const parentSchema = new mongoose.Schema(
     phone_number: { type: String, default: null, trim: true },
     national_id: { type: String, default: null, trim: true },
     profile_image: { type: String, default: null },
+    profileImage: { type: String, default: null },
     relation: {
       type: String,
       enum: ['father', 'mother', 'guardian'],

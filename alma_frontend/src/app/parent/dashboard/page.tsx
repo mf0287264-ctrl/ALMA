@@ -12,7 +12,8 @@ import {
   ArrowRight,
   AlertTriangle,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 
 interface LinkedChild {
@@ -36,20 +37,23 @@ interface LinkedChild {
     last_diagnosed_misconception?: string | null;
   }>;
   weekly_activity?: Record<string, number>;
+  sessions?: any[];
 }
 
 export default function ParentOverviewPage() {
   const { user } = useAuth();
   const [children, setChildren] = useState<LinkedChild[]>([]);
   const [selectedChildId, setSelectedChildId] = useState<string>("");
+  const [activeChildDetails, setActiveChildDetails] = useState<LinkedChild | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
-  const parentFirstName = user?.first_name || (user?.name?.split(" ")[0]) || "Mona";
+  const parentFirstName = user?.first_name || (user?.name?.split(" ")[0]) || "Guardian";
 
   const loadData = async () => {
     setLoading(true);
     try {
-      // 1. Get linked children
+      // 1. Get linked children from database
       const childrenRes = await api.get("/parents/children").catch(() => null);
       let kids: LinkedChild[] = childrenRes?.data?.data || [];
 
@@ -67,8 +71,9 @@ export default function ParentOverviewPage() {
       }
 
       setChildren(kids);
-      if (kids.length > 0 && !selectedChildId) {
-        setSelectedChildId(kids[0]._id || kids[0].student_id);
+      if (kids.length > 0) {
+        const firstId = kids[0]._id || kids[0].student_id;
+        setSelectedChildId(firstId);
       }
     } catch (err) {
       console.error("Failed to load overview data:", err);
@@ -77,29 +82,57 @@ export default function ParentOverviewPage() {
     }
   };
 
+  const loadChildDetails = async (cid: string) => {
+    setLoadingDetails(true);
+    try {
+      const res = await api.get(`/parents/child/${cid}/progress`);
+      if (res.data?.data) {
+        setActiveChildDetails(res.data.data);
+      }
+    } catch (e) {
+      console.warn("Could not load child progress:", e);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
   useEffect(() => {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (selectedChildId) {
+      loadChildDetails(selectedChildId);
+    }
+  }, [selectedChildId]);
+
   const activeChild =
-    children.find((c) => (c._id || c.student_id) === selectedChildId) || children[0];
+    activeChildDetails ||
+    children.find((c) => (c._id || c.student_id) === selectedChildId) ||
+    children[0];
 
-  const initials = (first?: string, last?: string) =>
-    `${(first || "S")[0]}${(last || "K")[0]}`.toUpperCase();
+  const initials = (first?: string, last?: string) => {
+    const f = (first || "").trim();
+    const l = (last || "").trim();
+    if (!f && !l) return "ST";
+    return `${f[0] || ""}${l[0] || ""}`.toUpperCase();
+  };
 
-  // Weekly activity counts from child or defaults
+  // Real weekly activity counts from DB sessions
   const weeklyCounts = activeChild?.weekly_activity || {
-    Mon: 3,
-    Tue: 5,
-    Wed: 1,
-    Thu: 4,
-    Fri: 6,
+    Mon: 0,
+    Tue: 0,
+    Wed: 0,
+    Thu: 0,
+    Fri: 0,
     Sat: 0,
-    Sun: 3,
+    Sun: 0,
   };
 
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const maxSessions = Math.max(...Object.values(weeklyCounts), 6);
+  const maxSessions = Math.max(...Object.values(weeklyCounts), 4);
+
+  const strugglingList = activeChild?.struggling_concepts || [];
 
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8 select-none">
@@ -110,19 +143,8 @@ export default function ParentOverviewPage() {
             Hello, {parentFirstName}
           </h1>
           <p className="text-sm md:text-base text-[#607274] mt-1 font-medium">
-            Here is how your children are learning this week.
+            Here is how your children are learning in real time.
           </p>
-        </div>
-
-        {/* Status Indicators Legend */}
-        <div className="flex items-center gap-2 self-start md:self-auto text-xs font-semibold">
-          <span className="text-[#8a999b]">Sample data</span>
-          <span className="bg-[#e6f5f2] text-[#118a80] px-2.5 py-0.5 rounded-full">
-            Existing
-          </span>
-          <span className="border border-dashed border-[#f25c78] text-[#f25c78] bg-[#fff0f3] px-2.5 py-0.5 rounded-full">
-            Proposed
-          </span>
         </div>
       </div>
 
@@ -145,13 +167,7 @@ export default function ParentOverviewPage() {
                     : "bg-white text-[#607274] border border-[#e8eeea] hover:border-[#ffa11f]/60"
                 }`}
               >
-                <span
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${
-                    child.first_name === "Layla"
-                      ? "bg-[#f3e8ff] text-[#9333ea]"
-                      : "bg-[#e2f7ed] text-[#118a80]"
-                  }`}
-                >
+                <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black bg-[#e2f7ed] text-[#118a80]">
                   {initials(child.first_name, child.last_name)}
                 </span>
                 <span>
@@ -163,36 +179,37 @@ export default function ParentOverviewPage() {
         </div>
       )}
 
-      {/* 4 Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-        {/* Current streak */}
+      {/* Overview Metric Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* Streak */}
         <div className="bg-white rounded-3xl p-6 border border-[#ece8de] shadow-2xs relative">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-[#7f9092]">Current streak</span>
-            <span className="bg-[#e6f5f2] text-[#118a80] text-[10px] font-bold px-2 py-0.5 rounded-full">
-              Existing
-            </span>
+            <div className="w-8 h-8 rounded-full bg-[#fdecd2] flex items-center justify-center text-[#ffa11f]">
+              <Flame size={16} />
+            </div>
           </div>
           <div className="mt-4 flex items-baseline gap-2">
             <span className="text-3xl md:text-4xl font-extrabold text-[#10292e]">
-              {activeChild?.current_streak ?? 4}
+              {activeChild?.current_streak ?? 0}
             </span>
-            <span className="text-sm font-bold text-[#10292e]">days</span>
+            <span className="text-xs font-bold text-[#7f9092]">days</span>
           </div>
         </div>
 
-        {/* Lessons completed */}
+        {/* Lessons Completed */}
         <div className="bg-white rounded-3xl p-6 border border-[#ece8de] shadow-2xs relative">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-[#7f9092]">Lessons completed</span>
-            <span className="bg-[#e6f5f2] text-[#118a80] text-[10px] font-bold px-2 py-0.5 rounded-full">
-              Existing
-            </span>
+            <div className="w-8 h-8 rounded-full bg-[#e6f5f2] flex items-center justify-center text-[#118a80]">
+              <BookOpen size={16} />
+            </div>
           </div>
-          <div className="mt-4">
+          <div className="mt-4 flex items-baseline gap-2">
             <span className="text-3xl md:text-4xl font-extrabold text-[#10292e]">
-              {activeChild?.lessons_completed ?? 12}
+              {activeChild?.lessons_completed ?? 0}
             </span>
+            <span className="text-xs font-bold text-[#7f9092]">lessons</span>
           </div>
         </div>
 
@@ -200,27 +217,30 @@ export default function ParentOverviewPage() {
         <div className="bg-white rounded-3xl p-6 border border-[#ece8de] shadow-2xs relative">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-[#7f9092]">Checkpoint accuracy</span>
-            <span className="bg-[#e6f5f2] text-[#118a80] text-[10px] font-bold px-2 py-0.5 rounded-full">
-              Existing
-            </span>
+            <div className="w-8 h-8 rounded-full bg-[#eef7ff] flex items-center justify-center text-[#3b82f6]">
+              <CheckCircle2 size={16} />
+            </div>
           </div>
           <div className="mt-4">
             <span className="text-3xl md:text-4xl font-extrabold text-[#10292e]">
-              {activeChild?.checkpoint_accuracy ?? 82}%
+              {activeChild?.checkpoint_accuracy !== undefined ? `${activeChild.checkpoint_accuracy}%` : "—"}
             </span>
           </div>
         </div>
 
-        {/* Time spent learning */}
-        <div className="bg-white rounded-3xl p-6 border border-dashed border-[#f7a4b8] shadow-2xs relative">
+        {/* Learning Sessions */}
+        <div className="bg-white rounded-3xl p-6 border border-[#ece8de] shadow-2xs relative">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#7f9092]">Time spent learning</span>
-            <span className="border border-dashed border-[#f25c78] text-[#f25c78] bg-[#fff0f3] text-[10px] font-bold px-2 py-0.5 rounded-full">
-              Proposed
-            </span>
+            <span className="text-xs font-semibold text-[#7f9092]">Total sessions</span>
+            <div className="w-8 h-8 rounded-full bg-[#fdf2f8] flex items-center justify-center text-[#ec4899]">
+              <Clock size={16} />
+            </div>
           </div>
-          <div className="mt-4">
-            <span className="text-3xl md:text-4xl font-extrabold text-[#10292e]">—</span>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-3xl md:text-4xl font-extrabold text-[#10292e]">
+              {activeChild?.sessions?.length ?? 0}
+            </span>
+            <span className="text-xs font-bold text-[#7f9092]">recorded</span>
           </div>
         </div>
       </div>
@@ -232,9 +252,6 @@ export default function ParentOverviewPage() {
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-extrabold text-[#10292e]">My children</h2>
-              <span className="border border-dashed border-[#f25c78] text-[#f25c78] bg-[#fff0f3] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                Proposed
-              </span>
             </div>
             <Link
               href="/parent/children"
@@ -245,7 +262,11 @@ export default function ParentOverviewPage() {
           </div>
 
           <div className="space-y-3.5">
-            {children.length === 0 ? (
+            {loading ? (
+              <div className="flex items-center justify-center py-10">
+                <Loader2 className="w-6 h-6 animate-spin text-[#ffa11f]" />
+              </div>
+            ) : children.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-sm text-[#8a999b]">No children linked yet.</p>
                 <Link
@@ -265,13 +286,7 @@ export default function ParentOverviewPage() {
                     className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl bg-[#fffcf7] border border-[#f0ede4] gap-4"
                   >
                     <div className="flex items-center gap-3.5">
-                      <div
-                        className={`w-11 h-11 rounded-full flex items-center justify-center font-black text-sm shrink-0 ${
-                          child.first_name === "Layla"
-                            ? "bg-[#f3e8ff] text-[#9333ea]"
-                            : "bg-[#e2f7ed] text-[#118a80]"
-                        }`}
-                      >
+                      <div className="w-11 h-11 rounded-full flex items-center justify-center font-black text-sm shrink-0 bg-[#e2f7ed] text-[#118a80]">
                         {initials(child.first_name, child.last_name)}
                       </div>
                       <div>
@@ -279,9 +294,9 @@ export default function ParentOverviewPage() {
                           {child.first_name} {child.last_name}
                         </h3>
                         <p className="text-xs text-[#7f9092] mt-0.5">
-                          {child.grade_level || "Grade 8"} · {child.student_code} ·{" "}
-                          {child.current_streak || 4}-day streak ·{" "}
-                          {child.lessons_completed || 12} lessons
+                          {child.grade_level ? `${child.grade_level} · ` : ""}{child.student_code} ·{" "}
+                          {child.current_streak || 0}-day streak ·{" "}
+                          {child.lessons_completed || 0} lessons
                         </p>
                       </div>
                     </div>
@@ -315,12 +330,9 @@ export default function ParentOverviewPage() {
           <div>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-extrabold text-[#10292e]">Weekly activity</h2>
-              <span className="bg-[#e6f5f2] text-[#118a80] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                Existing
-              </span>
             </div>
             <p className="text-xs text-[#7f9092] mt-1 font-medium">
-              Sessions completed per day (StudentLessonSession.completed_at)
+              Real lesson sessions completed per day from database
             </p>
           </div>
 
@@ -354,68 +366,47 @@ export default function ParentOverviewPage() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-extrabold text-[#10292e]">Needs attention</h2>
-            <span className="bg-[#e6f5f2] text-[#118a80] text-[10px] font-bold px-2 py-0.5 rounded-full">
-              Existing
-            </span>
           </div>
           <span className="text-xs text-[#7f9092]">
-            Derived from struggling_concepts and session status
+            Derived from diagnostic checkpoints and struggling concepts
           </span>
         </div>
 
-        <div className="space-y-3">
-          {/* Card 1: Loop stop condition */}
-          <div className="p-4 rounded-2xl bg-[#fff2f4] border border-[#fed7dd] flex items-center justify-between flex-wrap gap-2">
-            <div>
-              <p className="font-extrabold text-sm text-[#9f1239]">
-                Omar is struggling with &quot;Loop stop condition&quot;
-              </p>
-              <p className="text-xs text-[#be123c] mt-0.5">Wrong 9 of 24 checkpoints</p>
-            </div>
-            <Link
-              href="/parent/progress"
-              className="text-xs font-bold text-[#9f1239] hover:underline"
-            >
-              View details →
-            </Link>
+        {strugglingList.length > 0 ? (
+          <div className="space-y-3">
+            {strugglingList.map((sc: any, idx: number) => (
+              <div
+                key={sc.concept_id || idx}
+                className="p-4 rounded-2xl bg-[#fff2f4] border border-[#fed7dd] flex items-center justify-between flex-wrap gap-2"
+              >
+                <div>
+                  <p className="font-extrabold text-sm text-[#9f1239]">
+                    {activeChild?.first_name || "Your child"} is working on &quot;{sc.concept_label || sc.concept_id}&quot;
+                  </p>
+                  <p className="text-xs text-[#be123c] mt-0.5">
+                    {sc.times_wrong ? `Challenged on ${sc.times_wrong} checkpoint${sc.times_wrong > 1 ? "s" : ""}` : "Identified for review"}
+                    {sc.last_diagnosed_misconception ? ` · Note: ${sc.last_diagnosed_misconception}` : ""}
+                  </p>
+                </div>
+                <Link
+                  href="/parent/contact"
+                  className="text-xs font-bold text-[#9f1239] hover:underline"
+                >
+                  Ask teacher →
+                </Link>
+              </div>
+            ))}
           </div>
-
-          {/* Card 2: Abandoned session */}
-          <div className="p-4 rounded-2xl bg-[#fff9ed] border border-[#fdecd2] flex items-center justify-between flex-wrap gap-2">
-            <div>
-              <p className="font-extrabold text-sm text-[#b45309]">
-                Layla left &quot;Lists and indexing&quot; unfinished
-              </p>
-              <p className="text-xs text-[#d97706] mt-0.5">
-                Session status: abandoned · Oct 20
-              </p>
-            </div>
-            <Link
-              href="/parent/activity"
-              className="text-xs font-bold text-[#b45309] hover:underline"
-            >
-              View session →
-            </Link>
+        ) : (
+          <div className="p-5 rounded-2xl bg-[#f0fbf8] border border-[#d2f1e8] text-center">
+            <p className="font-extrabold text-sm text-[#118a80]">
+              All concepts on track!
+            </p>
+            <p className="text-xs text-[#607274] mt-1">
+              {activeChild?.first_name ? `${activeChild.first_name} has` : "Your child has"} no active learning roadblocks.
+            </p>
           </div>
-
-          {/* Card 3: Zero-based indexing */}
-          <div className="p-4 rounded-2xl bg-[#fffcee] border border-[#fbf0c9] flex items-center justify-between flex-wrap gap-2">
-            <div>
-              <p className="font-extrabold text-sm text-[#854d0e]">
-                Layla keeps mixing up zero-based indexing
-              </p>
-              <p className="text-xs text-[#a16207] mt-0.5">
-                Last misconception: thinks range() starts at 1
-              </p>
-            </div>
-            <Link
-              href="/parent/contact"
-              className="text-xs font-bold text-[#854d0e] hover:underline"
-            >
-              Ask teacher →
-            </Link>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

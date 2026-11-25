@@ -3,22 +3,22 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import TeacherSidebar from "@/components/TeacherSidebar";
-import { useAuth } from "@/app/_Context/AuthContext";
+import { useAuth, getProfileImageUrl } from "@/app/_Context/AuthContext";
 import { toast } from "sonner";
 
 export default function TeacherSettingsPage() {
   const router = useRouter();
-  const { user, updateUser, logout } = useAuth();
+  const { user, updateUser, uploadProfilePicture, updateName, logout } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Form state initialized with user or mockup defaults
-  const [firstName, setFirstName] = useState("Layla");
-  const [lastName, setLastName] = useState("Hassan");
-  const [email, setEmail] = useState("layla.h@school.edu");
-  const [teacherCode, setTeacherCode] = useState("TCH-0042");
-  const [phoneNumber, setPhoneNumber] = useState("+20 100 000 0000");
-  const [specialization, setSpecialization] = useState("Computer Science");
-  const [schoolName, setSchoolName] = useState("Cairo Model School");
+  // Form state initialized with user
+  const [firstName, setFirstName] = useState(user?.first_name || "");
+  const [lastName, setLastName] = useState(user?.last_name || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [teacherCode, setTeacherCode] = useState(user?.teacher_code || "");
+  const [phoneNumber, setPhoneNumber] = useState(user?.phone_number || "");
+  const [specialization, setSpecialization] = useState(user?.specialization || "");
+  const [schoolName, setSchoolName] = useState(user?.school_name || "");
 
   // Profile photo state
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -46,37 +46,41 @@ export default function TeacherSettingsPage() {
       if (user.phone_number) setPhoneNumber(user.phone_number);
       if (user.specialization) setSpecialization(user.specialization);
       if (user.school_name) setSchoolName(user.school_name);
-      if (user.profile_image) setPhotoPreview(user.profile_image);
+      if (user.profile_image) setPhotoPreview(getProfileImageUrl(user.profile_image));
     }
   }, [user]);
 
   // Handle Photo File Upload
-  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please upload a valid image file (PNG, JPG, WEBP).");
+    if (!file.type.match(/^image\/(png|jpe?g|webp)$/i) && !file.name.match(/\.(png|jpe?g|webp)$/i)) {
+      toast.error("Please upload a valid image file (PNG, JPG, JPEG, or WebP).");
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image size exceeds 5MB limit.");
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image size exceeds 10MB limit.");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const base64 = event.target?.result as string;
-      setPhotoPreview(base64);
-      try {
-        await updateUser({ profile_image: base64 });
+    try {
+      const res = await uploadProfilePicture(file);
+      if (res.success) {
+        const newImg = res.data?.profile_image || res.data?.profileImage;
+        if (newImg) setPhotoPreview(getProfileImageUrl(newImg));
         toast.success("Profile photo uploaded successfully!");
-      } catch {
-        toast.success("Profile photo preview updated!");
+      } else {
+        toast.error(res.error || "Failed to upload profile photo.");
       }
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      toast.error("An error occurred during photo upload.");
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
   };
 
   const handleRemovePhoto = async () => {
@@ -94,18 +98,28 @@ export default function TeacherSettingsPage() {
 
   const handleSavePersonal = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!firstName.trim() || !lastName.trim()) {
+      toast.error("First name and last name cannot be empty.");
+      return;
+    }
     setSaving(true);
     try {
+      const nameRes = await updateName(firstName, lastName);
+      if (!nameRes.success) {
+        toast.error(nameRes.error || "Failed to update name");
+        setSaving(false);
+        return;
+      }
+
       await updateUser({
-        first_name: firstName,
-        last_name: lastName,
-        name: `${firstName} ${lastName}`.trim(),
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        name: `${firstName.trim()} ${lastName.trim()}`.trim(),
         email,
         phone_number: phoneNumber,
         specialization,
         school_name: schoolName,
         teacher_code: teacherCode,
-        profile_image: photoPreview,
       });
       toast.success("Teacher profile updated successfully!");
     } catch (err: any) {
@@ -217,7 +231,7 @@ export default function TeacherSettingsPage() {
                   Teacher Profile Photo
                 </h3>
                 <p className="text-xs text-[#5a6e70] mt-0.5 mb-3">
-                  Upload a clear portrait photo (PNG, JPG, WEBP up to 5MB).
+                  Upload a clear portrait photo (PNG, JPG, JPEG up to 10MB).
                 </p>
 
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
@@ -225,7 +239,7 @@ export default function TeacherSettingsPage() {
                     type="file"
                     ref={fileInputRef}
                     onChange={handlePhotoSelect}
-                    accept="image/*"
+                    accept="image/png, image/jpeg, image/jpg"
                     className="hidden"
                   />
                   <button

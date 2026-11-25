@@ -1,28 +1,32 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
-import { useAuth } from "@/app/_Context/AuthContext";
+import { useAuth, getProfileImageUrl } from "@/app/_Context/AuthContext";
 import { toast } from "sonner";
-import { Award, Flame, Trophy, CheckCircle2, ArrowRight, ShieldCheck, KeyRound } from "lucide-react";
+import { Award, Flame, Trophy, CheckCircle2, ArrowRight, ShieldCheck, KeyRound, Camera, Loader2, Trash2 } from "lucide-react";
 
 export default function ProfilePage() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, uploadProfilePicture, updateName } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [activeTab, setActiveTab] = useState<"account" | "workspace">("account");
 
   // Profile Form States
-  const [firstName, setFirstName] = useState(user?.first_name || "Layla");
-  const [lastName, setLastName] = useState(user?.last_name || "Hassan");
-  const [email, setEmail] = useState(user?.email || "layla@mail.com");
-  const [gradeLevel, setGradeLevel] = useState(user?.grade_level || "Grade 8");
-  const [schoolName, setSchoolName] = useState(user?.school_name || "Cairo Model School");
-  const [parentPhone, setParentPhone] = useState(user?.parent_phone || "+20 100 222 3333");
+  const [firstName, setFirstName] = useState(user?.first_name || "");
+  const [lastName, setLastName] = useState(user?.last_name || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [gradeLevel, setGradeLevel] = useState(user?.grade_level || "");
+  const [schoolName, setSchoolName] = useState(user?.school_name || "");
+  const [parentPhone, setParentPhone] = useState(user?.parent_phone || "");
 
   // Preferences
-  const [ageRange, setAgeRange] = useState("13 to 15");
-  const [codingExp, setCodingExp] = useState("A little");
-  const [learningStyle, setLearningStyle] = useState("Pictures, Trying things");
+  const [ageRange, setAgeRange] = useState(user?.age_group || "");
+  const [codingExp, setCodingExp] = useState(user?.coding_experience || "");
+  const [learningStyle, setLearningStyle] = useState(
+    user?.learning_styles?.length ? user.learning_styles.join(", ") : ""
+  );
   const [dailyReminder, setDailyReminder] = useState(true);
   const [streakAlerts, setStreakAlerts] = useState(true);
 
@@ -49,26 +53,78 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
 
-  const fullName = `${firstName} ${lastName}`.trim();
-  const studentCode = user?.student_code || "STU-1102";
-  const currentStreak = user?.current_streak ?? 4;
-  const longestStreak = user?.longest_streak ?? 9;
-  const lessonsCompleted = 12;
+  const fullName = `${firstName} ${lastName}`.trim() || user?.name || user?.email?.split("@")[0] || "";
+  const studentCode = user?.student_code || "";
+  const currentStreak = user?.current_streak ?? 0;
+  const longestStreak = user?.longest_streak ?? 0;
+  const lessonsCompleted = user?.lessons_completed ?? 0;
 
   const initials =
     fullName
-      .split(" ")
-      .map((n) => n[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase() || "LH";
+      ? fullName
+          .split(" ")
+          .filter(Boolean)
+          .map((n) => n[0])
+          .slice(0, 2)
+          .join("")
+          .toUpperCase()
+      : "ST";
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.match(/^image\/(png|jpe?g|webp)$/i) && !file.name.match(/\.(png|jpe?g|webp)$/i)) {
+      toast.error("Please upload a valid image file (PNG, JPG, JPEG, or WebP).");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image file size must be less than 10MB.");
+      return;
+    }
+
+    setUploadingPhoto(true);
+    try {
+      const res = await uploadProfilePicture(file);
+      if (res.success) {
+        toast.success("Profile picture updated successfully!");
+      } else {
+        toast.error(res.error || "Failed to upload profile picture");
+      }
+    } catch {
+      toast.error("An error occurred during file upload.");
+    } finally {
+      setUploadingPhoto(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    try {
+      await updateUser({ profile_image: null });
+      toast.info("Profile picture removed");
+    } catch {
+      toast.error("Failed to remove profile picture");
+    }
+  };
 
   const handleSaveChanges = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!firstName.trim() || !lastName.trim()) {
+      toast.error("First name and last name cannot be empty.");
+      return;
+    }
     try {
+      const nameRes = await updateName(firstName, lastName);
+      if (!nameRes.success) {
+        toast.error(nameRes.error || "Failed to update name");
+        return;
+      }
+
       const res = await updateUser({
-        first_name: firstName,
-        last_name: lastName,
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
         grade_level: gradeLevel,
         school_name: schoolName,
         parent_phone: parentPhone,
@@ -171,20 +227,104 @@ export default function ProfilePage() {
               {/* Left Profile Form Card (5 cols) */}
               <div className="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-7 border border-[#e8eeea] shadow-xs">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-16 h-16 rounded-full bg-[#ffa11f] flex items-center justify-center text-white font-extrabold text-2xl shadow-xs shrink-0">
-                    {initials}
+                  <div className="relative group shrink-0">
+                    <div className="w-16 h-16 rounded-full overflow-hidden bg-[#ffa11f] flex items-center justify-center text-white font-extrabold text-2xl shadow-xs border-2 border-white ring-2 ring-[#ffa11f]/30">
+                      {user?.profile_image ? (
+                        <img
+                          src={getProfileImageUrl(user.profile_image)}
+                          alt={fullName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span>{initials}</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingPhoto}
+                      title="Upload new profile picture"
+                      className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-[#10292e] text-white hover:bg-[#ffa11f] transition-colors shadow-sm cursor-pointer"
+                    >
+                      {uploadingPhoto ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png, image/jpeg, image/jpg"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                    />
                   </div>
-                  <div>
-                    <h2 className="text-xl font-extrabold text-[#10292e]">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-xl font-extrabold text-[#10292e] truncate">
                       {fullName}
                     </h2>
                     <p className="text-xs text-[#8a999b] font-mono mt-0.5">
                       {studentCode} · active
                     </p>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingPhoto}
+                        className="text-[11px] font-semibold text-[#ffa11f] hover:underline cursor-pointer"
+                      >
+                        {uploadingPhoto ? "Uploading..." : "Change photo"}
+                      </button>
+                      {user?.profile_image && (
+                        <>
+                          <span className="text-[#c2cbcc] text-xs">·</span>
+                          <button
+                            type="button"
+                            onClick={handleRemovePhoto}
+                            className="text-[11px] font-semibold text-red-500 hover:underline cursor-pointer"
+                          >
+                            Remove
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 <form onSubmit={handleSaveChanges} className="space-y-4">
+                  {/* First Name & Last Name */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <div className="flex items-center justify-between text-xs text-[#8a999b] mb-1 font-medium">
+                        <span>First name</span>
+                        <span className="bg-[#e6f5f2] text-[#118a80] text-[10px] px-2 py-0.5 rounded-full font-semibold">
+                          Editable
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder="First name"
+                        required
+                        className="w-full px-4 py-2.5 rounded-2xl border border-[#e8eeea] bg-white text-xs sm:text-sm text-[#10292e] font-medium focus:border-[#ffa11f] focus:outline-hidden"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between text-xs text-[#8a999b] mb-1 font-medium">
+                        <span>Last name</span>
+                        <span className="bg-[#e6f5f2] text-[#118a80] text-[10px] px-2 py-0.5 rounded-full font-semibold">
+                          Editable
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        placeholder="Last name"
+                        required
+                        className="w-full px-4 py-2.5 rounded-2xl border border-[#e8eeea] bg-white text-xs sm:text-sm text-[#10292e] font-medium focus:border-[#ffa11f] focus:outline-hidden"
+                      />
+                    </div>
+                  </div>
                   <div>
                     <div className="flex items-center justify-between text-xs text-[#8a999b] mb-1 font-medium">
                       <span>Email</span>

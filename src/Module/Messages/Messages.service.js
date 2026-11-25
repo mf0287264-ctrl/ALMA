@@ -25,7 +25,7 @@ class MessagesService {
         student_code: partner.student_code,
         email: partner.email,
         grade_level: partner.grade_level,
-        profile_image: partner.profile_image
+        profile_image: partner.profile_image || partner.profileImage || null
       },
       messages: messages.map((m) => ({
         _id: m._id,

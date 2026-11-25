@@ -20,17 +20,32 @@ export const api = axios.create({
  */
 api.interceptors.request.use(
   async (config) => {
+    // If request contains FormData, let the browser / environment compute the multipart boundary
+    if (config.data instanceof FormData) {
+      delete config.headers["Content-Type"];
+    }
+
     if (typeof window !== "undefined") {
       try {
-        const res = await fetch("/api/auth/token");
+        const res = await fetch("/api/auth/token", {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+          },
+        });
         if (res.ok) {
           const data = await res.json();
           if (data?.token) {
             config.headers.Authorization = `Bearer ${data.token}`;
+          } else {
+            delete config.headers.Authorization;
           }
+        } else {
+          delete config.headers.Authorization;
         }
       } catch (e) {
-        // Continue request without token if route is inaccessible
+        delete config.headers.Authorization;
       }
     }
     return config;

@@ -122,6 +122,10 @@ class TeachersService {
   }
 
   async updateTeacher(id, data) {
+    // Teacher code is immutable once created and remains fixed across all updates
+    delete data.teacher_code;
+    delete data.teacherCode;
+
     if (data.email) {
       const existingTeacher = await teachersRepository.findByEmail(data.email);
       if (existingTeacher && existingTeacher._id.toString() !== id.toString()) {

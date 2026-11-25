@@ -2,9 +2,19 @@ import express from 'express';
 import adminsController from './Admins.controller.js';
 import { validate } from '../../Middleware/validation.middleware.js';
 import { authenticate } from '../../Middleware/auth.middleware.js';
+import { multerUpload } from '../../Middleware/multer.middleware.js';
+import { uploadProfilePictureHandler, updateUserNameHandler } from '../Users/Users.controller.js';
 import { createAdminSchema, updateAdminSchema, loginAdminSchema } from '../../Validation/Admin.validation.js';
 
 const router = express.Router();
+
+// Name update
+router.patch('/name', authenticate, updateUserNameHandler);
+router.put('/name', authenticate, updateUserNameHandler);
+
+// Profile picture upload
+router.patch('/profile-picture', authenticate, multerUpload({ desiredPath: 'Profiles' }).single('profile'), uploadProfilePictureHandler);
+router.post('/profile-picture', authenticate, multerUpload({ desiredPath: 'Profiles' }).single('profile'), uploadProfilePictureHandler);
 
 // Public: register an admin
 router.post('/', validate(createAdminSchema), adminsController.create);

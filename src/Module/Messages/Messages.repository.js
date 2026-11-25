@@ -107,6 +107,7 @@ class MessagesRepository {
             student_code: 1,
             email: 1,
             profile_image: 1,
+            profileImage: 1,
             grade_level: 1
           }
         }
@@ -115,8 +116,35 @@ class MessagesRepository {
 
     const partnerInfoMap = new Map();
     partners.forEach((p) => {
+      p.profile_image = p.profile_image || p.profileImage || null;
       partnerInfoMap.set(p._id.toString(), p);
     });
+
+    // Check missing partners in teachers collection if any
+    const missingIds = partnerIds.filter((id) => !partnerInfoMap.has(id.toString()));
+    if (missingIds.length > 0) {
+      const teachers = await this.teachersCollection
+        .find(
+          { _id: { $in: missingIds } },
+          {
+            projection: {
+              first_name: 1,
+              last_name: 1,
+              teacher_code: 1,
+              email: 1,
+              profile_image: 1,
+              profileImage: 1,
+              specialization: 1
+            }
+          }
+        )
+        .toArray();
+      teachers.forEach((t) => {
+        t.student_code = t.teacher_code || 'TEACHER';
+        t.profile_image = t.profile_image || t.profileImage || null;
+        partnerInfoMap.set(t._id.toString(), t);
+      });
+    }
 
     const threads = [];
     for (const [pIdStr, threadData] of partnerMap.entries()) {

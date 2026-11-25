@@ -8,7 +8,8 @@ class StudentsRepository {
 
   async findByEmail(email) {
     if (!email) return null;
-    return await this.collection.findOne({ email: email.toLowerCase().trim() });
+    const doc = await this.collection.findOne({ email: email.toLowerCase().trim() });
+    return doc ? { role: 'student', ...doc } : null;
   }
 
   async create(data) {
@@ -21,21 +22,33 @@ class StudentsRepository {
   }
 
   async findAll(filter = {}) {
-    return await this.collection.find(filter, { projection: { password_hash: 0 } }).toArray();
+    const docs = await this.collection.find(filter, { projection: { password_hash: 0 } }).toArray();
+    return docs.map((d) => ({ role: 'student', ...d }));
   }
 
   async findById(id) {
     const queryId = typeof id === 'string' ? new ObjectId(id) : id;
-    return await this.collection.findOne({ _id: queryId }, { projection: { password_hash: 0 } });
+    const doc = await this.collection.findOne({ _id: queryId }, { projection: { password_hash: 0 } });
+    return doc ? { role: 'student', ...doc } : null;
   }
 
   async update(id, data) {
     const queryId = typeof id === 'string' ? new ObjectId(id) : id;
+    const cleanData = {};
+    for (const [key, value] of Object.entries(data || {})) {
+      if (value !== undefined) {
+        cleanData[key] = value;
+      }
+    }
     await this.collection.updateOne(
       { _id: queryId },
-      { $set: { ...data, updated_at: new Date() } }
+      { $set: { ...cleanData, updated_at: new Date() } }
     );
     return await this.findById(id);
+  }
+
+  async updateDocumentById(id, data, options = {}) {
+    return await this.update(id, data);
   }
 
   async delete(id) {
@@ -56,6 +69,7 @@ class StudentsRepository {
           student_code: 1,
           grade_level: 1,
           profile_image: 1,
+          profileImage: 1,
           role: 1
         }
       }
@@ -83,6 +97,7 @@ class StudentsRepository {
         student_code: 1,
         grade_level: 1,
         profile_image: 1,
+        profileImage: 1,
         current_streak: 1,
         role: 1
       }

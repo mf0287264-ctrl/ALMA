@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import MangoIcon from "./MangoIcon";
-import { useAuth } from "@/app/_Context/AuthContext";
+import { useAuth, getProfileImageUrl } from "@/app/_Context/AuthContext";
 import { useSidebar } from "@/app/_Context/SidebarContext";
 import {
   LayoutGrid,
@@ -83,17 +83,20 @@ export default function Sidebar({ className = "" }: { className?: string }) {
 
   const studentName =
     user?.name ||
-    (user?.first_name ? `${user.first_name} ${user.last_name || ""}`.trim() : "Layla Hassan");
-  const studentCode = user?.student_code || "STU-1102";
-  const gradeLevel = user?.grade_level || "Grade 8";
+    (user?.first_name ? `${user.first_name} ${user.last_name || ""}`.trim() : user?.email ? user.email.split("@")[0] : "");
+  const studentCode = user?.student_code || "";
+  const gradeLevel = user?.grade_level || "";
 
   const initials =
     studentName
-      .split(" ")
-      .map((n) => n[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase() || "LH";
+      ? studentName
+          .split(" ")
+          .filter(Boolean)
+          .map((n) => n[0])
+          .slice(0, 2)
+          .join("")
+          .toUpperCase()
+      : "ST";
 
   const isActive = (href: string) => {
     if (href === "/home") return pathname === "/home";
@@ -169,13 +172,30 @@ export default function Sidebar({ className = "" }: { className?: string }) {
             <div className="pt-4 border-t border-[#e8eeea] mt-6">
               <p className="text-[11px] text-[#8a999b] mb-3 font-medium">Small steps. Bright futures.</p>
               <div className="flex items-center gap-3 p-2 rounded-xl bg-[#fafaf8]">
-                <div className="w-9 h-9 rounded-full bg-[#f3e8ff] text-[#9333ea] flex items-center justify-center font-bold text-xs border border-[#e9d5ff]">
-                  {initials}
-                </div>
-                <div className="flex-1 min-w-0">
+                <Link
+                  href="/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  title="Profile settings"
+                  className="w-9 h-9 rounded-full overflow-hidden bg-[#f3e8ff] text-[#9333ea] flex items-center justify-center font-bold text-xs border border-[#e9d5ff] shrink-0 hover:ring-2 hover:ring-[#118a80] transition-all cursor-pointer"
+                >
+                  {user?.profile_image ? (
+                    <img
+                      src={getProfileImageUrl(user.profile_image)}
+                      alt={studentName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    initials
+                  )}
+                </Link>
+                <Link
+                  href="/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                >
                   <p className="text-xs font-bold text-[#10292e] truncate">{studentName}</p>
                   <p className="text-[10px] text-[#8a999b]">{studentCode} · {gradeLevel}</p>
-                </div>
+                </Link>
                 <button
                   onClick={() => logout()}
                   title="Log out"
@@ -350,18 +370,27 @@ export default function Sidebar({ className = "" }: { className?: string }) {
           >
             {/* User row: Avatar + Name + Logout */}
             <div className={`flex items-center ${isCollapsed ? "justify-center" : "gap-2"}`}>
-              <div
-                title={`${studentName} (${studentCode} · ${gradeLevel})`}
-                className="w-7 h-7 rounded-full bg-[#f3e8ff] text-[#9333ea] flex items-center justify-center font-black text-[11px] border border-[#e9d5ff] shrink-0"
+              <Link
+                href="/profile"
+                title={`Profile settings · ${studentName} (${studentCode} · ${gradeLevel})`}
+                className="w-7 h-7 rounded-full overflow-hidden bg-[#f3e8ff] text-[#9333ea] flex items-center justify-center font-black text-[11px] border border-[#e9d5ff] shrink-0 hover:ring-2 hover:ring-[#118a80] transition-all cursor-pointer"
               >
-                {initials}
-              </div>
+                {user?.profile_image ? (
+                  <img
+                    src={getProfileImageUrl(user.profile_image)}
+                    alt={studentName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  initials
+                )}
+              </Link>
 
               {!isCollapsed && (
-                <div className="flex-1 min-w-0">
+                <Link href="/profile" className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
                   <p className="text-xs font-black text-[#10292e] truncate leading-tight">{studentName}</p>
                   <p className="text-[10px] text-[#8a999b] truncate leading-tight">{studentCode} · {gradeLevel}</p>
-                </div>
+                </Link>
               )}
 
               {!isCollapsed && (

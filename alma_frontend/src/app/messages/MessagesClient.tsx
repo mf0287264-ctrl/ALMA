@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import api from "@/services/api";
-import { useAuth } from "@/app/_Context/AuthContext";
+import { useAuth, getProfileImageUrl } from "@/app/_Context/AuthContext";
 import {
   Inbox,
   Mail,
@@ -342,9 +342,19 @@ export default function MessagesClient({ initialPartnerId }: MessagesClientProps
                       }`}
                     >
                       <div className="relative shrink-0">
-                        <div className="w-10 h-10 rounded-full bg-[#e6f4f2] text-[#118a80] flex items-center justify-center font-black text-xs shadow-2xs border border-[#118a80]/20">
-                          {partner.first_name[0]}
-                          {partner.last_name ? partner.last_name[0] : ""}
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-[#e6f4f2] text-[#118a80] flex items-center justify-center font-black text-xs shadow-2xs border border-[#118a80]/20">
+                          {partner.profile_image ? (
+                            <img
+                              src={getProfileImageUrl(partner.profile_image)}
+                              alt={partnerName}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <>
+                              {partner.first_name[0]}
+                              {partner.last_name ? partner.last_name[0] : ""}
+                            </>
+                          )}
                         </div>
                         <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
                       </div>
@@ -396,9 +406,19 @@ export default function MessagesClient({ initialPartnerId }: MessagesClientProps
                 <div className="flex items-center justify-between px-6 py-3.5 border-b border-[#e8eeea] bg-white">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="relative shrink-0">
-                      <div className="w-10 h-10 rounded-full bg-[#e6f4f2] text-[#118a80] flex items-center justify-center font-black text-xs border border-[#118a80]/20 shadow-2xs">
-                        {activePartner.first_name[0]}
-                        {activePartner.last_name ? activePartner.last_name[0] : ""}
+                      <div className="w-10 h-10 rounded-full overflow-hidden bg-[#e6f4f2] text-[#118a80] flex items-center justify-center font-black text-xs border border-[#118a80]/20 shadow-2xs">
+                        {activePartner.profile_image ? (
+                          <img
+                            src={getProfileImageUrl(activePartner.profile_image)}
+                            alt={`${activePartner.first_name} ${activePartner.last_name || ""}`}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <>
+                            {activePartner.first_name[0]}
+                            {activePartner.last_name ? activePartner.last_name[0] : ""}
+                          </>
+                        )}
                       </div>
                       <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
                     </div>
@@ -468,13 +488,27 @@ export default function MessagesClient({ initialPartnerId }: MessagesClientProps
                         <div key={msg._id} className="flex items-start gap-3 group">
                           <div className="relative shrink-0 mt-0.5">
                             <div
-                              className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shadow-2xs ${
+                              className={`w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center font-bold text-xs shadow-2xs ${
                                 isMe
                                   ? "bg-[#ffa11f] text-[#10292e]"
                                   : "bg-white text-[#118a80] border border-[#e8eeea]"
                               }`}
                             >
-                              {senderName[0]}
+                              {isMe && user?.profile_image ? (
+                                <img
+                                  src={getProfileImageUrl(user.profile_image)}
+                                  alt={senderName}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : !isMe && activePartner?.profile_image ? (
+                                <img
+                                  src={getProfileImageUrl(activePartner.profile_image)}
+                                  alt={senderName}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                senderName[0]
+                              )}
                             </div>
                           </div>
 
@@ -681,9 +715,19 @@ export default function MessagesClient({ initialPartnerId }: MessagesClientProps
                         className="flex items-center justify-between p-3 rounded-2xl bg-[#fafaf8] hover:bg-[#fff8ec] border border-[#e8eeea] cursor-pointer transition-colors"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-[#e6f4f2] text-[#118a80] flex items-center justify-center font-black text-xs border border-[#118a80]/20">
-                            {friend.first_name[0]}
-                            {friend.last_name ? friend.last_name[0] : ""}
+                          <div className="w-9 h-9 rounded-full overflow-hidden bg-[#e6f4f2] text-[#118a80] flex items-center justify-center font-black text-xs border border-[#118a80]/20 shrink-0">
+                            {friend.profile_image ? (
+                              <img
+                                src={getProfileImageUrl(friend.profile_image)}
+                                alt={fullName}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <>
+                                {friend.first_name[0]}
+                                {friend.last_name ? friend.last_name[0] : ""}
+                              </>
+                            )}
                           </div>
                           <div>
                             <p className="text-xs font-extrabold text-[#10292e]">{fullName}</p>

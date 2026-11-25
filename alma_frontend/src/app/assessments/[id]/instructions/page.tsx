@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use, useState, useEffect } from "react";
+import React, { use, useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import api from "@/services/api";
@@ -17,7 +17,7 @@ interface AssessmentDetail {
   questions?: any[];
 }
 
-export default function AssessmentInstructionsPage({
+function InstructionsContent({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -212,5 +212,23 @@ export default function AssessmentInstructionsPage({
         )}
       </main>
     </div>
+  );
+}
+
+export default function AssessmentInstructionsPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[#fafaf8]">
+          <Loader2 className="w-8 h-8 animate-spin text-[#118a80]" />
+        </div>
+      }
+    >
+      <InstructionsContent params={params} />
+    </Suspense>
   );
 }

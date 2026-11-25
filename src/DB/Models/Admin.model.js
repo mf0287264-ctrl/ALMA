@@ -9,6 +9,7 @@ const adminSchema = new mongoose.Schema(
     admin_code: { type: String, default: null },
     permissions: [{ type: String }],
     profile_image: { type: String, default: null },
+    profileImage: { type: String, default: null },
     role: { type: String, default: 'admin' },
     is_active: { type: Boolean, default: true },
     last_login_at: { type: Date, default: null }

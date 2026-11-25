@@ -1,10 +1,20 @@
 import express from 'express';
 import studentsController from './Students.controller.js';
 import { validate } from '../../Middleware/validation.middleware.js';
-import { authenticate } from '../../Middleware/auth.middleware.js';
+import { authenticate, requireRole } from '../../Middleware/auth.middleware.js';
+import { multerUpload } from '../../Middleware/multer.middleware.js';
+import { uploadProfilePictureHandler, updateUserNameHandler } from '../Users/Users.controller.js';
 import { createStudentSchema, updateStudentSchema, loginStudentSchema } from '../../Validation/Student.validation.js';
 
 const router = express.Router();
+
+// Name update
+router.patch('/name', authenticate, requireRole('student', 'admin'), updateUserNameHandler);
+router.put('/name', authenticate, requireRole('student', 'admin'), updateUserNameHandler);
+
+// Profile picture upload (PATCH and POST)
+router.patch('/profile-picture', authenticate, requireRole('student', 'admin'), multerUpload({ desiredPath: 'Profiles' }).single('profile'), uploadProfilePictureHandler);
+router.post('/profile-picture', authenticate, requireRole('student', 'admin'), multerUpload({ desiredPath: 'Profiles' }).single('profile'), uploadProfilePictureHandler);
 
 // Public: register a student
 router.post('/', validate(createStudentSchema), studentsController.create);
@@ -13,24 +23,31 @@ router.post('/', validate(createStudentSchema), studentsController.create);
 router.post('/login', validate(loginStudentSchema), studentsController.login);
 
 // Authenticated: get own profile from database
-router.get('/profile', authenticate, studentsController.getProfile);
+router.get('/profile', authenticate, requireRole('student', 'admin'), studentsController.getProfile);
 
 // If authorization header is sent, get profile from database; otherwise list all
 router.get('/', (req, res, next) => {
   if (req.headers.authorization || req.headers.authorize) {
-    return authenticate(req, res, () => studentsController.getProfile(req, res, next));
+    return authenticate(req, res, () => {
+      if (req.authUser?.role !== 'student' && req.authUser?.role !== 'admin') {
+        const error = new Error("Forbidden: Access denied. Role 'student' required.");
+        error.statusCode = 403;
+        return next(error);
+      }
+      return studentsController.getProfile(req, res, next);
+    });
   }
   return studentsController.getAll(req, res, next);
 });
 
 // Authenticated: update own profile
-router.put('/', authenticate, validate(updateStudentSchema), studentsController.update);
+router.put('/', authenticate, requireRole('student', 'admin'), validate(updateStudentSchema), studentsController.update);
 
 // Authenticated: delete own account
-router.delete('/', authenticate, studentsController.delete);
+router.delete('/', authenticate, requireRole('student', 'admin'), studentsController.delete);
 
 // Authenticated: Dashboard Summary
-router.get('/dashboard-summary', authenticate, studentsController.getDashboardSummary);
+router.get('/dashboard-summary', authenticate, requireRole('student', 'admin'), studentsController.getDashboardSummary);
 
 // Authenticated: Social & Friends
 router.get('/friends/me', authenticate, studentsController.getMyFriends);

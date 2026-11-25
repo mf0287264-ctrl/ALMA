@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import MangoIcon from "./MangoIcon";
-import { useAuth } from "@/app/_Context/AuthContext";
+import { useAuth, getProfileImageUrl } from "@/app/_Context/AuthContext";
 import { useSidebar } from "@/app/_Context/SidebarContext";
 import {
   LayoutGrid,
@@ -52,15 +52,19 @@ export default function TeacherSidebar({ className = "" }: { className?: string 
 
   const teacherName =
     user?.name ||
-    (user?.first_name ? `${user.first_name} ${user.last_name || ""}`.trim() : "Dr. Sara Hassan");
-  const teacherCode = user?.teacher_code || "TEA-8402";
+    (user?.first_name ? `${user.first_name} ${user.last_name || ""}`.trim() : user?.email ? user.email.split("@")[0] : "");
+  const teacherCode = user?.teacher_code || "";
 
-  const initials = teacherName
-    .split(" ")
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase() || "SH";
+  const initials =
+    teacherName
+      ? teacherName
+          .split(" ")
+          .filter(Boolean)
+          .map((n) => n[0])
+          .slice(0, 2)
+          .join("")
+          .toUpperCase()
+      : "TC";
 
   const isActive = (href: string) => {
     if (href === "/teacher/dashboard") {
@@ -131,13 +135,27 @@ export default function TeacherSidebar({ className = "" }: { className?: string 
 
             <div className="pt-4 border-t border-[#e8eeea] mt-6">
               <div className="flex items-center gap-3 p-2 rounded-xl bg-[#fafaf8]">
-                <div className="w-8 h-8 rounded-full bg-[#118a80] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                  {initials}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-black text-[#10292e] truncate">{teacherName}</p>
-                  <p className="text-[10px] text-[#8a999b]">{teacherCode} · Faculty</p>
-                </div>
+                <Link
+                  href="/teacher/settings"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 flex-1 min-w-0 group hover:opacity-80 transition-opacity"
+                >
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-[#118a80] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                    {user?.profile_image ? (
+                      <img
+                        src={getProfileImageUrl(user.profile_image)}
+                        alt={teacherName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      initials
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-black text-[#10292e] truncate group-hover:text-[#118a80] transition-colors">{teacherName}</p>
+                    <p className="text-[10px] text-[#8a999b]">{teacherCode} · Faculty</p>
+                  </div>
+                </Link>
                 <button
                   onClick={() => logout()}
                   title="Log out"
@@ -248,31 +266,46 @@ export default function TeacherSidebar({ className = "" }: { className?: string 
             }`}
           >
             <div className={`flex items-center ${isCollapsed ? "justify-center" : "gap-2"}`}>
-              <div
+              <Link
+                href="/teacher/settings"
                 title={`${teacherName} (${teacherCode})`}
-                className="w-7 h-7 rounded-full bg-[#118a80] text-white flex items-center justify-center font-black text-[11px] shrink-0 shadow-xs"
+                className={`flex items-center ${isCollapsed ? "justify-center" : "gap-2 flex-1 min-w-0"} group cursor-pointer`}
               >
-                {initials}
-              </div>
+                <div
+                  className="w-7 h-7 rounded-full overflow-hidden bg-[#118a80] text-white flex items-center justify-center font-black text-[11px] shrink-0 shadow-xs group-hover:ring-2 group-hover:ring-[#118a80]/30 transition-all"
+                >
+                  {user?.profile_image ? (
+                    <img
+                      src={getProfileImageUrl(user.profile_image)}
+                      alt={teacherName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    initials
+                  )}
+                </div>
+
+                {!isCollapsed && (
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-black text-[#10292e] truncate leading-tight group-hover:text-[#118a80] transition-colors">
+                      {teacherName}
+                    </p>
+                    <p className="text-[10px] text-[#8a999b] truncate leading-tight">
+                      {teacherCode} · Faculty
+                    </p>
+                  </div>
+                )}
+              </Link>
 
               {!isCollapsed && (
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-black text-[#10292e] truncate leading-tight">
-                    {teacherName}
-                  </p>
-                  <p className="text-[10px] text-[#8a999b] truncate leading-tight">
-                    {teacherCode} · Faculty
-                  </p>
-                </div>
+                <button
+                  onClick={() => logout()}
+                  title="Log out"
+                  className="text-[#a0afb1] hover:text-red-500 p-1 rounded-lg hover:bg-white transition-colors cursor-pointer shrink-0"
+                >
+                  <LogOut size={14} />
+                </button>
               )}
-
-              <button
-                onClick={() => logout()}
-                title="Log out"
-                className="text-[#a0afb1] hover:text-red-500 p-1 rounded-lg hover:bg-white transition-colors cursor-pointer shrink-0"
-              >
-                <LogOut size={14} />
-              </button>
             </div>
           </div>
         </div>

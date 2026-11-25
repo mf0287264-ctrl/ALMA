@@ -168,11 +168,7 @@ export default function MyChildrenPage() {
                 >
                   <div className="flex items-center gap-3.5">
                     <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-sm shrink-0 ${
-                        child.first_name === "Layla"
-                          ? "bg-[#f3e8ff] text-[#9333ea]"
-                          : "bg-[#e2f7ed] text-[#118a80]"
-                      }`}
+                      className="w-12 h-12 rounded-full flex items-center justify-center font-black text-sm shrink-0 bg-[#e2f7ed] text-[#118a80]"
                     >
                       {initials(child.first_name, child.last_name)}
                     </div>

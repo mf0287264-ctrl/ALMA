@@ -80,15 +80,32 @@ export interface ParentRegisterData {
 
 interface AuthContextType {
   user: User | null;
+  role: string | null;
   loading: boolean;
   login: (credentials: { email: string; password: string; role?: "student" | "teacher" | "admin" | "parent" }) => Promise<{ success: boolean; role?: string; error?: string }>;
   register: (data: { name?: string; first_name?: string; last_name?: string; email: string; password?: string }) => Promise<{ success: boolean; error?: string }>;
   registerTeacher: (data: TeacherRegisterData) => Promise<{ success: boolean; error?: string }>;
   registerParent: (data: ParentRegisterData) => Promise<{ success: boolean; error?: string }>;
   updateUser: (data: Partial<User>) => Promise<{ success: boolean; error?: string }>;
+  uploadProfilePicture: (file: File) => Promise<{ success: boolean; data?: any; error?: string }>;
+  updateName: (first_name: string, last_name: string) => Promise<{ success: boolean; data?: any; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
+
+export const getProfileImageUrl = (imagePath?: string | null): string => {
+  if (!imagePath) return "";
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://") || imagePath.startsWith("data:")) {
+    return imagePath;
+  }
+  const backendBase = (
+    process.env.NEXT_PUBLIC_BASE_API ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    "http://localhost:5000"
+  ).replace(/\/api\/v1\/?$/, "");
+  const cleanPath = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
+  return `${backendBase}${cleanPath}`;
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -96,6 +113,7 @@ const PROTECTED_ROUTES = [
   "/home",
   "/profile",
   "/learn",
+  "/lesson",
   "/my-lessons",
   "/courses",
   "/assessments",
@@ -106,6 +124,10 @@ const PROTECTED_ROUTES = [
   "/teachers",
   "/teacher",
   "/parent",
+  "/feeds",
+  "/feed",
+  "/friends",
+  "/messages",
 ];
 
 /**
@@ -216,7 +238,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const response = await api.get(endpoint);
       if (response.data?.data) {
-        setUser(response.data.data);
+        const fetchedUser = response.data.data;
+        if (!fetchedUser.role) {
+          fetchedUser.role = role || "student";
+        }
+        setUser(fetchedUser);
       }
     } catch (err) {
       console.warn("[AuthContext] Could not fetch full profile:", err);
@@ -226,6 +252,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Whenever the session becomes authenticated, load the full profile
   useEffect(() => {
     if (status === "authenticated" && role) {
+      setUser(null);
       fetchProfile();
     } else if (status === "unauthenticated") {
       setUser(null);
@@ -366,6 +393,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const uploadProfilePicture = async (file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append("profile", file);
+
+      const res = await api.patch("/users/profile-picture", formData);
+
+      const updatedData = res.data?.data;
+      if (updatedData) {
+        setUser((prev) => ({
+          ...(prev || {}),
+          ...updatedData,
+          profile_image: updatedData.profile_image || updatedData.profileImage,
+        }));
+      }
+      return { success: true, data: updatedData };
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to upload profile picture";
+      return { success: false, error: msg };
+    }
+  };
+
+  const updateName = async (first_name: string, last_name: string) => {
+    try {
+      const res = await api.patch("/users/name", {
+        first_name: first_name.trim(),
+        last_name: last_name.trim(),
+      });
+      const updatedData = res.data?.data;
+      if (updatedData) {
+        setUser((prev) => ({
+          ...(prev || {}),
+          ...updatedData,
+          first_name: updatedData.first_name || first_name.trim(),
+          last_name: updatedData.last_name || last_name.trim(),
+          name: `${updatedData.first_name || first_name} ${updatedData.last_name || last_name}`.trim(),
+        }));
+      }
+      return { success: true, data: updatedData };
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to update name";
+      return { success: false, error: msg };
+    }
+  };
+
   const logout = async () => {
     try {
       await api.post("/auth/logout");
@@ -394,12 +474,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
+        role,
         loading,
         login,
         register,
         registerTeacher,
         registerParent,
         updateUser,
+        uploadProfilePicture,
+        updateName,
         logout,
         refreshUser,
       }}

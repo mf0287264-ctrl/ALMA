@@ -16,6 +16,7 @@ const teacherSchema = new mongoose.Schema(
     specialization: { type: String, required: true },
     school_name: { type: String, default: null },
     profile_image: { type: String, default: null },
+    profileImage: { type: String, default: null },
     phone_number: { type: String, default: null },
     role: { type: String, default: "teacher" },
     is_active: { type: Boolean, default: true },

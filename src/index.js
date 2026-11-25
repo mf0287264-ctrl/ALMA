@@ -3,12 +3,14 @@ dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import { database_connect } from './DB/db.connection.js';
 import errorHandler from './Middleware/error.middleware.js';
 import { getRedisClient } from './Utils/redis.util.js';
 
 // Route Imports
 import authRoutes from './Module/Auth/Auth.routes.js';
+import usersRoutes from './Module/Users/Users.routes.js';
 import parentsRoutes from './Module/Parents/Parents.routes.js';
 import studentsRoutes from './Module/Students/Students.routes.js';
 import teachersRoutes from './Module/Teachers/Teachers.routes.js';
@@ -37,8 +39,13 @@ getRedisClient();
 app.use(cors());
 app.use(express.json());
 
+// Enable access to uploaded static files
+app.use('/uploads', express.static('uploads'));
+app.use('/uploaded', express.static('uploaded'));
+
 // API Routes
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/users', usersRoutes);
 app.use('/api/v1/parents', parentsRoutes);
 app.use('/api/v1/students', studentsRoutes);
 app.use('/api/v1/teachers', teachersRoutes);

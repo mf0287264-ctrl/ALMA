@@ -12,7 +12,8 @@ class ParentsRepository {
 
   async findByEmail(email) {
     if (!email) return null;
-    return await this.collection.findOne({ email: email.toLowerCase().trim() });
+    const doc = await this.collection.findOne({ email: email.toLowerCase().trim() });
+    return doc ? { role: 'parent', ...doc } : null;
   }
 
   async create(data) {
@@ -25,13 +26,15 @@ class ParentsRepository {
   }
 
   async findAll(filter = {}) {
-    return await this.collection.find(filter, { projection: { password_hash: 0 } }).toArray();
+    const docs = await this.collection.find(filter, { projection: { password_hash: 0 } }).toArray();
+    return docs.map((d) => ({ role: 'parent', ...d }));
   }
 
   async findById(id) {
     if (!id) return null;
     const queryId = typeof id === 'string' ? new ObjectId(id) : id;
-    return await this.collection.findOne({ _id: queryId }, { projection: { password_hash: 0 } });
+    const doc = await this.collection.findOne({ _id: queryId }, { projection: { password_hash: 0 } });
+    return doc ? { role: 'parent', ...doc } : null;
   }
 
   async update(id, data) {
@@ -42,6 +45,10 @@ class ParentsRepository {
       { $set: { ...data, updated_at: new Date() } }
     );
     return await this.findById(id);
+  }
+
+  async updateDocumentById(id, data, options = {}) {
+    return await this.update(id, data);
   }
 
   async delete(id) {

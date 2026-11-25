@@ -719,7 +719,7 @@ export default function TeacherGroupsPage() {
                                     Assigned {new Date(lesson.created_at).toLocaleDateString()}
                                   </span>
                                   <a
-                                    href="/my-lessons"
+                                    href="/teacher/lessons"
                                     className="inline-flex items-center gap-1 text-xs font-bold text-[#ffa11f] hover:underline"
                                   >
                                     <span>Preview</span>

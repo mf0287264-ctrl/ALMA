@@ -39,6 +39,7 @@ const studentSchema = new mongoose.Schema(
     grade_level: { type: String, required: true },
     school_name: { type: String, default: null },
     profile_image: { type: String, default: null },
+    profileImage: { type: String, default: null },
     role: { type: String, default: 'student' },
     is_active: { type: Boolean, default: true },
     national_id: { type: String, default: null, trim: true },

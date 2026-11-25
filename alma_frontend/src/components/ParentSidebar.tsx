@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import MangoIcon from "./MangoIcon";
-import { useAuth } from "@/app/_Context/AuthContext";
+import { useAuth, getProfileImageUrl } from "@/app/_Context/AuthContext";
 import { useSidebar } from "@/app/_Context/SidebarContext";
 import {
   LayoutGrid,
@@ -31,7 +31,7 @@ export interface ParentNavItem {
 
 const PARENT_NAV_ITEMS: ParentNavItem[] = [
   { label: "Overview", href: "/parent/dashboard", icon: LayoutGrid },
-  { label: "Feeds", href: "/feeds", icon: Compass },
+  { label: "Feeds", href: "/parent/feeds", icon: Compass },
   { label: "My Children", href: "/parent/children", icon: Users },
   { label: "Progress", href: "/parent/progress", icon: TrendingUp },
   { label: "Activity", href: "/parent/activity", icon: Activity },
@@ -49,16 +49,19 @@ export default function ParentSidebar({ className = "" }: { className?: string }
 
   const parentName =
     user?.name ||
-    (user?.first_name ? `${user.first_name} ${user.last_name || ""}`.trim() : "Mona Hassan");
-  const parentCode = user?.parent_code || "PAR-001";
+    (user?.first_name ? `${user.first_name} ${user.last_name || ""}`.trim() : user?.email ? user.email.split("@")[0] : "");
+  const parentCode = user?.parent_code || "";
 
   const initials =
     parentName
-      .split(" ")
-      .map((n) => n[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase() || "MH";
+      ? parentName
+          .split(" ")
+          .filter(Boolean)
+          .map((n) => n[0])
+          .slice(0, 2)
+          .join("")
+          .toUpperCase()
+      : "PR";
 
   const isActive = (href: string) => {
     if (href === "/parent/dashboard") {
@@ -129,13 +132,30 @@ export default function ParentSidebar({ className = "" }: { className?: string }
 
             <div className="pt-4 border-t border-[#e8eeea] mt-6">
               <div className="flex items-center gap-3 p-2 rounded-xl bg-[#fafaf8]">
-                <div className="w-8 h-8 rounded-full bg-[#fdecd2] text-[#10292e] flex items-center justify-center font-bold text-xs shrink-0 border border-[#f7d6aa]">
-                  {initials}
-                </div>
-                <div className="flex-1 min-w-0">
+                <Link
+                  href="/parent/settings"
+                  onClick={() => setMobileMenuOpen(false)}
+                  title="Parent settings"
+                  className="w-8 h-8 rounded-full overflow-hidden bg-[#fdecd2] text-[#10292e] flex items-center justify-center font-bold text-xs shrink-0 border border-[#f7d6aa] hover:ring-2 hover:ring-[#ffa11f] transition-all cursor-pointer"
+                >
+                  {user?.profile_image ? (
+                    <img
+                      src={getProfileImageUrl(user.profile_image)}
+                      alt={parentName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    initials
+                  )}
+                </Link>
+                <Link
+                  href="/parent/settings"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                >
                   <p className="text-xs font-black text-[#10292e] truncate">{parentName}</p>
                   <p className="text-[10px] text-[#8a999b]">{parentCode} · Guardian</p>
-                </div>
+                </Link>
                 <button
                   onClick={() => logout()}
                   title="Log out"
@@ -240,22 +260,31 @@ export default function ParentSidebar({ className = "" }: { className?: string }
             }`}
           >
             <div className={`flex items-center ${isCollapsed ? "justify-center" : "gap-2"}`}>
-              <div
-                title={`${parentName} (${parentCode})`}
-                className="w-7 h-7 rounded-full bg-[#fdecd2] text-[#10292e] flex items-center justify-center font-black text-[11px] shrink-0 border border-[#f7d6aa]"
+              <Link
+                href="/parent/settings"
+                title={`Parent settings · ${parentName} (${parentCode})`}
+                className="w-7 h-7 rounded-full overflow-hidden bg-[#fdecd2] text-[#10292e] flex items-center justify-center font-black text-[11px] shrink-0 border border-[#f7d6aa] hover:ring-2 hover:ring-[#ffa11f] transition-all cursor-pointer"
               >
-                {initials}
-              </div>
+                {user?.profile_image ? (
+                  <img
+                    src={getProfileImageUrl(user.profile_image)}
+                    alt={parentName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  initials
+                )}
+              </Link>
 
               {!isCollapsed && (
-                <div className="flex-1 min-w-0">
+                <Link href="/parent/settings" className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
                   <p className="text-xs font-black text-[#10292e] truncate leading-tight">
                     {parentName}
                   </p>
                   <p className="text-[10px] text-[#8a999b] truncate leading-tight">
                     {parentCode} · Guardian
                   </p>
-                </div>
+                </Link>
               )}
 
               <button

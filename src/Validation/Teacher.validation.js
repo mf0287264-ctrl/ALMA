@@ -6,7 +6,7 @@ export const createTeacherSchema = z.object({
   last_name: z.string().optional().default('User'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters long').optional(),
-  teacher_code: z.string().optional().default(() => `TEA-${Math.floor(1000 + Math.random() * 9000)}`),
+  teacher_code: z.string().optional(),
   specialization: z.string().optional().default('Computer Science'),
   school_name: z.string().optional().nullable(),
   profile_image: z.string().optional().nullable(),

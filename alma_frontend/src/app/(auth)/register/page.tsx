@@ -122,7 +122,7 @@ export default function RegisterPage() {
                   setName(e.target.value);
                   if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
                 }}
-                placeholder="Layla Hassan"
+                placeholder="Alex Morgan"
                 className={`w-full rounded-2xl bg-white px-4 py-3.5 text-sm text-[#10292e] placeholder:text-[#5a6e70]/60 transition-all shadow-[0_1px_2px_rgba(0,0,0,0.03)] focus:outline-none ${
                   errors.name
                     ? "border-2 border-[#cc4d4c] focus:ring-2 focus:ring-[#cc4d4c]/20"
@@ -152,7 +152,7 @@ export default function RegisterPage() {
                   setEmail(e.target.value);
                   if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
                 }}
-                placeholder="layla@"
+                placeholder="alex@school.edu"
                 className={`w-full rounded-2xl bg-white px-4 py-3.5 text-sm text-[#10292e] placeholder:text-[#5a6e70]/60 transition-all shadow-[0_1px_2px_rgba(0,0,0,0.03)] focus:outline-none ${
                   errors.email
                     ? "border-2 border-[#cc4d4c] focus:ring-2 focus:ring-[#cc4d4c]/20"
