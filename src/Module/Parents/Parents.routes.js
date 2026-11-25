@@ -41,25 +41,12 @@ router.get('/child/:childId/progress', authenticate, requireRole('parent'), pare
 router.post('/messages', authenticate, requireRole('parent'), validate(sendMessageSchema), parentsController.sendMessage);
 router.get('/messages', authenticate, requireRole('parent'), parentsController.getMessages);
 
-// Authenticated or list all
-router.get('/', (req, res, next) => {
-  if (req.headers.authorization || req.headers.authorize) {
-    return authenticate(req, res, () => {
-      if (req.authUser?.role !== 'parent') {
-        const error = new Error("Forbidden: Access denied. Role 'parent' required.");
-        error.statusCode = 403;
-        return next(error);
-      }
-      return parentsController.getProfile(req, res, next);
-    });
-  }
-  return parentsController.getAll(req, res, next);
-});
+router.get('/', authenticate, requireRole('parent'), parentsController.getProfile);
 
 router.put('/', authenticate, requireRole('parent'), validate(updateParentSchema), parentsController.update);
 router.delete('/', authenticate, requireRole('parent'), parentsController.delete);
 
-router.get('/:id', parentsController.getById);
+router.get('/:id', authenticate, requireRole('parent', 'admin'), parentsController.getById);
 router.put('/:id', authenticate, requireRole('parent'), validate(updateParentSchema), parentsController.update);
 router.delete('/:id', authenticate, requireRole('parent'), parentsController.delete);
 

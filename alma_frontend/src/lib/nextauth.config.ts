@@ -1,48 +1,81 @@
-import { NextAuthOptions } from "next-auth";
+import { createHash } from "node:crypto";
+import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { encryptToken, decryptToken } from "@/utils/tokenEncryption";
+import { authSigningSecret, backendApiUrl } from "./request-security";
 
-const API_BASE = process.env.NEXT_PUBLIC_BASE_API || "http://localhost:5000/api/v1";
+const SESSION_SECONDS = 60 * 60 * 24 * 30;
+const roles = new Set(["student", "teacher", "parent", "admin"]);
+const refreshes = new Map<
+  string,
+  { expires: number; promise: Promise<Refreshed | "unavailable" | null> }
+>();
+type Refreshed = {
+  accessToken: string;
+  refreshToken: string;
+  accessTokenExpires: number;
+};
+type UserProfile = {
+  _id?: string;
+  id?: string;
+  first_name?: string;
+  last_name?: string;
+  name?: string;
+  role?: string;
+};
 
-/** 30 days in seconds (matches backend JWT_ACCESS_EXPIRES_IN=30d) */
-const ACCESS_TOKEN_LIFETIME_S = 60 * 60 * 24 * 30;
+function accessExpiry(token: string): number {
+  const payload = JSON.parse(
+    Buffer.from(token.split(".")[1], "base64url").toString("utf8"),
+  ) as { exp?: number };
+  if (!payload.exp || !Number.isFinite(payload.exp))
+    throw new Error("Invalid authentication response");
+  return payload.exp * 1000;
+}
 
-/**
- * Call the backend refresh endpoint and return new encrypted token pair,
- * or null if the refresh token itself has expired / been invalidated.
- */
 async function refreshAccessToken(
-  encryptedRefreshToken: string
-): Promise<{ accessToken: string; refreshToken: string; accessTokenExpires: number } | null> {
-  try {
-    const rawRefreshToken = await decryptToken(encryptedRefreshToken);
-    if (!rawRefreshToken) return null;
-
-    const res = await fetch(`${API_BASE}/auth/refresh-token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken: rawRefreshToken }),
-    });
-
-    if (!res.ok) return null;
-
-    const json = await res.json();
-    const { accessToken: newAccess, refreshToken: newRefresh } = json?.data ?? {};
-    if (!newAccess || !newRefresh) return null;
-
-    const [encAccess, encRefresh] = await Promise.all([
-      encryptToken(newAccess),
-      encryptToken(newRefresh),
-    ]);
-
-    return {
-      accessToken: encAccess,
-      refreshToken: encRefresh,
-      accessTokenExpires: Date.now() + ACCESS_TOKEN_LIFETIME_S * 1000,
-    };
-  } catch {
-    return null;
-  }
+  encryptedRefresh: string,
+): Promise<Refreshed | "unavailable" | null> {
+  const key = createHash("sha256").update(encryptedRefresh).digest("hex");
+  const existing = refreshes.get(key);
+  if (existing && existing.expires > Date.now()) return existing.promise;
+  if (refreshes.size >= 1000) refreshes.delete(refreshes.keys().next().value!);
+  const promise = (async () => {
+    try {
+      const raw = await decryptToken(encryptedRefresh);
+      if (!raw) return null;
+      const response = await fetch(`${backendApiUrl()}/auth/refresh-token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken: raw }),
+        cache: "no-store",
+        signal: AbortSignal.timeout(15000),
+      });
+      if (response.status === 429 || response.status >= 500)
+        return "unavailable";
+      if (!response.ok) return null;
+      const { data } = await response.json();
+      if (
+        typeof data?.accessToken !== "string" ||
+        typeof data?.refreshToken !== "string"
+      )
+        return null;
+      const [accessToken, refreshToken] = await Promise.all([
+        encryptToken(data.accessToken),
+        encryptToken(data.refreshToken),
+      ]);
+      return {
+        accessToken,
+        refreshToken,
+        accessTokenExpires: accessExpiry(data.accessToken),
+      };
+    } catch {
+      return "unavailable";
+    }
+  })();
+  // Parallel requests from the same browser share one rotation rather than reusing the old token.
+  refreshes.set(key, { expires: Date.now() + 20000, promise });
+  return promise;
 }
 
 export const authOptions: NextAuthOptions = {
@@ -52,157 +85,138 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
-        role: { label: "Role", type: "text" }, // 'student' | 'teacher' | 'admin'
+        role: { label: "Role", type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
-
+        if (
+          typeof credentials?.email !== "string" ||
+          typeof credentials.password !== "string" ||
+          credentials.email.length > 254 ||
+          credentials.password.length > 128
+        )
+          return null;
         const role = credentials.role || "student";
-        let endpoint = "/students/login";
-        if (role === "teacher") {
-          endpoint = "/teachers/login";
-        } else if (role === "parent") {
-          endpoint = "/parents/login";
-        } else if (role === "admin") {
-          endpoint = "/admins/login";
-        }
-
-        const cleanEmail = credentials.email.toLowerCase().trim();
-
+        if (!roles.has(role)) return null;
+        const email = credentials.email.toLowerCase().trim();
         try {
-          const res = await fetch(`${API_BASE}${endpoint}`, {
+          const response = await fetch(`${backendApiUrl()}/${role}s/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: cleanEmail,
-              password: credentials.password,
-            }),
+            body: JSON.stringify({ email, password: credentials.password }),
+            cache: "no-store",
+            signal: AbortSignal.timeout(15000),
           });
-
-          if (!res.ok) {
-            const jsonErr = await res.json().catch(() => null);
-            const msg =
-              jsonErr?.message ||
-              jsonErr?.error ||
-              `Invalid credentials for ${role} portal`;
-            throw new Error(msg);
-          }
-
-          const json = await res.json();
-          const data = json?.data;
-          if (!data?.accessToken || !data?.refreshToken) {
-            throw new Error("No tokens returned from server");
-          }
-
-          const userObj =
-            (role === "student" && data.student) ||
-            (role === "teacher" && data.teacher) ||
-            (role === "parent" && data.parent) ||
-            (role === "admin" && data.admin) ||
-            data.student ||
-            data.teacher ||
-            data.parent ||
-            data.admin ||
-            {};
-
-          // Encrypt tokens before storing them in the cookie
-          const [encAccess, encRefresh] = await Promise.all([
+          if (!response.ok) return null;
+          const { data } = await response.json();
+          if (
+            typeof data?.accessToken !== "string" ||
+            typeof data?.refreshToken !== "string"
+          )
+            return null;
+          const profile = data[role] as UserProfile | undefined;
+          if (
+            !profile ||
+            (profile.role && profile.role !== role) ||
+            !(profile._id || profile.id)
+          )
+            return null;
+          const [accessToken, refreshToken] = await Promise.all([
             encryptToken(data.accessToken),
             encryptToken(data.refreshToken),
           ]);
-
           return {
-            id: userObj._id?.toString() || userObj.id?.toString() || cleanEmail,
-            name: `${userObj.first_name || ""} ${userObj.last_name || ""}`.trim() || userObj.name || cleanEmail,
-            email: cleanEmail,
-            // Custom fields stored in next-auth JWT
-            accessToken: encAccess,
-            refreshToken: encRefresh,
-            role: role,
-            backendId: userObj._id?.toString() || userObj.id?.toString(),
-            accessTokenExpires: Date.now() + ACCESS_TOKEN_LIFETIME_S * 1000,
+            id: String(profile._id || profile.id),
+            backendId: String(profile._id || profile.id),
+            role,
+            name:
+              `${profile.first_name || ""} ${profile.last_name || ""}`.trim() ||
+              profile.name ||
+              email,
+            email,
+            accessToken,
+            refreshToken,
+            accessTokenExpires: accessExpiry(data.accessToken),
           };
-        } catch (err: any) {
-          throw new Error(err.message || "Authentication failed");
+        } catch {
+          return null;
         }
       },
     }),
   ],
-
   callbacks: {
-    /**
-     * jwt callback — runs every time a JWT is created or refreshed.
-     * Stores encrypted tokens and handles automatic refresh rotation.
-     */
     async jwt({ token, user }) {
-      // First sign-in: user object is populated by authorize()
-      if (user) {
-        token.accessToken = user.accessToken;
-        token.refreshToken = user.refreshToken;
-        token.role = user.role;
-        token.backendId = user.backendId;
-        token.name = user.name ?? undefined;
-        token.accessTokenExpires = user.accessTokenExpires;
-        token.error = undefined;
-        return token;
-      }
-
-      // Token still valid → pass through
+      if (user)
+        return {
+          ...token,
+          accessToken: user.accessToken,
+          refreshToken: user.refreshToken,
+          role: user.role,
+          backendId: user.backendId,
+          name: user.name || undefined,
+          accessTokenExpires: user.accessTokenExpires,
+          error: undefined,
+        };
       if (
         token.accessTokenExpires &&
-        Date.now() < token.accessTokenExpires
-      ) {
+        Date.now() < token.accessTokenExpires - 30000
+      )
         return token;
-      }
-
-      // Access token has expired — attempt silent refresh
-      if (token.refreshToken) {
+      if (typeof token.refreshToken === "string") {
         const refreshed = await refreshAccessToken(token.refreshToken);
-        if (refreshed) {
-          return {
-            ...token,
-            accessToken: refreshed.accessToken,
-            refreshToken: refreshed.refreshToken,
-            accessTokenExpires: refreshed.accessTokenExpires,
-            error: undefined,
-          };
-        }
-        // Refresh token also expired/invalid — user must re-login
-        return { ...token, error: "RefreshAccessTokenError" };
+        if (refreshed === "unavailable")
+          return { ...token, error: "AuthenticationServiceUnavailable" };
+        if (refreshed) return { ...token, ...refreshed, error: undefined };
       }
-
-      return token;
+      return { ...token, error: "RefreshAccessTokenError" };
     },
-
-    /**
-     * session callback — exposes selected JWT fields to the client via useSession().
-     * Raw tokens are NEVER sent to the client — they remain server-side encrypted.
-     */
     async session({ session, token }) {
-      // Expose encrypted tokens to Server Components / API routes (not to the browser directly)
-      session.accessToken = token.accessToken;
-      session.refreshToken = token.refreshToken;
+      // Only identity and session status are sent to the browser.
       session.role = token.role;
       session.backendId = token.backendId;
       session.error = token.error;
       return session;
     },
+    async redirect({ url, baseUrl }) {
+      try {
+        const target = new URL(url, baseUrl);
+        return target.origin === new URL(baseUrl).origin
+          ? target.href
+          : baseUrl;
+      } catch {
+        return baseUrl;
+      }
+    },
   },
-
-  pages: {
-    signIn: "/login",
+  events: {
+    async signOut({ token }) {
+      if (!token) return;
+      try {
+        const refreshToken =
+          typeof token.refreshToken === "string"
+            ? await decryptToken(token.refreshToken)
+            : null;
+        const accessToken =
+          typeof token.accessToken === "string"
+            ? await decryptToken(token.accessToken)
+            : null;
+        await fetch(`${backendApiUrl()}/auth/logout`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          },
+          body: JSON.stringify({ refreshToken }),
+          cache: "no-store",
+          signal: AbortSignal.timeout(10000),
+        });
+      } catch {
+        /* Local cookies are removed even if the backend is temporarily unavailable. */
+      }
+    },
   },
-
-  session: {
-    strategy: "jwt",
-    // Session max age matches the refresh token lifetime (30 days)
-    maxAge: ACCESS_TOKEN_LIFETIME_S,
-  },
-
-  jwt: {
-    // JWT cookie max age = 30 days
-    maxAge: ACCESS_TOKEN_LIFETIME_S,
-  },
-
-  secret: process.env.NEXTAUTH_SECRET,
+  pages: { signIn: "/login" },
+  session: { strategy: "jwt", maxAge: SESSION_SECONDS },
+  jwt: { maxAge: SESSION_SECONDS },
+  secret: authSigningSecret(),
+  useSecureCookies: process.env.NODE_ENV === "production",
 };

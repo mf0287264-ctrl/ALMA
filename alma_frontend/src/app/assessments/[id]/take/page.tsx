@@ -13,7 +13,6 @@ interface AssessmentQuestion {
   question_text: string;
   question_type: string;
   options: string[];
-  correct_answer: string;
   points: number;
   explanation?: string;
 }
@@ -58,7 +57,7 @@ function AssessmentTakeContent({
         } else {
           setError("Assessment not found in database.");
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Failed to load assessment for taking:", err);
         setError("Could not load assessment questions from database.");
       } finally {
@@ -83,59 +82,19 @@ function AssessmentTakeContent({
 
     setIsSubmitting(true);
 
-    // Calculate score
-    let earnedPoints = 0;
-    let correctCount = 0;
-    const questionsBreakdown = questions.map((q, idx) => {
-      const selected = answers[idx];
-      const isCorrect = selected === q.correct_answer;
-      if (isCorrect) {
-        earnedPoints += q.points || 10;
-        correctCount += 1;
-      }
-      return {
-        question_text: q.question_text,
-        selected_answer: selected || "Not answered",
-        correct_answer: q.correct_answer,
-        is_correct: isCorrect,
-        points: q.points || 10,
-        explanation: q.explanation || "",
-      };
-    });
-
-    const totalPossible = assessment.total_points || questions.reduce((s, q) => s + (q.points || 10), 0);
-    const scorePercent = Math.round((earnedPoints / totalPossible) * 100);
-    const passed = scorePercent >= (assessment.passing_score || 60);
-
-    const resultPayload = {
-      assessment_id: assessment._id,
-      title: assessment.title,
-      course_title: assessment.course_title,
-      earned_points: earnedPoints,
-      total_points: totalPossible,
-      score_percent: scorePercent,
-      correct_count: correctCount,
-      total_questions: questions.length,
-      passing_score: assessment.passing_score,
-      passed,
-      submitted_at: new Date().toISOString(),
-      breakdown: questionsBreakdown,
-    };
-
     try {
-      // Save directly to MongoDB connected to the logged-in student
-      await api.post(`/assessments/${assessment._id}/submit`, resultPayload);
-    } catch (apiErr) {
-      console.warn("Could not save submission to API, saving to local cache:", apiErr);
-      try {
-        localStorage.setItem(`assessment_result_${assessment._id}`, JSON.stringify(resultPayload));
-      } catch (e) {
-        // ignore
-      }
+      const submittedAnswers = Object.fromEntries(questions.flatMap((q, index) =>
+        answers[index] === undefined ? [] : [[q._id || String(index), answers[index]]],
+      ));
+      const response = await api.post(`/assessments/${assessment._id}/submit`, { answers: submittedAnswers });
+      if (!response.data?.success) throw new Error("Submission was not recorded.");
+      toast.success("Assessment submitted successfully!");
+      router.push(`/assessments/${assessment._id}/result`);
+    } catch {
+      toast.error("Your assessment could not be saved. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast.success("Assessment submitted successfully!");
-    router.push(`/assessments/${assessment._id}/result`);
   };
 
   if (loading) {

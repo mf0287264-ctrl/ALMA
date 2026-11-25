@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { signIn, signOut, useSession } from "next-auth/react";
+import { isAxiosError } from "axios";
 import api from "@/services/api";
 import MangoIcon from "@/components/MangoIcon";
 
@@ -78,6 +79,14 @@ export interface ParentRegisterData {
   child_student_code?: string | null;
 }
 
+function apiError(error: unknown, fallback: string): string {
+  if (isAxiosError<{ error?: string; message?: string; details?: { message?: string }[] }>(error)) {
+    const data = error.response?.data;
+    return data?.details?.[0]?.message || data?.error || data?.message || fallback;
+  }
+  return fallback;
+}
+
 interface AuthContextType {
   user: User | null;
   role: string | null;
@@ -87,24 +96,26 @@ interface AuthContextType {
   registerTeacher: (data: TeacherRegisterData) => Promise<{ success: boolean; error?: string }>;
   registerParent: (data: ParentRegisterData) => Promise<{ success: boolean; error?: string }>;
   updateUser: (data: Partial<User>) => Promise<{ success: boolean; error?: string }>;
-  uploadProfilePicture: (file: File) => Promise<{ success: boolean; data?: any; error?: string }>;
-  updateName: (first_name: string, last_name: string) => Promise<{ success: boolean; data?: any; error?: string }>;
+  uploadProfilePicture: (file: File) => Promise<{ success: boolean; data?: User & { profileImage?: string | null }; error?: string }>;
+  updateName: (first_name: string, last_name: string) => Promise<{ success: boolean; data?: User & { profileImage?: string | null }; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
 export const getProfileImageUrl = (imagePath?: string | null): string => {
   if (!imagePath) return "";
-  if (imagePath.startsWith("http://") || imagePath.startsWith("https://") || imagePath.startsWith("data:")) {
-    return imagePath;
+  if (/^data:image\/(png|jpeg|webp);base64,/.test(imagePath)) return imagePath;
+  let pathname = imagePath;
+  if (/^https?:\/\//.test(imagePath)) {
+    try {
+      const url = new URL(imagePath);
+      if (!/^\/(uploads|uploaded)\//.test(url.pathname)) return url.protocol === "https:" ? url.href : "";
+      pathname = url.pathname;
+    } catch { return ""; }
   }
-  const backendBase = (
-    process.env.NEXT_PUBLIC_BASE_API ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    "http://localhost:5000"
-  ).replace(/\/api\/v1\/?$/, "");
-  const cleanPath = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
-  return `${backendBase}${cleanPath}`;
+  const clean = pathname.replace(/^\//, "");
+  if (!/^(uploads|uploaded)\/[a-zA-Z0-9_\/.-]+\.(png|jpe?g|webp)$/i.test(clean)) return "";
+  return `/api/media/${clean}`;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -242,20 +253,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!fetchedUser.role) {
           fetchedUser.role = role || "student";
         }
-        setUser(fetchedUser);
+        return fetchedUser as User;
       }
-    } catch (err) {
-      console.warn("[AuthContext] Could not fetch full profile:", err);
+    } catch {
+      console.warn("[AuthContext] Could not fetch full profile.");
     }
+    return null;
   }, [role]);
 
   // Whenever the session becomes authenticated, load the full profile
   useEffect(() => {
     if (status === "authenticated" && role) {
-      setUser(null);
-      fetchProfile();
-    } else if (status === "unauthenticated") {
-      setUser(null);
+      let active = true;
+      void fetchProfile().then(profile => { if (active && profile) setUser(profile); });
+      return () => { active = false; };
     }
   }, [status, role, fetchProfile]);
 
@@ -314,13 +325,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: false, error: result.error };
       }
       return { success: true };
-    } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.details?.[0]?.message ||
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        "Registration failed. Please check your details.";
-      return { success: false, error: errorMessage };
+    } catch (error: unknown) {
+      return { success: false, error: apiError(error, "Registration failed. Please check your details.") };
     }
   };
 
@@ -337,13 +343,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: false, error: result.error };
       }
       return { success: true };
-    } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.details?.[0]?.message ||
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        "Teacher registration failed. Please check your details.";
-      return { success: false, error: errorMessage };
+    } catch (error: unknown) {
+      return { success: false, error: apiError(error, "Teacher registration failed. Please check your details.") };
     }
   };
 
@@ -360,13 +361,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: false, error: result.error };
       }
       return { success: true };
-    } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.details?.[0]?.message ||
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        "Parent registration failed. Please check your details.";
-      return { success: false, error: errorMessage };
+    } catch (error: unknown) {
+      return { success: false, error: apiError(error, "Parent registration failed. Please check your details.") };
     }
   };
 
@@ -387,9 +383,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser((prev) => (prev ? { ...prev, ...data } : null));
       }
       return { success: true };
-    } catch {
-      setUser((prev) => (prev ? { ...prev, ...data } : null));
-      return { success: true };
+    } catch (error: unknown) {
+      return { success: false, error: apiError(error, "Your profile could not be saved. Please try again.") };
     }
   };
 
@@ -409,13 +404,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }));
       }
       return { success: true, data: updatedData };
-    } catch (err: any) {
-      const msg =
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        err.message ||
-        "Failed to upload profile picture";
-      return { success: false, error: msg };
+    } catch (error: unknown) {
+      return { success: false, error: apiError(error, "Failed to upload profile picture") };
     }
   };
 
@@ -436,22 +426,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }));
       }
       return { success: true, data: updatedData };
-    } catch (err: any) {
-      const msg =
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        err.message ||
-        "Failed to update name";
-      return { success: false, error: msg };
+    } catch (error: unknown) {
+      return { success: false, error: apiError(error, "Failed to update name") };
     }
   };
 
   const logout = async () => {
-    try {
-      await api.post("/auth/logout");
-    } catch {
-      // Best-effort
-    }
     if (typeof window !== "undefined") {
       try {
         localStorage.clear();
@@ -466,14 +446,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = async () => {
     if (status === "authenticated") {
-      await fetchProfile();
+      const profile = await fetchProfile();
+      if (profile) setUser(profile);
     }
   };
 
   return (
     <AuthContext.Provider
       value={{
-        user,
+        user: status === "authenticated" && user?.role === role && String(user?._id || user?.id) === session?.backendId ? user : null,
         role,
         loading,
         login,

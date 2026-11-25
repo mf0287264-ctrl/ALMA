@@ -16,7 +16,7 @@ test('lesson summary keeps both ID filters and preserves the caller input', asyn
   let captured;
   t.mock.method(db, 'collection', () => ({ find(query, options) {
     captured = { query, options };
-    return { toArray: async () => [] };
+    return { limit() { return this; }, toArray: async () => [] };
   } }));
   await lessonsRepository.findAll(filter, { summary: true });
   assert.equal(captured.query.course_id.$in[0].toHexString(), course);

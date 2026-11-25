@@ -5,14 +5,14 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import api from "@/services/api";
-import { Check, X, Loader2, AlertCircle, RotateCcw, BookOpen } from "lucide-react";
+import { Check, X, Loader2, AlertCircle, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 interface QuizItem {
   _id: string;
   question: string;
   options: string[];
-  correct_option_index: number;
+  correct_option_index?: number;
   explanation?: string;
 }
 
@@ -26,6 +26,13 @@ interface QuizDocument {
   questions: QuizItem[];
 }
 
+interface QuizResult {
+  score: number;
+  score_percent: number;
+  total_questions: number;
+  breakdown: { question_id: string; correct_option_index: number; is_correct: boolean; explanation: string }[];
+}
+
 function QuizContent() {
   const searchParams = useSearchParams();
   const quizIdParam = searchParams.get("quizId");
@@ -37,6 +44,8 @@ function QuizContent() {
 
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
+  const [result, setResult] = useState<QuizResult | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [showExplanation, setShowExplanation] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
@@ -53,7 +62,7 @@ function QuizContent() {
           const initial = match ? match._id : list[0]._id;
           setSelectedQuizId(initial);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Failed to load quizzes from database:", err);
         setError("Could not load quizzes. Please check your connection.");
       } finally {
@@ -70,50 +79,41 @@ function QuizContent() {
   const currentQuestion = questions[currentIdx] || null;
   const userSelected = selectedAnswers[currentIdx];
 
-  // Calculate score
-  let correctCount = 0;
-  let attemptedCount = 0;
-  questions.forEach((q, idx) => {
-    if (selectedAnswers[idx] !== undefined) {
-      attemptedCount++;
-      if (selectedAnswers[idx] === q.correct_option_index) {
-        correctCount++;
-      }
-    }
-  });
+  const correctCount = result?.score ?? 0;
+  const attemptedCount = Object.keys(selectedAnswers).length;
+  const currentFeedback = result?.breakdown[currentIdx];
 
   const handleSelectOption = (optIdx: number) => {
-    if (!currentQuestion) return;
+    if (!currentQuestion || result || submitting) return;
     setSelectedAnswers((prev) => ({ ...prev, [currentIdx]: optIdx }));
-    setShowExplanation((prev) => ({ ...prev, [currentIdx]: true }));
-
-    if (optIdx === currentQuestion.correct_option_index) {
-      toast.success("Spot on!");
-    } else {
-      toast.error("Not quite right.");
-    }
   };
 
   const handleNext = async () => {
     if (currentIdx < totalQuestions - 1) {
       setCurrentIdx((prev) => prev + 1);
-    } else {
+    } else if (!result && !submitting) {
+      setSubmitting(true);
       try {
-        await api.post(`/quizzes/${activeQuiz._id}/attempt`, {
-          score: correctCount,
-          total_questions: totalQuestions,
-          score_percent: Math.round((correctCount / totalQuestions) * 100),
-          answers: selectedAnswers,
-        });
-        toast.success(`Quiz completed and saved to your profile! You scored ${correctCount}/${totalQuestions}`);
-      } catch (e) {
-        toast.success(`Quiz completed! You scored ${correctCount}/${totalQuestions}`);
+        const answers = Object.fromEntries(questions.flatMap((question, index) =>
+          selectedAnswers[index] === undefined ? [] : [[question._id || String(index), selectedAnswers[index]]],
+        ));
+        const response = await api.post(`/quizzes/${activeQuiz._id}/attempt`, { answers });
+        if (!response.data?.success || !response.data.data?.breakdown) throw new Error("No saved result.");
+        const saved: QuizResult = response.data.data;
+        setResult(saved);
+        setShowExplanation(Object.fromEntries(questions.map((_, index) => [index, true])));
+        toast.success(`Quiz saved! You scored ${saved.score}/${saved.total_questions}`);
+      } catch {
+        toast.error("Your quiz could not be saved. Please try again.");
+      } finally {
+        setSubmitting(false);
       }
     }
   };
 
   const handleReset = () => {
     setSelectedAnswers({});
+    setResult(null);
     setShowExplanation({});
     setCurrentIdx(0);
     toast.info("Quiz reset for a fresh attempt.");
@@ -173,6 +173,7 @@ function QuizContent() {
                   onClick={() => {
                     setSelectedQuizId(q._id);
                     setCurrentIdx(0);
+                    setResult(null);
                     setSelectedAnswers({});
                     setShowExplanation({});
                   }}
@@ -217,12 +218,13 @@ function QuizContent() {
                 <div className="space-y-3 font-mono text-xs sm:text-sm">
                   {currentQuestion.options.map((option, idx) => {
                     const isSelected = userSelected === idx;
-                    const isCorrect = idx === currentQuestion.correct_option_index;
-                    const hasAnswered = userSelected !== undefined;
+                    const isCorrect = idx === currentFeedback?.correct_option_index;
+                    const hasAnswered = Boolean(result) && userSelected !== undefined;
 
                     let cardStyle = "bg-white border-[#e8eeea] hover:bg-[#fafaf8]";
                     let icon = null;
 
+                    if (!result && isSelected) cardStyle = "bg-[#fff8ec] border-2 border-[#ffa11f]";
                     if (hasAnswered) {
                       if (isCorrect) {
                         cardStyle = "bg-[#e6f5f2] border-2 border-[#118a80] text-[#10292e]";
@@ -237,6 +239,7 @@ function QuizContent() {
                       <button
                         key={idx}
                         onClick={() => handleSelectOption(idx)}
+                        disabled={Boolean(result) || submitting}
                         className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${cardStyle}`}
                       >
                         <span>{option}</span>
@@ -247,13 +250,13 @@ function QuizContent() {
                 </div>
 
                 {/* Explanation box */}
-                {showExplanation[currentIdx] && currentQuestion.explanation && (
+                {showExplanation[currentIdx] && currentFeedback?.explanation && (
                   <div className="p-4 rounded-2xl bg-[#fffdf9] border border-[#fae2b8] text-xs sm:text-sm leading-relaxed animate-in fade-in duration-200">
                     <div className="font-extrabold text-[#10292e] mb-1">
                       Explanation
                     </div>
                     <p className="text-[#607274]">
-                      {currentQuestion.explanation}
+                      {currentFeedback?.explanation}
                     </p>
                   </div>
                 )}
@@ -262,9 +265,10 @@ function QuizContent() {
                 <div className="pt-2 flex items-center justify-between">
                   <button
                     onClick={handleNext}
+                    disabled={submitting || (Boolean(result) && currentIdx === totalQuestions - 1)}
                     className="px-7 py-2.5 rounded-full bg-[#ffa11f] hover:bg-[#ff9400] text-[#10292e] font-extrabold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer"
                   >
-                    {currentIdx < totalQuestions - 1 ? "Next question" : "Finish quiz"}
+                    {submitting ? "Saving…" : currentIdx < totalQuestions - 1 ? "Next question" : result ? "Quiz saved" : "Finish quiz"}
                   </button>
 
                   <button
@@ -291,7 +295,7 @@ function QuizContent() {
                 </span>
               </div>
               <p className="text-xs text-[#8a999b]">
-                Click any question number to review your answer and explanation.
+                {result ? "Review your saved answers and explanations." : "Choose your answers, then finish the quiz to see your score."}
               </p>
             </div>
 
@@ -300,12 +304,12 @@ function QuizContent() {
               {questions.map((q, idx) => {
                 const answer = selectedAnswers[idx];
                 const isAnswered = answer !== undefined;
-                const isCorrect = answer === q.correct_option_index;
+                const isCorrect = result?.breakdown[idx]?.is_correct;
                 const isCurrent = idx === currentIdx;
 
                 let circleClass = "bg-white border border-[#e8eeea] text-[#8a999b]";
                 if (isAnswered) {
-                  circleClass = isCorrect
+                  circleClass = !result ? "bg-[#ffa11f] text-[#10292e]" : isCorrect
                     ? "bg-[#118a80] text-white"
                     : "bg-[#fff0f3] text-[#f25c78] border border-[#f4c8ce]";
                 } else if (isCurrent) {
@@ -327,15 +331,15 @@ function QuizContent() {
             {/* Score box */}
             <div className="p-6 rounded-2xl bg-[#fff8ec] border border-[#fae2b8] text-center">
               <div className="text-4xl font-black text-[#10292e]">
-                {correctCount}/{attemptedCount || 1}
+                {result ? `${correctCount}/${totalQuestions}` : `${attemptedCount}/${totalQuestions}`}
               </div>
               <div className="text-xs text-[#8a999b] font-medium mt-1">
-                correct so far
+                {result ? "correct answers" : "answers selected"}
               </div>
             </div>
 
             <p className="text-[11px] text-[#8a999b] leading-relaxed">
-              Every answered question logs telemetry to strengthen your personalized study paths.
+              Submit your quiz to save your score and review the explanation for each answer.
             </p>
           </div>
         </div>

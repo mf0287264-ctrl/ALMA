@@ -103,31 +103,15 @@ export const addStudentCodeToRedis = async (code) => {
  * Verified against Redis to ensure zero duplicates.
  */
 export const generateUniqueStudentCode = async (dbInstance) => {
-  if (!isStudentCodesLoaded) {
-    await loadStudentCodesToRedis(dbInstance);
+  // MongoDB's unique index is authoritative; registration does not wait on Redis.
+  for (let attempt = 0; attempt < 1000; attempt++) {
+    const code = `STU-${crypto.randomInt(10000, 100000)}`;
+    if (inMemoryStudentCodes.has(code)) continue;
+    if (dbInstance && await dbInstance.collection('students').findOne({ student_code: code }, { projection: { _id: 1 } })) continue;
+    inMemoryStudentCodes.add(code);
+    return code;
   }
-
-  let code = '';
-  let attempts = 0;
-  const maxAttempts = 1000;
-
-  while (attempts < maxAttempts) {
-    attempts++;
-    // Generate 5 digits (one more digit than previous 4 digits: 10000 - 99999) using crypto
-    const randomFiveDigits = crypto.randomInt(10000, 100000);
-    code = `STU-${randomFiveDigits}`;
-
-    const isTaken = await isStudentCodeInRedis(code, dbInstance);
-    if (!isTaken) {
-      await addStudentCodeToRedis(code);
-      return code;
-    }
-  }
-
-  // Fallback
-  const fallbackCode = `STU-${Date.now().toString().slice(-5)}`;
-  await addStudentCodeToRedis(fallbackCode);
-  return fallbackCode;
+  throw new Error('Could not allocate a unique student code. Please retry.');
 };
 
 /**

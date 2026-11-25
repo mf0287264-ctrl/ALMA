@@ -51,7 +51,7 @@ class QuizzesController {
 
   async getById(req, res, next) {
     try {
-      const quiz = await quizzesService.getQuizById(req.params.id);
+      const quiz = await quizzesService.getQuizById(req.params.id, req.authUser);
       res.status(200).json({ success: true, data: quiz });
     } catch (error) {
       next(error);

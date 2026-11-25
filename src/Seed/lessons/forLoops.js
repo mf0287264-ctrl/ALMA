@@ -87,7 +87,7 @@ export default {
         ],
         check: {
           concept: 'loop_purpose',
-          question: 'Which job is a loop best for?',
+          question: 'Compare these tasks. A loop repeats the same body for a sequence of values. Which task benefits directly from repetition, rather than needing only one statement?',
           code: null,
           options: ['Printing your name once', 'Adding two numbers once', 'Printing Hello 100 times', 'Storing one value'],
           answer: 'Printing Hello 100 times',
@@ -164,7 +164,7 @@ export default {
               { say: '...run the indented line below. That is the body of the loop.', lines: [2], note: 'runs once for each number' },
               {
                 say: 'Before I run it, can you guess what it prints?',
-                ask: { question: 'What will this loop print? Type the numbers with spaces between them.', answer: '0 1 2 3 4' }
+                ask: { question: 'Trace for i in range(5): print(i). Start at 0, exclude 5, and write each printed value on its own line in order.', answer: ['0', '1', '2', '3', '4'], explanation: 'Each sequence value produces a separate output line. The excluded stop 5 is never printed.' }
               },
               { say: "Let's see: zero, one, two, three and four, one per line.", output: ['0', '1', '2', '3', '4'] }
             ]
@@ -172,7 +172,7 @@ export default {
         ],
         check: {
           concept: 'zero_indexing',
-          question: 'What does range(5) produce?',
+          question: 'Use range(5) as the sequence in a Python for loop. Predict every value the loop variable receives, in order, remembering that the stopping value is excluded.',
           code: 'for i in range(5):\n    print(i)',
           options: ['0 to 4', '1 to 5', '0 to 5', '1 to 4'],
           answer: '0 to 4',
@@ -181,7 +181,7 @@ export default {
             '0 to 5': 'Thinks the stop value is included',
             '1 to 4': 'Mixes up both the start and the stop'
           },
-          explanation: 'range(5) starts at 0 and stops before 5, so you get 0, 1, 2, 3, 4.'
+          explanation: 'With one argument, range starts at 0 and uses the argument as an excluded stopping value. The loop receives 0, 1, 2, 3 and 4. It runs five times but never receives 5. The iteration count and the last value are different quantities.'
         },
         remediation: [
           callout('warning', 'Remember: range(n) starts at 0 and stops before n.'),
@@ -257,7 +257,7 @@ export default {
         ],
         check: {
           concept: 'loop_body',
-          question: 'How many times does this print Hello?',
+          question: 'Trace the code below before counting its output lines. Which values does range(4) supply, and how many times does the indented print statement run in total?',
           code: 'for i in range(4):\n    print("Hello")',
           options: ['3', '4', '5', '1'],
           answer: '4',
@@ -266,7 +266,7 @@ export default {
             '5': 'Counts range(4) as 0 to 4 included',
             '1': 'Thinks the loop body runs only once'
           },
-          explanation: 'range(4) gives four values: 0, 1, 2 and 3. The body runs once for each of them.'
+          explanation: 'range(4) supplies 0, 1, 2 and 3. Each value causes one run of the indented print statement, producing four Hello lines. The final value is 3 but the iteration count is four because counting began at zero.'
         },
         remediation: [
           callout('warning', 'Count the values range gives you, not the stop number.'),
@@ -306,7 +306,7 @@ export default {
               { say: 'Each lap, the body multiplies three by i and prints it.', lines: [2], note: '3 * i on every lap' },
               {
                 say: 'Can you work out what it prints before we run it?',
-                ask: { question: 'What does it print? Type the numbers with spaces between them.', answer: '3 6 9 12 15' }
+                ask: { question: 'Follow every iteration of the multiplication example on the board. Write each output value on its own line, in the order the print statements run.', answer: ['3', '6', '9', '12', '15'] }
               },
               { say: 'And out comes the times table: three, six, nine, twelve, fifteen.', output: ['3', '6', '9', '12', '15'] }
             ]
@@ -337,7 +337,7 @@ export default {
         ],
         check: {
           concept: 'range_start_stop',
-          question: 'What does this code print?',
+          question: 'Follow range(1, 4) in order. For each value assigned to i, evaluate i + 10. Which option lists all output values without including the stopping value?',
           code: 'for i in range(1, 4):\n    print(i + 10)',
           options: ['11, 12, 13', '10, 11, 12', '11, 12, 13, 14', '1, 2, 3'],
           answer: '11, 12, 13',
@@ -346,7 +346,7 @@ export default {
             '11, 12, 13, 14': 'Thinks the stop value 4 is included',
             '1, 2, 3': 'Forgets to add 10'
           },
-          explanation: 'i is 1, 2 and 3 (the stop value 4 is not included). Adding 10 gives 11, 12 and 13.'
+          explanation: 'The start is 1 and the excluded stop is 4, so i receives 1, then 2, then 3. Adding 10 to the current value each time produces 11, 12 and 13. No iteration uses i = 4, so 14 is never printed.'
         },
         remediation: [
           callout('warning', 'range(1, 4) starts at 1 and stops before 4: the values are 1, 2, 3.'),

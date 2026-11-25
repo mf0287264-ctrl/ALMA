@@ -31,6 +31,7 @@ const earnedAchievementSchema = new mongoose.Schema({
 // ---------------------------------------------------------------------------
 const studentSchema = new mongoose.Schema(
   {
+    auth_version: { type: Number, default: 0 },
     first_name: { type: String, required: true, trim: true },
     last_name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
@@ -48,6 +49,8 @@ const studentSchema = new mongoose.Schema(
 
     // --- Parent / Guardian Linking ---
     parent_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Parent', default: null },
+    guardian_verified_at: { type: Date, default: null },
+    guardian_verified_by: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', default: null },
     parent_name: { type: String, default: null },
     parent_email: { type: String, default: null },
     parent_national_id: { type: String, default: null },

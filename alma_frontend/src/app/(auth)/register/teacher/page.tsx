@@ -45,7 +45,7 @@ export default function TeacherRegisterPage() {
     if (!firstName.trim()) newErrors.firstName = "First name is required";
     if (!lastName.trim()) newErrors.lastName = "Last name is required";
     if (!email.includes("@") || !email.includes(".")) newErrors.email = "Valid email is required";
-    if (password.length < 6) newErrors.password = "Password must be at least 6 characters";
+    if (password.length < 12 || password.length > 128) newErrors.password = "Password must be 12–128 characters";
     if (password !== rePassword) newErrors.rePassword = "Passwords do not match";
     if (specialization === "Other" && !customSpecialization.trim()) {
       newErrors.specialization = "Please specify your subject area";

@@ -1,7 +1,8 @@
 import { getUserRepoByRole, userRepo } from './Users.repository.js';
+import path from 'node:path';
 
 export const uploadProfilePicture = async (file, user) => {
-  const normalizedPath = file.path.replace(/\\/g, '/');
+  const normalizedPath = path.relative(process.cwd(), file.path).replace(/\\/g, '/');
   const targetRepo = user?.role ? getUserRepoByRole(user.role) : userRepo;
 
   return await targetRepo.updateDocumentById(

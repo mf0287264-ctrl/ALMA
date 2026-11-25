@@ -2,10 +2,12 @@ import crypto from "crypto";
 import teacherGroupsRepository from "./TeacherGroups.repository.js";
 import Student from "../../DB/Models/Student.model.js";
 import Teacher from "../../DB/Models/Teacher.model.js";
+import lessonsRepository from "../Lessons/Lessons.repository.js";
+import { canStudyLesson } from "../../Security/access.js";
 
 class TeacherGroupsService {
   _generateClassCode(prefix = "ALMA") {
-    const num = Math.floor(1000 + Math.random() * 9000);
+    const num = crypto.randomBytes(12).toString("hex").toUpperCase();
     return `${prefix}-${num}`;
   }
 
@@ -108,7 +110,7 @@ class TeacherGroupsService {
   }
 
   async joinGroupWithCode(studentUser, rawCode) {
-    if (!rawCode || !rawCode.trim()) {
+    if (typeof rawCode !== 'string' || !rawCode.trim() || rawCode.length > 64) {
       const error = new Error("Class code is required");
       error.statusCode = 400;
       throw error;
@@ -223,6 +225,10 @@ class TeacherGroupsService {
       throw error;
     }
 
+    if (lessonData.lesson_id) {
+      const lesson = await lessonsRepository.findById(lessonData.lesson_id);
+      if (!lesson || !await canStudyLesson(teacherUser, lesson)) throw Object.assign(new Error("You cannot assign another teacher's private lesson."), { statusCode: 403 });
+    }
     const payload = {
       title: lessonData.title || lessonData.topic || "Teacher Lesson",
       topic: lessonData.topic || "Python Iteration",
@@ -259,7 +265,7 @@ class TeacherGroupsService {
   }
 
   async sendMessage(currentUser, groupId, messageText) {
-    if (!messageText || !messageText.trim()) {
+    if (typeof messageText !== 'string' || !messageText.trim() || messageText.length > 5000) {
       const error = new Error("Message text cannot be empty");
       error.statusCode = 400;
       throw error;

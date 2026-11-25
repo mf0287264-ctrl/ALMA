@@ -4,7 +4,8 @@ import studentsRepository from '../Students/Students.repository.js';
 import teachersRepository from '../Teachers/Teachers.repository.js';
 import { db } from '../../DB/db.connection.js';
 import { hashPassword, verifyPassword } from '../../Utils/argon2.util.js';
-import { generateToken, generateRefreshToken } from '../../Utils/jwt.util.js';
+import authService from '../Auth/Auth.service.js';
+import sessions from '../Auth/AuthSessions.repository.js';
 
 class ParentsService {
   async createParent(data) {
@@ -15,8 +16,6 @@ class ParentsService {
     }
     delete data.name;
 
-    const childEmail = data.child_email;
-    const childCode = data.child_student_code;
     delete data.child_email;
     delete data.child_student_code;
 
@@ -54,47 +53,24 @@ class ParentsService {
       }
     }
 
-    const rawPassword = data.password || 'ParentPass123!';
+    if (!data.password) throw Object.assign(new Error('A password is required.'), { statusCode: 400 });
+    const rawPassword = data.password;
     data.password_hash = await hashPassword(rawPassword);
     delete data.password;
 
-    // Optional child linking at registration
-    let linkedChildId = null;
-    if (childEmail || childCode) {
-      let child = null;
-      if (childEmail) {
-        child = await studentsRepository.findByEmail(childEmail);
-      }
-      if (!child && childCode) {
-        child = await db.collection('students').findOne({ student_code: childCode.trim() });
-      }
-      if (child) {
-        linkedChildId = child._id;
-        data.children.push(child._id);
-      }
-    }
-
+    // Guardian relationships require prior verification, not knowledge of a child's email or code.
+    data.children = [];
     const createdParent = await parentsRepository.create(data);
-
-    if (linkedChildId) {
-      await studentsRepository.update(linkedChildId, {
-        parent_id: createdParent._id,
-        parent_name: `${createdParent.first_name} ${createdParent.last_name}`.trim(),
-        parent_phone: createdParent.phone_number,
-        parent_email: createdParent.email,
-        parent_relation: createdParent.relation
-      });
-    }
 
     const payload = {
       id: createdParent._id,
+      auth_version: createdParent.auth_version || 0,
       name: `${createdParent.first_name || ''} ${createdParent.last_name || ''}`.trim(),
       email: createdParent.email,
       role: 'parent'
     };
 
-    const accessToken = generateToken(payload);
-    const refreshToken = generateRefreshToken(payload);
+    const { accessToken, refreshToken } = await authService.generateTokenPair(payload);
 
     const { password_hash, ...parentWithoutPassword } = createdParent;
 
@@ -113,7 +89,7 @@ class ParentsService {
     }
 
     const parent = await parentsRepository.findByEmail(email);
-    if (!parent) {
+    if (!parent || parent.is_active === false || !parent.password_hash) {
       const error = new Error('Invalid email or password');
       error.statusCode = 401;
       throw error;
@@ -128,13 +104,13 @@ class ParentsService {
 
     const payload = {
       id: parent._id,
+      auth_version: parent.auth_version || 0,
       name: `${parent.first_name || ''} ${parent.last_name || ''}`.trim(),
       email: parent.email,
       role: 'parent'
     };
 
-    const accessToken = generateToken(payload);
-    const refreshToken = generateRefreshToken(payload);
+    const { accessToken, refreshToken } = await authService.generateTokenPair(payload);
 
     const { password_hash, ...parentWithoutPassword } = parent;
 
@@ -169,22 +145,26 @@ class ParentsService {
       }
     }
 
+    const before = data.email ? await parentsRepository.findById(id) : null;
+    const revokeSessions = Boolean(data.password || data.is_active === false || (data.email && data.email !== before?.email));
     if (data.password) {
       data.password_hash = await hashPassword(data.password);
       delete data.password;
     }
 
     delete data.role; // Prevent role tampering
-    const parent = await parentsRepository.update(id, data);
+    const parent = await (revokeSessions ? parentsRepository.updateCredentials(id, data) : parentsRepository.update(id, data));
     if (!parent) {
       const error = new Error('Parent not found');
       error.statusCode = 404;
       throw error;
     }
+    if (revokeSessions) await sessions.revokeUser(id, parent.auth_version);
     return parent;
   }
 
   async deleteParent(id) {
+    await sessions.revokeUser(id);
     const result = await parentsRepository.delete(id);
     if (!result || result.deletedCount === 0) {
       const error = new Error('Parent not found');
@@ -206,8 +186,8 @@ class ParentsService {
     }
 
     if (!student) {
-      const error = new Error('Student not found with provided student code or email');
-      error.statusCode = 404;
+      const error = new Error('Ask an administrator to verify this guardian relationship before linking the student.');
+      error.statusCode = 403;
       throw error;
     }
 
@@ -218,15 +198,9 @@ class ParentsService {
       throw error;
     }
 
-    // Phone verification against Student.parent_phone if provided or on file
-    const inputPhone = (parent_phone || parent.phone_number || '').trim();
-    if (student.parent_phone && inputPhone) {
-      const cleanPhone = (p) => p.replace(/[\s\-\(\)\+]/g, '');
-      if (cleanPhone(student.parent_phone) !== cleanPhone(inputPhone)) {
-        const error = new Error('Phone number does not match. Check the number the school has on file.');
-        error.statusCode = 400;
-        throw error;
-      }
+    const inputPhone = parent.phone_number || '';
+    if (String(student.parent_id) !== String(parentId) || !student.guardian_verified_at) {
+      throw Object.assign(new Error('Ask an administrator to verify this guardian relationship before linking the student.'), { statusCode: 403 });
     }
 
     const updatedParent = await parentsRepository.addChild(parentId, student._id);
@@ -277,7 +251,7 @@ class ParentsService {
       throw error;
     }
 
-    const children = await parentsRepository.findChildrenDetails(parent.children || []);
+    const children = await parentsRepository.findChildrenDetails(parent.children || [], parentId);
     return children.map((c) => ({
       student_id: c._id,
       _id: c._id,
@@ -321,6 +295,7 @@ class ParentsService {
       throw error;
     }
 
+    if (String(student.parent_id) !== String(parentId) || !student.guardian_verified_at) throw Object.assign(new Error('This guardian relationship needs administrator verification.'), { statusCode: 403 });
     const [sessions, achievements] = await Promise.all([
       parentsRepository.getChildSessions(childObjectId),
       parentsRepository.getChildAchievements(childObjectId)

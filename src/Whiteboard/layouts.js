@@ -492,7 +492,7 @@ function physics(beat) {
 /** algorithm: { algorithm: 'loop'|'search'|'sort'|'stack'|'queue', values, target?, strategy?, operations?, step_seconds?, steps: [{say, note?}] } */
 function algorithm(beat) {
   const name = ['loop', 'search', 'sort', 'stack', 'queue'].includes(beat.algorithm) ? beat.algorithm : 'loop';
-  const payload = { values: beat.values, target: beat.target, strategy: beat.strategy, operations: beat.operations, prefix: beat.prefix, variable: beat.variable, code: beat.code, step_seconds: beat.step_seconds };
+  const payload = { values: beat.values, target: beat.target, strategy: beat.strategy, operations: beat.operations, prefix: beat.prefix, output_mode: beat.output_mode, variable: beat.variable, code: beat.code, step_seconds: beat.step_seconds };
   return {
     intro: heading(beat.title),
     steps: beat.steps.map((_, index) => index === 0 ? [{ type: `animate_${name}`, payload }] : [])

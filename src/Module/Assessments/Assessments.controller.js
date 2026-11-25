@@ -51,7 +51,7 @@ class AssessmentsController {
 
   async getById(req, res, next) {
     try {
-      const assessment = await assessmentsService.getAssessmentById(req.params.id);
+      const assessment = await assessmentsService.getAssessmentById(req.params.id, req.authUser);
       res.status(200).json({ success: true, data: assessment });
     } catch (error) {
       next(error);

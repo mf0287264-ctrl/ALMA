@@ -1,3 +1,4 @@
+import { gradeQuiz, questionsForViewer } from '../../Security/grading.js';
 import quizzesRepository from './Quizzes.repository.js';
 import coursesRepository from '../Courses/Courses.repository.js';
 import studentsRepository from '../Students/Students.repository.js';
@@ -9,7 +10,7 @@ class QuizzesService {
 
   async getAllQuizzes(filter, user = null) {
     let student = null;
-    if (user?._id) {
+    if (user?._id && (!user.role || user.role === 'student')) {
       student = await studentsRepository.findById(user._id);
     }
 
@@ -43,7 +44,7 @@ class QuizzesService {
       const cId = q.course_id ? q.course_id.toString() : null;
       const att = attemptsMap.get(q._id.toString());
       return {
-        ...q,
+        ...questionsForViewer(q, user),
         course_title: cId ? coursesMap.get(cId) || 'Platform Course' : 'Platform Course',
         has_attempted: Boolean(att),
         user_score: att ? att.score_percent : null,
@@ -51,7 +52,7 @@ class QuizzesService {
     });
   }
 
-  async getQuizById(id) {
+  async getQuizById(id, user = null) {
     const quiz = await quizzesRepository.findById(id);
     if (!quiz) {
       const error = new Error('Quiz not found');
@@ -66,7 +67,7 @@ class QuizzesService {
     }
 
     return {
-      ...quiz,
+      ...questionsForViewer(quiz, user),
       course_title: courseTitle,
     };
   }
@@ -80,7 +81,7 @@ class QuizzesService {
     }
 
     const attempt = await quizzesRepository.saveAttempt({
-      ...data,
+      ...gradeQuiz(quiz, data.answers),
       student_id: studentId,
       quiz_id: quiz._id,
       course_id: quiz.course_id,

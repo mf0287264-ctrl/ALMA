@@ -1,38 +1,30 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import Sidebar from "@/components/Sidebar";
 import MangoIcon from "@/components/MangoIcon";
 import api from "@/services/api";
 import {
-  BookOpen,
-  Sparkles,
+  PRACTICE_LESSON_SUMMARIES,
+  PRACTICE_COURSE_TITLE,
+} from "@/components/whiteboard/practiceLessons";
+import type { LessonSummary } from "@/types/Lesson.type";
+import { lessonPlayerHref } from "@/utils/toPlayerLesson";
+import { progressStorageKey } from "@/utils/lessonProgress";
+import {
   Clock,
   Play,
-  CheckCircle2,
   GraduationCap,
   Search,
   Loader2,
   FolderOpen,
   ChevronRight,
-  Layers,
-  Award,
+  MonitorPlay,
 } from "lucide-react";
 
-interface LessonItem {
-  _id: string;
-  topic: string;
-  title?: string;
-  course_id?: string;
-  course_title?: string;
-  module_id?: string;
-  module_title?: string;
-  programming_language?: string;
-  grade_level?: string;
-  target_duration_minutes?: number;
-  status?: string;
-}
+type LessonItem = LessonSummary;
 
 interface ModuleGroup {
   module_id?: string;
@@ -48,25 +40,47 @@ interface CourseGroup {
 }
 
 export default function MyLessonsPage() {
+  const { data: session } = useSession();
+  const studentId = session?.backendId;
   const [courses, setCourses] = useState<CourseGroup[]>([]);
   const [selectedCourseTitle, setSelectedCourseTitle] = useState<string>("");
   const [teacherLessons, setTeacherLessons] = useState<LessonItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [savedStatus, setSavedStatus] = useState<
+    Record<string, "started" | "completed">
+  >({});
+  const courseStorageKey = `alma:selected-course:${studentId || "local-practice"}`;
 
-  const fetchMyLessons = async () => {
-    setLoading(true);
-    setError(null);
+  const fetchMyLessons = useCallback(async () => {
     try {
       const res = await api.get("/lessons/my-lessons");
       const data = res.data?.data;
+      if (
+        !data ||
+        !Array.isArray(data.available_lessons) ||
+        !Array.isArray(data.teacher_lessons)
+      )
+        throw new Error("Invalid lesson list");
+      setError(null);
       if (data) {
-        const available: LessonItem[] = data.available_lessons || [];
+        const available: LessonItem[] = [
+          ...(data.available_lessons || []),
+          ...PRACTICE_LESSON_SUMMARIES,
+        ];
         setTeacherLessons(data.teacher_lessons || []);
 
         // Group available lessons by Course and then by Module
-        const coursesMap: Record<string, { course_id?: string; course_title: string; totalLessons: number; modulesMap: Record<string, ModuleGroup> }> = {};
+        const coursesMap: Record<
+          string,
+          {
+            course_id?: string;
+            course_title: string;
+            totalLessons: number;
+            modulesMap: Record<string, ModuleGroup>;
+          }
+        > = {};
 
         available.forEach((l) => {
           const cTitle = l.course_title || "Platform Course";
@@ -91,39 +105,116 @@ export default function MyLessonsPage() {
           coursesMap[cTitle].modulesMap[mTitle].lessons.push(l);
         });
 
-        const groupedCourses: CourseGroup[] = Object.values(coursesMap).map((c) => ({
-          course_id: c.course_id,
-          course_title: c.course_title,
-          totalLessons: c.totalLessons,
-          modules: Object.values(c.modulesMap),
-        }));
+        const groupedCourses: CourseGroup[] = Object.values(coursesMap).map(
+          (c) => ({
+            course_id: c.course_id,
+            course_title: c.course_title,
+            totalLessons: c.totalLessons,
+            modules: Object.values(c.modulesMap),
+          }),
+        );
 
         setCourses(groupedCourses);
         if (groupedCourses.length > 0) {
-          setSelectedCourseTitle(groupedCourses[0].course_title);
+          let savedCourse = "";
+          try {
+            savedCourse = sessionStorage.getItem(courseStorageKey) || "";
+          } catch {}
+          setSelectedCourseTitle(
+            groupedCourses.some((course) => course.course_title === savedCourse)
+              ? savedCourse
+              : groupedCourses[0].course_title,
+          );
         }
+        const statuses: Record<string, "started" | "completed"> = {};
+        for (const lesson of [...available, ...(data.teacher_lessons || [])]) {
+          try {
+            const progress = JSON.parse(
+              localStorage.getItem(
+                progressStorageKey(
+                  lesson._id,
+                  lesson.version_no || 1,
+                  studentId,
+                ),
+              ) || "null",
+            );
+            if (progress?.finished) statuses[lesson._id] = "completed";
+            else if (
+              progress?.completedSections?.length ||
+              progress?.watchedSections?.length ||
+              progress?.sectionIndex > 0
+            )
+              statuses[lesson._id] = "started";
+          } catch {}
+        }
+        setSavedStatus(statuses);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Failed to load lessons from database:", err);
-      setError("Could not load your lessons. Please check your connection.");
+      setError(
+        "Your course lessons are unavailable right now. You can still explore all five whiteboard practice lessons below.",
+      );
+      const modulesMap = new Map<string, ModuleGroup>();
+      PRACTICE_LESSON_SUMMARIES.forEach((lesson) => {
+        const title = lesson.module_title || "Whiteboard practice";
+        if (!modulesMap.has(title))
+          modulesMap.set(title, { module_title: title, lessons: [] });
+        modulesMap.get(title)!.lessons.push(lesson);
+      });
+      setCourses([
+        {
+          course_title: PRACTICE_COURSE_TITLE,
+          totalLessons: PRACTICE_LESSON_SUMMARIES.length,
+          modules: [...modulesMap.values()],
+        },
+      ]);
+      setSelectedCourseTitle(PRACTICE_COURSE_TITLE);
     } finally {
       setLoading(false);
     }
-  };
+  }, [courseStorageKey, studentId]);
 
   useEffect(() => {
-    fetchMyLessons();
-  }, []);
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) void fetchMyLessons();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchMyLessons]);
 
-  const activeCourse = courses.find((c) => c.course_title === selectedCourseTitle) || courses[0];
+  useEffect(() => {
+    if (!selectedCourseTitle) return;
+    try {
+      sessionStorage.setItem(courseStorageKey, selectedCourseTitle);
+    } catch {}
+  }, [courseStorageKey, selectedCourseTitle]);
+
+  const activeCourse =
+    courses.find((c) => c.course_title === selectedCourseTitle) || courses[0];
 
   const query = search.toLowerCase();
   const filteredTeacher = teacherLessons.filter(
     (l) =>
       l.topic?.toLowerCase().includes(query) ||
       l.course_title?.toLowerCase().includes(query) ||
-      l.programming_language?.toLowerCase().includes(query)
+      l.programming_language?.toLowerCase().includes(query),
   );
+  const visibleModules =
+    activeCourse?.modules
+      .map((module) => ({
+        ...module,
+        lessons: module.lessons.filter((lesson) =>
+          [
+            lesson.topic,
+            lesson.course_title,
+            lesson.module_title,
+            lesson.programming_language,
+          ].some((value) => value?.toLowerCase().includes(query)),
+        ),
+      }))
+      .filter((module) => module.lessons.length) || [];
 
   return (
     <div className="w-full min-h-screen flex bg-[#fff8ec]">
@@ -137,7 +228,8 @@ export default function MyLessonsPage() {
               My Lessons
             </h1>
             <p className="text-xs sm:text-sm text-[#607274] mt-1 font-medium">
-              Select a course to view all its modules and lessons, or start an assigned teacher lesson.
+              Your courses, teacher lessons and animated whiteboards. Pick an
+              idea and make it yours.
             </p>
           </div>
 
@@ -155,16 +247,24 @@ export default function MyLessonsPage() {
         {loading && (
           <div className="py-24 flex flex-col items-center justify-center text-center">
             <Loader2 className="w-10 h-10 text-[#118a80] animate-spin mb-3" />
-            <p className="text-sm font-bold text-[#10292e]">Loading your courses &amp; lessons...</p>
+            <p className="text-sm font-bold text-[#10292e]">
+              Loading your courses &amp; lessons...
+            </p>
           </div>
         )}
 
         {/* Error */}
         {!loading && error && (
-          <div className="p-8 bg-white rounded-3xl border border-red-200 text-center max-w-md mx-auto my-12">
-            <p className="text-sm font-semibold text-red-600 mb-4">{error}</p>
+          <div
+            role="status"
+            className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#fae2b8] bg-white px-5 py-4"
+          >
+            <p className="text-xs leading-6 text-[#607274]">{error}</p>
             <button
-              onClick={fetchMyLessons}
+              onClick={() => {
+                setLoading(true);
+                void fetchMyLessons();
+              }}
               className="px-5 py-2.5 bg-[#ffa11f] text-[#10292e] rounded-full text-xs font-bold hover:brightness-95 cursor-pointer"
             >
               Try Again
@@ -172,7 +272,7 @@ export default function MyLessonsPage() {
           </div>
         )}
 
-        {!loading && !error && (
+        {!loading && (
           <div className="space-y-8">
             {/* TEACHER GROUP LESSONS (Classroom Assignments) */}
             {teacherLessons.length > 0 && (
@@ -187,7 +287,8 @@ export default function MyLessonsPage() {
                         Teacher Classroom Lessons
                       </h2>
                       <p className="text-xs text-[#8a999b]">
-                        Custom AI lessons generated by your teacher for your classroom.
+                        Custom AI lessons generated by your teacher for your
+                        classroom.
                       </p>
                     </div>
                   </div>
@@ -208,24 +309,41 @@ export default function MyLessonsPage() {
                             Assigned
                           </span>
                           <span className="text-xs text-[#8a999b] truncate">
-                            {lesson.programming_language || "Python"} · {lesson.grade_level || "Grade 8"}
+                            {lesson.programming_language || "Python"} ·{" "}
+                            {lesson.grade_level || "Grade 8"}
                           </span>
                         </div>
                         <h3 className="font-extrabold text-sm text-[#10292e] truncate">
                           {lesson.topic}
                         </h3>
                         <div className="text-[11px] text-[#8a999b] flex items-center gap-1 mt-1 font-mono">
-                          <Clock className="w-3 h-3" /> {lesson.target_duration_minutes || 15}m
+                          <Clock className="w-3 h-3" />{" "}
+                          {lesson.target_duration_minutes || 15}m
+                          {lesson.has_whiteboard && (
+                            <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-[#e6f5f2] px-2 py-0.5 font-sans text-[10px] font-bold text-[#118a80]">
+                              <MonitorPlay className="h-3 w-3" />
+                              Whiteboard
+                            </span>
+                          )}
                         </div>
                       </div>
 
-                      <Link
-                        href={`/my-lessons/player?lessonId=${lesson._id}`}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#118a80] hover:bg-[#0e746b] text-white rounded-full font-extrabold text-xs shadow-xs transition-colors shrink-0"
-                      >
-                        <Play className="w-3 h-3 fill-current" />
-                        Start
-                      </Link>
+                      {lesson.is_available === false ? (
+                        <span
+                          className="rounded-full border border-[#e8eeea] px-3 py-2 text-[11px] text-[#8a999b]"
+                          title="Your teacher has not attached lesson content yet."
+                        >
+                          Content pending
+                        </span>
+                      ) : (
+                        <Link
+                          href={lessonPlayerHref(lesson)}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#118a80] hover:bg-[#0e746b] text-white rounded-full font-extrabold text-xs shadow-xs transition-colors shrink-0"
+                        >
+                          <Play className="w-3 h-3 fill-current" />
+                          {lesson.has_whiteboard ? "Watch" : "Start"}
+                        </Link>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -236,9 +354,12 @@ export default function MyLessonsPage() {
             {courses.length === 0 ? (
               <div className="bg-white rounded-3xl p-12 text-center border border-[#e8eeea] max-w-lg mx-auto">
                 <FolderOpen className="w-12 h-12 text-[#8a999b] mx-auto mb-3 opacity-60" />
-                <h3 className="text-base font-extrabold text-[#10292e]">No lessons available</h3>
+                <h3 className="text-base font-extrabold text-[#10292e]">
+                  No lessons available
+                </h3>
                 <p className="text-xs text-[#607274] mt-1 mb-6">
-                  Enroll in a course from our catalog to unlock its full curriculum.
+                  Enroll in a course from our catalog to unlock its full
+                  curriculum.
                 </p>
                 <Link
                   href="/courses"
@@ -267,11 +388,16 @@ export default function MyLessonsPage() {
 
                     <div className="space-y-3">
                       {courses.map((c) => {
-                        const isSelected = c.course_title === activeCourse?.course_title;
+                        const isSelected =
+                          c.course_title === activeCourse?.course_title;
                         return (
                           <button
                             key={c.course_title}
-                            onClick={() => setSelectedCourseTitle(c.course_title)}
+                            onClick={() => {
+                              setSelectedCourseTitle(c.course_title);
+                              setSearch("");
+                            }}
+                            aria-pressed={isSelected}
                             className={`w-full text-left p-4 rounded-2xl transition-all cursor-pointer flex items-center justify-between ${
                               isSelected
                                 ? "border-2 border-[#ffa11f] bg-[#fffcf7] shadow-xs"
@@ -290,7 +416,9 @@ export default function MyLessonsPage() {
                             </div>
                             <ChevronRight
                               className={`w-4 h-4 transition-transform ${
-                                isSelected ? "text-[#ffa11f] translate-x-1" : "text-[#8a999b]"
+                                isSelected
+                                  ? "text-[#ffa11f] translate-x-1"
+                                  : "text-[#8a999b]"
                               }`}
                             />
                           </button>
@@ -308,21 +436,26 @@ export default function MyLessonsPage() {
                       One lesson at a time
                     </h4>
                     <p className="text-xs text-[#607274] mt-1 mb-3">
-                      Completing interactive checkpoints strengthens your problem-solving intuition.
+                      Completing interactive checkpoints strengthens your
+                      problem-solving intuition.
                     </p>
                     <div className="w-full pt-3 border-t border-[#fae2b8]/60 flex items-center justify-around text-center text-xs">
                       <div>
                         <div className="font-black text-base text-[#10292e]">
                           {courses.reduce((sum, c) => sum + c.totalLessons, 0)}
                         </div>
-                        <div className="text-[10px] text-[#8a999b]">Available Lessons</div>
+                        <div className="text-[10px] text-[#8a999b]">
+                          Available Lessons
+                        </div>
                       </div>
                       <div className="w-px h-6 bg-[#fae2b8]" />
                       <div>
                         <div className="font-black text-base text-[#118a80]">
                           {courses.length}
                         </div>
-                        <div className="text-[10px] text-[#8a999b]">Active Courses</div>
+                        <div className="text-[10px] text-[#8a999b]">
+                          Active Courses
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -351,13 +484,51 @@ export default function MyLessonsPage() {
                       )}
                     </div>
                     <p className="text-xs text-[#8a999b]">
-                      {activeCourse?.modules.length} modules · {activeCourse?.totalLessons} total lessons
+                      {activeCourse?.modules.length} modules ·{" "}
+                      {activeCourse?.totalLessons} total lessons
                     </p>
                   </div>
 
+                  {activeCourse?.course_title === PRACTICE_COURSE_TITLE && (
+                    <div className="flex items-center gap-3 rounded-2xl border border-[#d2ede7] bg-[#e6f5f2] px-5 py-4">
+                      <MangoIcon size={36} />
+                      <div>
+                        <p className="text-sm font-extrabold text-[#10292e]">
+                          A little practice, a big step.
+                        </p>
+                        <p className="mt-1 text-xs leading-6 text-[#607274]">
+                          Five ready-to-watch lessons with drawings, narration
+                          and detailed checkpoints. Available whenever you want
+                          to practise.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Modules Accordion / List */}
+                  <label className="flex items-center gap-2.5 rounded-full border border-[#e8eeea] bg-[#fafaf8] px-4 py-3 text-[#8a999b]">
+                    <Search className="h-4 w-4 shrink-0" />
+                    <span className="sr-only">
+                      Search lessons in this course
+                    </span>
+                    <input
+                      type="search"
+                      value={search}
+                      onChange={(event) => setSearch(event.target.value)}
+                      placeholder="Search lessons in this course…"
+                      className="min-w-0 flex-1 bg-transparent text-sm text-[#10292e] outline-none placeholder:text-[#8a999b]"
+                    />
+                  </label>
                   <div className="space-y-6">
-                    {activeCourse?.modules.map((m, mIdx) => (
+                    {!visibleModules.length && (
+                      <p
+                        role="status"
+                        className="rounded-2xl bg-[#fafaf8] p-5 text-center text-sm text-[#607274]"
+                      >
+                        No lessons match “{search}”. Try another topic.
+                      </p>
+                    )}
+                    {visibleModules.map((m, mIdx) => (
                       <div
                         key={m.module_id || mIdx}
                         className="border border-[#e8eeea] rounded-2xl p-5 bg-white space-y-3"
@@ -373,7 +544,8 @@ export default function MyLessonsPage() {
                             </h3>
                           </div>
                           <span className="text-xs text-[#8a999b] font-medium">
-                            {m.lessons.length} {m.lessons.length === 1 ? "lesson" : "lessons"}
+                            {m.lessons.length}{" "}
+                            {m.lessons.length === 1 ? "lesson" : "lessons"}
                           </span>
                         </div>
 
@@ -388,20 +560,45 @@ export default function MyLessonsPage() {
                                 <div className="font-bold text-sm text-[#10292e] truncate">
                                   {lesson.topic}
                                 </div>
-                                <div className="text-xs text-[#8a999b] flex items-center gap-1.5 mt-0.5">
+                                <div className="text-xs text-[#8a999b] flex flex-wrap items-center gap-1.5 mt-1.5">
                                   <Clock className="w-3 h-3" />
-                                  <span>{lesson.target_duration_minutes || 15} minutes</span>
+                                  <span>
+                                    {lesson.target_duration_minutes || 15} min
+                                  </span>
+                                  {lesson.has_whiteboard && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-[#e6f5f2] px-2 py-0.5 text-[10px] font-bold text-[#118a80]">
+                                      <MonitorPlay className="h-3 w-3" />
+                                      Whiteboard
+                                    </span>
+                                  )}
+                                  {lesson.section_count ? (
+                                    <span>
+                                      {lesson.section_count}{" "}
+                                      {lesson.section_count === 1
+                                        ? "section"
+                                        : "sections"}
+                                    </span>
+                                  ) : null}
+                                  {lesson.is_practice && (
+                                    <span className="text-[10px] font-bold text-[#a96310]">
+                                      Practice
+                                    </span>
+                                  )}
                                 </div>
                               </div>
 
                               <Link
-                                href={`/my-lessons/player?lessonId=${lesson._id}${
-                                  lesson.course_id ? `&courseId=${lesson.course_id}` : ""
-                                }`}
+                                href={lessonPlayerHref(lesson)}
                                 className="inline-flex items-center justify-center gap-1.5 px-5 py-2 bg-[#ffa11f] hover:bg-[#ff9400] text-[#10292e] rounded-full font-extrabold text-xs shadow-xs transition-colors self-start sm:self-auto shrink-0"
                               >
                                 <Play className="w-3 h-3 fill-current" />
-                                Start
+                                {savedStatus[lesson._id] === "completed"
+                                  ? "Review lesson"
+                                  : savedStatus[lesson._id] === "started"
+                                    ? "Continue lesson"
+                                    : lesson.has_whiteboard
+                                      ? "Watch lesson"
+                                      : "Start lesson"}
                               </Link>
                             </div>
                           ))}

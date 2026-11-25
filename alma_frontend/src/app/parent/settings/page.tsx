@@ -69,8 +69,8 @@ export default function ParentSettingsPage() {
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Image size exceeds 10MB limit.");
+    if (file.size > 4 * 1024 * 1024) {
+      toast.error("Image size exceeds 4MB limit.");
       return;
     }
 
@@ -237,7 +237,7 @@ export default function ParentSettingsPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-extrabold text-sm text-[#10292e]">Parent Profile Photo</h3>
-                <p className="text-xs text-[#8a999b] mt-0.5">Upload a portrait photo (PNG, JPG, JPEG up to 10MB)</p>
+                <p className="text-xs text-[#8a999b] mt-0.5">Upload a portrait photo (PNG, JPG, JPEG up to 4MB)</p>
                 <div className="flex items-center gap-2 mt-2">
                   <button
                     type="button"

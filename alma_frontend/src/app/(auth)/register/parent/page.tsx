@@ -41,8 +41,8 @@ export default function RegisterParentPage() {
     if (!email.includes("@") || !email.includes(".")) {
       newErrors.email = ["Enter a valid email address."];
     }
-    if (password.length < 6) {
-      newErrors.password = ["Password must be at least 6 characters."];
+    if (password.length < 12 || password.length > 128) {
+      newErrors.password = ["Password must be 12–128 characters."];
     }
     if (password !== rePassword) {
       newErrors.rePassword = ["Passwords do not match."];

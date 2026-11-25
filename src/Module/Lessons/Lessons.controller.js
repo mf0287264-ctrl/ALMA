@@ -25,7 +25,7 @@ class LessonsController {
       const { summary, ...filter } = req.query;
       const lessons = await lessonsService.getAllLessons(filter, {
         summary: summary === 'true' || summary === '1'
-      });
+      }, req.authUser);
       res.status(200).json({ success: true, data: lessons });
     } catch (error) {
       next(error);
@@ -34,7 +34,7 @@ class LessonsController {
 
   async getById(req, res, next) {
     try {
-      const lesson = await lessonsService.getLessonById(req.params.id);
+      const lesson = await lessonsService.getLessonById(req.params.id, req.authUser);
       res.status(200).json({ success: true, data: lesson });
     } catch (error) {
       next(error);

@@ -16,7 +16,7 @@ class LessonGenerationsRepository {
   }
 
   async findAll(filter = {}) {
-    return await this.collection.find(filter).toArray();
+    return await this.collection.find(filter).limit(200).toArray();
   }
 
   async findById(id) {

@@ -1,139 +1,46 @@
-import studentsRepository from '../Module/Students/Students.repository.js';
-import teachersRepository from '../Module/Teachers/Teachers.repository.js';
-import adminsRepository from '../Module/Admins/Admins.repository.js';
-import parentsRepository from '../Module/Parents/Parents.repository.js';
+import students from '../Module/Students/Students.repository.js';
+import teachers from '../Module/Teachers/Teachers.repository.js';
+import admins from '../Module/Admins/Admins.repository.js';
+import parents from '../Module/Parents/Parents.repository.js';
+import sessions from '../Module/Auth/AuthSessions.repository.js';
 import { verifyToken, extractRawToken } from '../Utils/jwt.util.js';
-import { isBlacklisted } from '../Utils/redis.util.js';
+import { ObjectId } from 'mongodb';
+
+const repositories = { student: students, teacher: teachers, admin: admins, parent: parents };
+const invalid = () => Object.assign(new Error('Authentication required. Please log in again.'), { statusCode: 401 });
 
 export const authenticate = async (req, res, next) => {
+  if (req.authUser && req.decodedToken && req.rawToken) return next();
   try {
-    const authorization = req.headers.authorization || req.headers.authorize;
-    if (!authorization) {
-      const error = new Error('Authorization header is missing');
-      error.statusCode = 400;
-      throw error;
-    }
-
-    // Extract raw token for blacklist check
-    const rawToken = extractRawToken(authorization);
-
-    // Check Redis blacklist — reject tokens that have been logged out
-    const blacklisted = await isBlacklisted(rawToken);
-    if (blacklisted) {
-      const error = new Error('Token has been invalidated. Please log in again.');
-      error.statusCode = 401;
-      throw error;
-    }
-
-    const decodedData = verifyToken(authorization);
-    const userId = decodedData.id || decodedData._id;
-
-    if (!userId) {
-      const error = new Error('Invalid token: user ID missing');
-      error.statusCode = 401;
-      throw error;
-    }
-
-    // Attach the raw token to the request so controllers can use it (e.g. for logout)
-    req.rawToken = rawToken;
-    req.decodedToken = decodedData;
-
-    // Find user by id and attach to req object
-    let user = null;
-    if (decodedData.role === 'student') {
-      user = await studentsRepository.findById(userId);
-    } else if (decodedData.role === 'teacher') {
-      user = await teachersRepository.findById(userId);
-    } else if (decodedData.role === 'admin') {
-      user = await adminsRepository.findById(userId);
-    } else if (decodedData.role === 'parent') {
-      user = await parentsRepository.findById(userId);
-    } else {
-      user = (await studentsRepository.findById(userId)) ||
-             (await teachersRepository.findById(userId)) ||
-             (await adminsRepository.findById(userId)) ||
-             (await parentsRepository.findById(userId));
-    }
-
-    if (!user) {
-      const error = new Error('User not found');
-      error.statusCode = 404;
-      throw error;
-    }
-
-    if (!user.role) {
-      user.role = decodedData.role || 'student';
-    }
-
-    req.authUser = user;
+    const authorization = req.headers.authorization;
+    if (typeof authorization !== 'string' || !/^Bearer \S+$/.test(authorization)) throw invalid();
+    const decoded = verifyToken(authorization);
+    if (typeof decoded.sid !== 'string' || typeof decoded.id !== 'string' || !ObjectId.isValid(decoded.id)) throw invalid();
+    const session = await sessions.findActive(decoded.sid, decoded.id, decoded.role);
+    if (!session) throw invalid();
+    const user = await repositories[decoded.role].findById(decoded.id);
+    if (!user || user.is_active === false || (decoded.auth_version || 0) !== (user.auth_version || 0) || (session.auth_version || 0) !== (user.auth_version || 0)) throw invalid();
+    req.rawToken = extractRawToken(authorization);
+    req.decodedToken = decoded;
+    // A database collection determines the account role; stored profile fields cannot change it.
+    req.authUser = { ...user, role: decoded.role };
+    delete req.authUser.password;
+    delete req.authUser.password_hash;
     next();
   } catch (error) {
-    if (!error.statusCode) error.statusCode = 401;
+    if (error.statusCode !== 401) error = Object.assign(new Error('The authentication service is temporarily unavailable.'), { statusCode: 503 });
     next(error);
   }
 };
 
-export const optionalAuthenticate = async (req, res, next) => {
-  try {
-    const authorization = req.headers.authorization || req.headers.authorize;
-    if (!authorization) {
-      return next();
-    }
+export const optionalAuthenticate = (req, res, next) => {
+  if (!req.headers.authorization) return next();
+  return authenticate(req, res, next);
+};
 
-    const rawToken = extractRawToken(authorization);
-    const blacklisted = await isBlacklisted(rawToken);
-    if (blacklisted) return next();
-
-    const decodedData = verifyToken(authorization);
-    const userId = decodedData.id || decodedData._id;
-    if (!userId) return next();
-
-    req.rawToken = rawToken;
-    req.decodedToken = decodedData;
-
-    let user = null;
-    if (decodedData.role === 'student') {
-      user = await studentsRepository.findById(userId);
-    } else if (decodedData.role === 'teacher') {
-      user = await teachersRepository.findById(userId);
-    } else if (decodedData.role === 'admin') {
-      user = await adminsRepository.findById(userId);
-    } else if (decodedData.role === 'parent') {
-      user = await parentsRepository.findById(userId);
-    } else {
-      user = (await studentsRepository.findById(userId)) ||
-             (await teachersRepository.findById(userId)) ||
-             (await adminsRepository.findById(userId)) ||
-             (await parentsRepository.findById(userId));
-    }
-
-    if (user) {
-      if (!user.role) {
-        user.role = decodedData.role || 'student';
-      }
-      req.authUser = user;
-    }
-  } catch (err) {
-    // Gracefully ignore token errors for optional authentication
-  }
+export const requireRole = (...roles) => (req, res, next) => {
+  if (!req.authUser) return next(invalid());
+  if (!roles.includes(req.authUser.role)) return next(Object.assign(new Error('You do not have permission to access this resource.'), { statusCode: 403 }));
   next();
 };
-
-export const requireRole = (...allowedRoles) => {
-  return (req, res, next) => {
-    if (!req.authUser) {
-      const error = new Error('Authentication required');
-      error.statusCode = 401;
-      return next(error);
-    }
-    const userRole = req.authUser.role || req.decodedToken?.role;
-    if (!allowedRoles.includes(userRole)) {
-      const error = new Error(`Forbidden: Access denied. Role '${userRole}' cannot access this resource.`);
-      error.statusCode = 403;
-      return next(error);
-    }
-    next();
-  };
-};
-
 export default authenticate;

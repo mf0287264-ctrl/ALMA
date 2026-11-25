@@ -1,24 +1,11 @@
-const errorHandler = (err, req, res, next) => {
-  console.error('[Error Handler]', err);
-
-  let statusCode = err.statusCode || 500;
-  let message = err.message || 'Internal Server Error';
-
-  if (err.name === 'MulterError') {
-    statusCode = 400;
-    message = `File upload error: ${err.message}`;
-  } else if (err.name === 'ValidationError') {
-    statusCode = 400;
-  }
-
-  res.status(statusCode).json({
-    success: false,
-    message: message,
-    error: message,
-    code: err.code || undefined,
-    details: err.details || undefined,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-  });
+const errorHandler = (error, req, res, next) => {
+  if (res.headersSent) return next(error);
+  let status = Number(error.statusCode || error.status || 500);
+  if (status < 400 || status > 599) status = 500;
+  if (error.name === 'MulterError' || error.name === 'ValidationError' || error.name === 'CastError') status = 400;
+  if (error.code === 11000) status = 409;
+  if (status >= 500) console.error('Request failed', { name: error.name, code: error.code, requestId: req.requestId });
+  const message = status >= 500 ? 'The request could not be completed. Please try again.' : error.code === 11000 ? 'An account or resource with these details already exists.' : error.message || 'Invalid request.';
+  return res.status(status).json({ success: false, message, error: message, request_id: req.requestId });
 };
-
 export default errorHandler;

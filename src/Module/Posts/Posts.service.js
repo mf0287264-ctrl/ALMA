@@ -1,3 +1,5 @@
+import { escapeSearch } from '../../Security/input.js';
+import { canReadPost, postVisibilityFilter } from '../../Security/postPrivacy.js';
 import { ObjectId } from 'mongodb';
 import postsRepository from './Posts.repository.js';
 import studentsRepository from '../Students/Students.repository.js';
@@ -31,6 +33,7 @@ class PostsService {
 
     return {
       ...post,
+      bookmarks: (post.bookmarks || []).filter(bookmark => String(bookmark.user_id) === currentUserIdStr),
       is_liked,
       is_bookmarked
     };
@@ -90,13 +93,10 @@ class PostsService {
     }
 
     if (query.search) {
-      filter.content = { $regex: query.search, $options: 'i' };
+      filter.content = { $regex: escapeSearch(query.search), $options: 'i' };
     }
 
-    // By default, public posts or posts authored by current user
-    if (!currentUser) {
-      filter.visibility = 'public';
-    }
+    filter.$and = [postVisibilityFilter(currentUser)];
 
     const { posts, total } = await postsRepository.findAll(filter, {
       page,
@@ -155,6 +155,7 @@ class PostsService {
       filter = { visibility: 'public' };
     }
 
+    filter.$and = [postVisibilityFilter(currentUser)];
     const { posts, total } = await postsRepository.findAll(filter, {
       page,
       limit,
@@ -373,6 +374,8 @@ class PostsService {
       throw error;
     }
 
+    if (!canReadPost(currentUser, originalPost)) throw Object.assign(new Error('Post not found.'), { statusCode: 404 });
+    if (originalPost.visibility !== 'public') throw Object.assign(new Error('Only public posts can be shared.'), { statusCode: 403 });
     // Increment share counter on the original post
     await postsRepository.incrementShareCount(postId);
 

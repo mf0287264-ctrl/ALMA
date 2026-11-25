@@ -10,7 +10,7 @@ class AuthController {
   async refreshToken(req, res, next) {
     try {
       const { refreshToken } = req.body;
-      if (!refreshToken) {
+      if (typeof refreshToken !== 'string' || !refreshToken || refreshToken.length > 8192) {
         const error = new Error('refreshToken is required in request body');
         error.statusCode = 400;
         throw error;
@@ -37,10 +37,8 @@ class AuthController {
   async logout(req, res, next) {
     try {
       // req.rawToken and req.decodedToken are attached by authenticate middleware
-      const rawToken = req.rawToken;
-      const exp = req.decodedToken?.exp;
-
-      await authService.logout(rawToken, exp);
+      const rawToken = extractRawToken(req.headers.authorization);
+      await authService.logout(rawToken, req.body?.refreshToken);
 
       res.status(200).json({
         success: true,

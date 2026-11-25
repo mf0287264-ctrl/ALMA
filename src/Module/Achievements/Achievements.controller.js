@@ -15,11 +15,9 @@ class AchievementsController {
     try {
       const studentId = req.authUser._id;
       const courseId = req.params.courseId;
-      const force = req.body?.force === true;
       const result = await achievementsService.checkAndAwardCourseCompletion(
         studentId,
-        courseId,
-        force
+        courseId
       );
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -30,8 +28,8 @@ class AchievementsController {
   async completeLesson(req, res, next) {
     try {
       const studentId = req.authUser._id;
-      const lessonId = req.params.lessonId;
-      const result = await achievementsService.completeLesson(studentId, lessonId);
+      const lessonId = req.params.lessonId || req.params.id;
+      const result = await achievementsService.completeLesson(studentId, lessonId, req.body);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);

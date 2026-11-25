@@ -1,6 +1,10 @@
 # Lesson whiteboard
 
-The lesson page is available at `/lesson`. It opens with five complete default lessons and can also load academy lessons. Existing academy deep links use `/lesson?lesson=0&section=0`; add `autoplay=1` to start automatically.
+Whiteboards are part of **My Lessons** at `/my-lessons`, inside the existing student sidebar and course/module library. The five default boards appear in **Whiteboard essentials**, with detailed authored checkpoints, and remain available when the course API is offline. Practice links use `/my-lessons/player?sample=lesson-loops`; saved academy lessons use `/my-lessons/player?lessonId=<id>`. An optional `section=0` selects a section and `autoplay=1` starts playback.
+
+`/lesson` redirects to the same player. Existing `/lesson?lesson=0&section=0` links still resolve the old lesson index and open the matching lesson by ID. Login behavior is unchanged.
+
+The shared lesson player preserves single-section and multi-section content, selects the published version when present, and combines the board, reading notes, authored diagnostic checks, explanations and remediation. The generic frontend checkpoint generator has been removed. Watch/Read controls stop narration when leaving the board. Completed questions and the current section are saved on this device, scoped to the student and lesson version. Course selection is retained on return to the library. Practice completion stays local; real lesson completion uses the existing achievement endpoint.
 
 ```tsx
 import { WhiteboardPlayer } from "@/components/whiteboard";
@@ -36,8 +40,20 @@ A supplied `audio_url` plays the recording. If recording playback fails, the bro
 
 The backend `buildWhiteboard` supports the original nine layouts plus `array`, `diagram`, `chart`, `physics`, and `algorithm`; see `src/Whiteboard/layouts.js` for their fields. `defaultLessons.ts` contains ready-to-play lesson timelines.
 
-Future generation requests receive `whiteboard_generation` defaults from `src/Whiteboard/generationDefaults.js`, including an explanatory animation policy, limits, and a valid sample storyboard. Lesson create/update compiles `whiteboard.plan`, `whiteboard_plan`, or `board` plans before storage. Sections with reading blocks and no storyboard receive a board automatically; an exact supported two-line Python loop gets a loop execution animation. Other source is described and highlighted without execution or invented output.
+Future generation requests receive `whiteboard_generation` defaults from `src/Whiteboard/generationDefaults.js`, including an explanatory animation policy, detailed checkpoint requirements, limits, and a valid sample storyboard. Lesson create/update compiles `whiteboard.plan`, `whiteboard_plan`, or `board` plans before storage, including unversioned sections. Sections with reading blocks and no storyboard receive a board automatically. Supported two-line Python range/print loops get a loop animation, including negative steps and value-only output. Other source is described and highlighted without executing arbitrary code or inventing unknown output.
+
+Compiler v3 derives operation explanations from actual algorithm values: assignment and output, search bounds and comparisons, sorting passes and resulting arrays, and collection removal order and size. The board displays matching state indicators. On read, older editable boards without recorded audio are recompiled with the current compiler; existing recorded audio keeps its original timeline. Reading does not update database records.
+
+The existing Python variables, loops and functions sources now contain more detailed questions and feedback. `src/Seed/lessonDocuments.js` builds their documents and adds verified loop traces when source and supplied output agree. `npm run seed:lessons` updates the existing seeded curriculum by its original course/module/topic keys when the database is available.
+
+## Generation studio
+
+`/teacher/ai-generation` follows actual backend job status and previews the saved lesson's real boards and questions. The old timed progress simulation, fabricated draft, mock credential fields and simulated PDF analysis have been replaced with a lesson specification form and reference notes.
+
+Set `GEMINI_API_KEY` on the backend and optionally `GEMINI_MODEL` (default `gemini-2.5-flash`). New pending jobs run in the backend process: outline, section authoring, structural/animation validation with one repair attempt, independent model review of worked examples, and draft storage. Detailed question wording, distinct options, specific distractor feedback, prediction-before-reveal and remediation are required. A model review helps assess content; it is not a substitute for teacher review. The draft starts as `AWAITING_REVIEW` and only appears in the student library after approval. Approve and revision actions save the real version state.
+
+Keys are backend configuration and are not stored with job metadata. Without a configured provider, the job reports a connection failure instead of simulating completion. `LESSON_GENERATION_EXTERNAL_WORKER=1` keeps requests pending for an external worker. The built-in worker runs in-process; use an external worker for durable processing across server restarts. Live generation requires a connected backend database and model provider.
 
 The `algorithm` layout automatically fills in missing spoken operational steps from its actual values and operations. It emits `step_times` and `end_time` so comparisons, swaps, and collection operations follow caption boundaries. Existing `flow`, `code`, `trace`, and `boxes` layouts now include meaningful data or execution transfers by default. The compiler reserves enough time for a movement before the next spoken step and for the entire algorithm before clearing the page.
 
-Run `node --test tests/whiteboard.test.mjs` from the repository root with Node 24 or newer. From `alma_frontend`, run `npx --no-install tsc --noEmit --incremental false` and `npx --no-install eslint src/components/whiteboard src/utils/toWhiteboardPart.ts src/app/lesson/page.tsx`.
+Run `node --test tests/whiteboard.test.mjs tests/lesson-player.test.mjs tests/lesson-generation.test.mjs tests/lessons-merge.test.mjs` from the repository root with Node 24 or newer. From `alma_frontend`, run `npx --no-install tsc --noEmit --incremental false` and ESLint on the lesson pages, generation studio, lesson components and whiteboard components. Generation tests use an injected model response and do not call a live provider.

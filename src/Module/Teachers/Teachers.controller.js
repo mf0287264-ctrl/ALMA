@@ -47,7 +47,7 @@ class TeachersController {
 
   async update(req, res, next) {
     try {
-      const teacherId = req.authUser?._id || req.params.id;
+      const teacherId = req.authUser?.role === 'admin' && req.params.id ? req.params.id : req.authUser?._id;
       const teacher = await teachersService.updateTeacher(teacherId, req.body);
       res.status(200).json({ success: true, data: teacher });
     } catch (error) {
@@ -57,7 +57,7 @@ class TeachersController {
 
   async delete(req, res, next) {
     try {
-      const teacherId = req.authUser?._id || req.params.id;
+      const teacherId = req.authUser?.role === 'admin' && req.params.id ? req.params.id : req.authUser?._id;
       await teachersService.deleteTeacher(teacherId);
       res.status(200).json({ success: true, message: 'Teacher deleted successfully' });
     } catch (error) {

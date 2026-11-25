@@ -1,3 +1,4 @@
+import { escapeSearch } from '../../Security/input.js';
 import { ObjectId } from 'mongodb';
 import { db } from '../../DB/db.connection.js';
 
@@ -16,7 +17,7 @@ class CoursesRepository {
   }
 
   async findAll(filter = {}) {
-    return await this.collection.find(filter).toArray();
+    return await this.collection.find(filter).limit(200).toArray();
   }
 
   async findById(id) {
@@ -33,7 +34,7 @@ class CoursesRepository {
 
     // 2. Try finding by title slug (e.g. "intro-to-python" -> regex for "intro.*python")
     if (typeof id === 'string') {
-      const slugPattern = id.replace(/[-_]/g, '.*');
+      const slugPattern = id.split(/[-_]+/).map(escapeSearch).join('[^a-z0-9]+');
       const foundByTitle = await this.collection.findOne({
         title: { $regex: new RegExp(`^${slugPattern}$`, 'i') }
       });

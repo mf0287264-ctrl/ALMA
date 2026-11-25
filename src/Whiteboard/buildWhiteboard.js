@@ -20,6 +20,7 @@ import { algorithmStages } from './algorithmStages.js';
 
 const WORDS_PER_SECOND = 2.6;
 const MIN_DWELL_SECONDS = 2.4;
+export const WHITEBOARD_COMPILER_VERSION = 3;
 
 const round = (n) => Math.round(n * 100) / 100;
 const wordCount = (sentence) => sentence.trim().split(/\s+/).filter(Boolean).length;
@@ -69,7 +70,8 @@ export function buildWhiteboard(plan) {
     if (!beat || beat.layout !== 'algorithm' || !Array.isArray(beat.values) || beat.values.length > 10) return beat;
     const stages = algorithmStages(beat);
     const supplied = Array.isArray(beat.steps) ? beat.steps : [];
-    return { ...beat, steps: supplied.length >= stages.length && supplied.length ? supplied : [...stages, ...supplied] };
+    const authoredChecks = supplied.filter(step => step?.ask || step?.text || step?.note);
+    return { ...beat, steps: [...stages, ...authoredChecks] };
   }) };
   checkPlan(plan);
 
@@ -131,7 +133,7 @@ export function buildWhiteboard(plan) {
       const drawn = draw(steps[i], clock + 0.15);
       const next = Math.max(clock + dwell(step.say), drawn + 0.1);
       if (step.ask) {
-        const question = ask(step.ask.question, step.ask.answer);
+        const question = ask(step.ask.question, step.ask.answer, step.ask.title, step.ask);
         add(question.type, question.payload, next - 0.25);
       }
       clock = next;
@@ -151,6 +153,7 @@ export function buildWhiteboard(plan) {
   });
 
   return {
+    compiler_version: WHITEBOARD_COMPILER_VERSION,
     narration: sentences.join(' '),
     duration_seconds: round(clock + 0.8),
     scenes: scenes.sort((a, b) => a.time_offset - b.time_offset)

@@ -29,6 +29,7 @@ export default function PredictPrompt({ payload, onContinue }: PredictPromptProp
   const [guess, setGuess] = useState("");
   const [result, setResult] = useState<Result>("asking");
   const [misses, setMisses] = useState(0);
+  const [hint, setHint] = useState(false);
   const finished = result === "right" || result === "shown";
 
   const check = () => {
@@ -54,14 +55,15 @@ export default function PredictPrompt({ payload, onContinue }: PredictPromptProp
       >
         {result === "right" && <Confetti pieces={26} fall={150} />}
 
-        <div className="flex items-center gap-2">
+        <div className="space-y-3">
           <span className="rounded-full bg-[#ffa11f] px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#10292e]">
             {String(payload.title ?? "Your turn")}
           </span>
-          <p className="text-sm font-extrabold text-[#10292e]">{String(payload.instructions ?? "What do you think happens?")}</p>
+          <p className="whitespace-pre-line text-sm font-semibold leading-7 text-[#10292e]">{String(payload.instructions ?? "Follow the worked steps and explain what happens next.")}</p>
+          {typeof payload.code === "string" && <pre className="overflow-x-auto rounded-xl bg-[#0b1a1c] p-4 font-mono text-xs leading-6 text-[#a4efb3]"><code>{payload.code}</code></pre>}
         </div>
 
-        <form className="mt-3 flex gap-2" onSubmit={(event) => { event.preventDefault(); check(); }}>
+        <form className="mt-3 flex flex-col gap-2 sm:flex-row" onSubmit={(event) => { event.preventDefault(); check(); }}>
           <textarea
             autoFocus
             rows={expected.includes("\n") ? 3 : 1}
@@ -76,7 +78,7 @@ export default function PredictPrompt({ payload, onContinue }: PredictPromptProp
           <button
             type="submit"
             disabled={!guess.trim() || finished || !expected}
-            className="cursor-pointer rounded-full bg-[#ffa11f] px-5 text-xs font-extrabold text-[#10292e] transition-colors hover:bg-[#ff9400] disabled:cursor-not-allowed disabled:opacity-50"
+            className="cursor-pointer rounded-full bg-[#ffa11f] px-5 py-2.5 text-xs font-extrabold text-[#10292e] transition-colors hover:bg-[#ff9400] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Check
           </button>
@@ -89,20 +91,19 @@ export default function PredictPrompt({ payload, onContinue }: PredictPromptProp
             aria-live="polite"
           >
             {result === "asking" && (expected ? "Think like the computer, then press Check." : "Try the exercise, then continue when you are ready.")}
-            {result === "wrong" && "Not quite. Look at the code again and try once more."}
+            {result === "wrong" && String(payload.hint ?? "Not quite. Revisit the worked steps and try again. Match the answer’s case, punctuation and line breaks.")}
             {result === "right" && (
               <span className="inline-flex items-center gap-1">
-                <Check className="h-4 w-4" /> Yes! That is exactly what it prints.
+                <Check className="h-4 w-4" /> That’s correct. Nicely reasoned.
               </span>
             )}
             {result === "shown" && (
-              <span>
-                It prints: <code className="rounded bg-[#e6f5f2] px-1.5 py-0.5 font-mono text-[#118a80]">{expected.replace(/\n/g, "  ")}</code>
-              </span>
+              <span>Compare the reference answer below with your prediction.</span>
             )}
           </p>
 
           <div className="flex gap-2">
+            {!finished && typeof payload.hint === "string" && <button type="button" onClick={() => setHint(value => !value)} aria-expanded={hint} className="cursor-pointer rounded-full border border-[#e8eeea] px-3.5 py-1.5 text-xs font-bold text-[#118a80]">{hint ? "Hide hint" : "Hint"}</button>}
             {!finished && expected && (
               <button
                 type="button"
@@ -123,6 +124,8 @@ export default function PredictPrompt({ payload, onContinue }: PredictPromptProp
             )}
           </div>
         </div>
+        {hint && !finished && <p className="mt-3 rounded-xl bg-[#fff8ec] p-3 text-sm leading-6 text-[#607274]">{String(payload.hint)}</p>}
+        {finished && <div className="mt-3 rounded-xl bg-[#e6f5f2] p-4"><p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[#118a80]">Reference answer</p><pre className="overflow-x-auto whitespace-pre-wrap font-mono text-sm leading-6 text-[#10292e]">{expected}</pre>{typeof payload.explanation === "string" && <p className="mt-3 text-sm leading-7 text-[#607274]">{payload.explanation}</p>}</div>}
       </div>
     </div>
   );

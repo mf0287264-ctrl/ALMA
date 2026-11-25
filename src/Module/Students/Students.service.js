@@ -2,7 +2,8 @@ import { ObjectId } from 'mongodb';
 import { db } from '../../DB/db.connection.js';
 import studentsRepository from './Students.repository.js';
 import { hashPassword, verifyPassword } from '../../Utils/argon2.util.js';
-import { generateToken, generateRefreshToken } from '../../Utils/jwt.util.js';
+import authService from '../Auth/Auth.service.js';
+import sessions from '../Auth/AuthSessions.repository.js';
 import { generateUniqueStudentCode, addStudentCodeToRedis } from '../../Utils/redis.util.js';
 
 class StudentsService {
@@ -69,7 +70,8 @@ class StudentsService {
       }
     }
 
-    const rawPassword = data.password || 'StudentPass123!';
+    if (!data.password) throw Object.assign(new Error('A password is required.'), { statusCode: 400 });
+    const rawPassword = data.password;
     data.password_hash = await hashPassword(rawPassword);
     delete data.password;
 
@@ -77,13 +79,13 @@ class StudentsService {
 
     const payload = {
       id: createdStudent._id,
+      auth_version: createdStudent.auth_version || 0,
       name: `${createdStudent.first_name || ''} ${createdStudent.last_name || ''}`.trim(),
       email: createdStudent.email,
       role: 'student',
     };
 
-    const accessToken = generateToken(payload);
-    const refreshToken = generateRefreshToken(payload);
+    const { accessToken, refreshToken } = await authService.generateTokenPair(payload);
 
     return {
       student: createdStudent,
@@ -100,7 +102,7 @@ class StudentsService {
     }
 
     const student = await studentsRepository.findByEmail(email);
-    if (!student) {
+    if (!student || student.is_active === false || !student.password_hash) {
       const error = new Error('Invalid email or password');
       error.statusCode = 401;
       throw error;
@@ -115,13 +117,13 @@ class StudentsService {
 
     const payload = {
       id: student._id,
+      auth_version: student.auth_version || 0,
       name: `${student.first_name || ''} ${student.last_name || ''}`.trim(),
       email: student.email,
       role: 'student',
     };
 
-    const accessToken = generateToken(payload);
-    const refreshToken = generateRefreshToken(payload);
+    const { accessToken, refreshToken } = await authService.generateTokenPair(payload);
 
     const { password_hash, ...studentWithoutPassword } = student;
 
@@ -160,20 +162,24 @@ class StudentsService {
       }
     }
 
+    const before = data.email ? await studentsRepository.findById(id) : null;
+    const revokeSessions = Boolean(data.password || data.is_active === false || (data.email && data.email !== before?.email));
     if (data.password) {
       data.password_hash = await hashPassword(data.password);
       delete data.password;
     }
-    const student = await studentsRepository.update(id, data);
+    const student = await (revokeSessions ? studentsRepository.updateCredentials(id, data) : studentsRepository.update(id, data));
     if (!student) {
       const error = new Error('Student not found');
       error.statusCode = 404;
       throw error;
     }
+    if (revokeSessions) await sessions.revokeUser(id, student.auth_version);
     return student;
   }
 
   async deleteStudent(id) {
+    await sessions.revokeUser(id);
     const result = await studentsRepository.delete(id);
     if (!result || result.deletedCount === 0) {
       const error = new Error('Student not found');

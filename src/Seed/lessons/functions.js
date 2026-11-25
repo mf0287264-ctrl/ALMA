@@ -87,7 +87,7 @@ export default {
         ],
         check: {
           concept: 'function_purpose',
-          question: 'What is the main benefit of a function?',
+          question: 'A game needs the same greeting in several places. Define it once, then call it whenever needed. Which benefit explains this design when you edit the function body?',
           code: null,
           options: ['It makes the computer faster', 'You write code once and reuse it', 'It removes the need for variables', 'It fixes errors automatically'],
           answer: 'You write code once and reuse it',
@@ -165,7 +165,7 @@ export default {
         ],
         check: {
           concept: 'define_vs_call',
-          question: 'What does this program print?',
+          question: 'Trace this program from top to bottom. Distinguish defining a function from calling it, and evaluate any returned value before the surrounding print. Which output follows from the calls actually present?',
           code: 'def hi():\n    print("Hi!")\n\nprint("Start")',
           options: ['Hi!', 'Start', 'Start then Hi!', 'Nothing'],
           answer: 'Start',
@@ -174,7 +174,7 @@ export default {
             'Start then Hi!': 'Thinks the function runs on its own',
             Nothing: 'Misses that print("Start") runs'
           },
-          explanation: 'hi() is defined but never called, so only print("Start") runs.'
+          explanation: 'Python records the body when it reads def hi() but does not run its indented statements yet. Since the program never calls hi(), that greeting is not printed. Execution continues outside the definition, which prints Start exactly once.'
         },
         remediation: [
           callout('warning', 'Defining a function does not run it. You must call it with hi().'),
@@ -242,7 +242,7 @@ export default {
         ],
         check: {
           concept: 'parameters',
-          question: 'In def greet(name):, what is name?',
+          question: 'In def greet(name):, consider a later call greet("Layla"). What role does name play in the definition, and how does it receive the supplied value for this call?',
           code: null,
           options: ['A parameter', 'An argument', 'A function call', 'A string'],
           answer: 'A parameter',
@@ -251,7 +251,7 @@ export default {
             'A function call': 'Thinks a definition line is a call',
             'A string': 'Confuses the variable with the value it may hold'
           },
-          explanation: 'name sits in the brackets of the definition, so it is a parameter. The value in the call is the argument.'
+          explanation: 'name is a parameter: a local name in the function definition. The call greet("Layla") supplies the argument "Layla", which is bound to name for that call. Another call can bind a different argument without changing the definition.'
         },
         remediation: [
           callout('warning', 'Parameter = in the definition. Argument = in the call.'),
@@ -321,7 +321,7 @@ export default {
         ],
         check: {
           concept: 'return_values',
-          question: 'What does this program print?',
+          question: 'Trace this program from top to bottom. Distinguish defining a function from calling it, and evaluate any returned value before the surrounding print. Which output follows from the calls actually present?',
           code: 'def double(n):\n    return n * 2\n\nprint(double(5))',
           options: ['5', '10', 'n * 2', 'Nothing'],
           answer: '10',
@@ -330,7 +330,7 @@ export default {
             'n * 2': 'Thinks Python prints the formula instead of its result',
             Nothing: 'Thinks a function with return cannot be printed'
           },
-          explanation: 'double(5) returns 5 * 2, which is 10, and print shows that value.'
+          explanation: 'Calling double(5) binds n to 5. The body evaluates n * 2 as 10 and returns that value. The call expression becomes 10, so the outer print receives 10 and displays it. Returning and displaying are separate steps.'
         },
         remediation: [
           callout('warning', 'A call to a function that returns a value turns into that value.'),

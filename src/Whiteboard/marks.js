@@ -144,10 +144,13 @@ export const code = (lines, x, y, options = {}) =>
  * `answer` is the expected text (a string or one string per line). The player shows a
  * "your turn" card with an input (it is a sandbox_question scene, see Whiteboard.type.ts).
  */
-export const ask = (question, answer, title = 'Your turn') =>
+export const ask = (question, answer, title = 'Your turn', details = {}) =>
   mark('sandbox_question', {
     title,
     instructions: question,
+    ...(typeof details.code === 'string' ? { code: details.code } : {}),
+    ...(typeof details.hint === 'string' ? { hint: details.hint } : {}),
+    ...(typeof details.explanation === 'string' ? { explanation: details.explanation } : {}),
     language: 'text',
     testCases: [{ id: 'predict', input: '', expectedOutput: [].concat(answer).join('\n'), description: question }]
   });

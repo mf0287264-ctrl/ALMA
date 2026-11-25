@@ -90,7 +90,7 @@ export default {
         ],
         check: {
           concept: 'variable_basics',
-          question: 'After this line runs, what is stored in the variable lives?',
+          question: 'Read the assignment below from right to left: evaluate the value, then store it under the name lives. Which value is stored, rather than the variable name itself?',
           code: 'lives = 3',
           options: ['The name 3', 'The value 3', 'Nothing yet', 'The word lives'],
           answer: 'The value 3',
@@ -156,7 +156,7 @@ export default {
         ],
         check: {
           concept: 'reassignment',
-          question: 'What does this program print?',
+          question: 'Trace both assignments below. Read the right-hand expression using the current value of x before replacing it. What value does the final print display?',
           code: 'x = 5\nx = x + 1\nprint(x)',
           options: ['5', '6', 'x + 1', '51'],
           answer: '6',
@@ -165,7 +165,7 @@ export default {
             'x + 1': 'Thinks Python prints the formula instead of its result',
             '51': 'Joins the numbers instead of adding them'
           },
-          explanation: 'x starts at 5. Then x + 1 is 6, and that 6 is stored back into x.'
+          explanation: 'First x contains 5. The next assignment reads that current value on the right: 5 + 1 = 6. Python then replaces the stored value of x with 6. The final print looks up x and displays 6, rather than printing the expression itself.'
         },
         remediation: [
           callout('warning', 'Read the right side first: x + 1 uses the current value of x.'),
@@ -233,15 +233,16 @@ export default {
         ],
         check: {
           concept: 'data_types',
-          question: 'Which of these values is a string?',
+          question: 'Inspect the values below as Python source. Which one is a string representing text, rather than a number that can be added directly to an integer?',
           code: null,
           options: ['42', '9.5', '"42"', 'True'],
           answer: '"42"',
           mistakes: {
             '42': 'Thinks any number is text',
+            '9.5': 'A decimal literal without quotation marks is a floating-point number, not a string',
             True: 'Thinks True is text instead of a boolean'
           },
-          explanation: 'Anything inside quotes is a string, even when it is made of digits.'
+          explanation: 'Quotation marks tell Python to treat a value as text. Digits inside quotes are characters in a string, not an integer. Removing the quotes changes its type, which changes whether arithmetic operations are valid.'
         },
         remediation: [
           callout('warning', 'Look for the quotes. No quotes around digits means a number. Quotes mean text.'),
@@ -301,7 +302,7 @@ export default {
         ],
         check: {
           concept: 'naming',
-          question: "Which is the best variable name for a player's score?",
+          question: "You are storing a player’s score in Python. Which name is valid syntax and describes the stored value clearly? Check spaces, the first character and readability.",
           code: null,
           options: ['x', 'my score', 'player_score', '2score'],
           answer: 'player_score',
@@ -310,7 +311,7 @@ export default {
             'my score': 'Forgets that names cannot contain spaces',
             '2score': 'Forgets that names cannot start with a digit'
           },
-          explanation: 'player_score is clear, has no spaces and does not start with a digit.'
+          explanation: 'player_score describes the stored value, uses an underscore instead of a space, and starts with a letter. A name that starts with a digit or contains spaces is invalid. A vague name may run but makes the program harder to understand.'
         },
         remediation: [
           callout('warning', 'Names cannot have spaces or start with a digit. Use underscores between words.'),

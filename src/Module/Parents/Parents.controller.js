@@ -47,7 +47,7 @@ class ParentsController {
 
   async update(req, res, next) {
     try {
-      const parentId = req.authUser?._id || req.params.id;
+      const parentId = req.authUser?.role === 'admin' && req.params.id ? req.params.id : req.authUser?._id;
       const parent = await parentsService.updateParent(parentId, req.body);
       res.status(200).json({ success: true, data: parent });
     } catch (error) {
@@ -57,7 +57,7 @@ class ParentsController {
 
   async delete(req, res, next) {
     try {
-      const parentId = req.authUser?._id || req.params.id;
+      const parentId = req.authUser?.role === 'admin' && req.params.id ? req.params.id : req.authUser?._id;
       await parentsService.deleteParent(parentId);
       res.status(200).json({ success: true, message: 'Parent deleted successfully' });
     } catch (error) {

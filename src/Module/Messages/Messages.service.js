@@ -23,7 +23,6 @@ class MessagesService {
         first_name: partner.first_name,
         last_name: partner.last_name,
         student_code: partner.student_code,
-        email: partner.email,
         grade_level: partner.grade_level,
         profile_image: partner.profile_image || partner.profileImage || null
       },
@@ -40,7 +39,7 @@ class MessagesService {
   }
 
   async sendMessage(currentUserId, partnerIdentifier, messageText) {
-    if (!messageText || !messageText.trim()) {
+    if (typeof messageText !== 'string' || !messageText.trim() || messageText.length > 5000) {
       const error = new Error('Message cannot be empty');
       error.statusCode = 400;
       throw error;

@@ -79,8 +79,8 @@ export default function ProfilePage() {
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Image file size must be less than 10MB.");
+    if (file.size > 4 * 1024 * 1024) {
+      toast.error("Image file size must be less than 4MB.");
       return;
     }
 

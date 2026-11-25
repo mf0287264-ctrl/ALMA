@@ -1,6 +1,6 @@
 import express from 'express';
 import { authenticate } from '../../Middleware/auth.middleware.js';
-import { multerUpload } from '../../Middleware/multer.middleware.js';
+import { multerUpload, removeUploadedFile } from '../../Middleware/multer.middleware.js';
 import { BadRequestException } from '../../Common/Utils/Errors/exceptions.error.js';
 import * as userService from './Users.service.js';
 
@@ -24,6 +24,7 @@ export const uploadProfilePictureHandler = async (req, res, next) => {
       data: result
     });
   } catch (error) {
+    removeUploadedFile(req.file);
     next(error);
   }
 };
@@ -31,10 +32,11 @@ export const uploadProfilePictureHandler = async (req, res, next) => {
 export const updateUserNameHandler = async (req, res, next) => {
   try {
     const { first_name, last_name, firstName, lastName } = req.body || {};
+    if (typeof (first_name ?? firstName) !== 'string' || typeof (last_name ?? lastName) !== 'string') throw new BadRequestException('Both names must be text.');
     const finalFirstName = (first_name ?? firstName ?? '').trim();
     const finalLastName = (last_name ?? lastName ?? '').trim();
 
-    if (!finalFirstName || !finalLastName) {
+    if (!finalFirstName || !finalLastName || finalFirstName.length > 100 || finalLastName.length > 100) {
       throw new BadRequestException(
         'Both first name and last name are required and cannot be empty.',
         null,

@@ -18,7 +18,7 @@ export const DEFAULT_LESSONS: WhiteboardPart[] = [
       caption(6, "Range three gives us zero, one, and two. The stopping value is excluded."),
       scene(6.3, "draw_array", { values: [0, 1, 2], position: [45, 318], width: 415, active_index: 0, label: "range(3)" }),
       scene(7.5, "draw_callout", { content: "Predict the last line of output.", position: [505, 326], width: 230 }),
-      scene(10.5, "sandbox_question", { title: "Your turn", instructions: "What is the last line printed?", testCases: [{ expectedOutput: "Hello 2" }] }),
+      scene(10.5, "sandbox_question", { title: "Trace the loop", instructions: 'The loop uses range(3) and prints "Hello" followed by i once per iteration. range starts at 0 and excludes 3. Before watching the animation, write all three output lines in order, one per line.', code: 'for i in range(3):\n    print("Hello", i)', hint: 'Track i as 0, then 1, then 2. Each iteration prints one line.', explanation: 'range(3) supplies exactly 0, 1 and 2. The print inside the loop runs once for each value, producing three lines in that order.', testCases: [{ expectedOutput: "Hello 0\nHello 1\nHello 2" }] }),
       chapter(12, "Follow each iteration"), heading(12.2, "The computer follows the same steps."),
       caption(12.4, "Each iteration picks the next value, then prints Hello and that value."),
       scene(13, "animate_loop", { values: [0, 1, 2], step_seconds: 2, prefix: "Hello" }),

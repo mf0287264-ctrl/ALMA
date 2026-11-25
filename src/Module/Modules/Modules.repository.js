@@ -29,7 +29,7 @@ class ModulesRepository {
       ];
       delete query.course_id;
     }
-    return await this.collection.find(query).sort({ order: 1 }).toArray();
+    return await this.collection.find(query).sort({ order: 1 }).limit(200).toArray();
   }
 
   async countByCourse(courseId) {

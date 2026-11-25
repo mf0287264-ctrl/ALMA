@@ -30,9 +30,9 @@ router.put('/profile', authenticate, requireRole('teacher', 'admin'), validate(u
 router.put('/', authenticate, requireRole('teacher', 'admin'), validate(updateTeacherSchema), teachersController.update);
 
 // List all teachers
-router.get('/', teachersController.getAll);
+router.get('/', authenticate, teachersController.getAll);
 
-router.get('/:id', teachersController.getById);
+router.get('/:id', authenticate, teachersController.getById);
 router.put('/:id', authenticate, requireRole('teacher', 'admin'), validate(updateTeacherSchema), teachersController.update);
 router.delete('/:id', authenticate, requireRole('teacher', 'admin'), teachersController.delete);
 

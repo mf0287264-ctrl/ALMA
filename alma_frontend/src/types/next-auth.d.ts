@@ -18,14 +18,10 @@ declare module "next-auth" {
   }
 
   interface Session {
-    /** Encrypted backend access token — decrypt with TOKEN_ENCRYPTION_KEY */
-    accessToken?: string;
-    /** Encrypted backend refresh token */
-    refreshToken?: string;
     role?: string;
     backendId?: string;
     /** Whether the access token has expired and needs refresh */
-    error?: "RefreshAccessTokenError";
+    error?: "RefreshAccessTokenError" | "AuthenticationServiceUnavailable";
   }
 }
 
@@ -40,6 +36,6 @@ declare module "next-auth/jwt" {
     name?: string;
     /** Unix timestamp (ms) when the access token expires */
     accessTokenExpires?: number;
-    error?: "RefreshAccessTokenError";
+    error?: "RefreshAccessTokenError" | "AuthenticationServiceUnavailable";
   }
 }

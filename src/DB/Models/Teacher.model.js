@@ -2,6 +2,10 @@ import mongoose from "mongoose";
 
 const teacherSchema = new mongoose.Schema(
   {
+    auth_version: { type: Number, default: 0 },
+    is_verified: { type: Boolean, default: false },
+    teacher_verified_at: { type: Date, default: null },
+    teacher_verified_by: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', default: null },
     first_name: { type: String, required: true, trim: true },
     last_name: { type: String, required: true, trim: true },
     email: {

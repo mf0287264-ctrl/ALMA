@@ -4,7 +4,7 @@ export const registerSchema = z
   .object({
     name: z.string().min(2, "Full name is required"),
     email: z.string().email("Enter a valid email address."),
-    password: z.string().min(8, "At least 8 characters"),
+    password: z.string().min(12, "At least 12 characters").max(128, "At most 128 characters"),
     rePassword: z.string(),
     agreeToTerms: z.boolean().refine((val) => val === true, {
       message: "You must agree to the Terms and Privacy Policy",

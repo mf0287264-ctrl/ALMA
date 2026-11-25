@@ -2,6 +2,9 @@ import { ObjectId } from 'mongodb';
 import { db } from '../../DB/db.connection.js';
 import achievementsRepository from './Achievements.repository.js';
 import studentsRepository from '../Students/Students.repository.js';
+import { canStudyLesson } from '../../Security/access.js';
+import { httpError } from '../../Security/input.js';
+import { activeLessonVersion, isPublishedLesson, publishedLessonDocument } from '../../Whiteboard/lessonSummary.js';
 
 function getCourseAchievementMetadata(courseTitle) {
   const lower = (courseTitle || '').toLowerCase();
@@ -136,7 +139,7 @@ class AchievementsService {
    * Check if student completed all lessons for a course (or explicit trigger)
    * and award the specific course achievement to this student.
    */
-  async checkAndAwardCourseCompletion(studentIdStr, courseIdStr, forceComplete = false) {
+  async checkAndAwardCourseCompletion(studentIdStr, courseIdStr) {
     const studentId = new ObjectId(studentIdStr);
     const courseId = new ObjectId(courseIdStr);
 
@@ -148,6 +151,7 @@ class AchievementsService {
     if (!student || !course) {
       return { awarded: false, message: 'Student or Course not found' };
     }
+    if (course.status !== 'published' || !(student.enrolled_courses || []).some(id => String(id) === String(courseId))) throw httpError(403, 'Enroll in the published course first.');
 
     const cIdStr = course._id.toString();
     const completedCourses = (student.completed_courses || []).map((id) => id.toString());
@@ -168,10 +172,10 @@ class AchievementsService {
     // Check course lessons
     const courseLessons = await db
       .collection('lessons')
-      .find({ course_id: course._id }, { projection: { _id: 1 } })
+      .find({ course_id: { $in: [course._id, String(course._id)] } })
       .toArray();
 
-    const courseLessonIds = courseLessons.map((l) => l._id.toString());
+    const courseLessonIds = courseLessons.filter(l => l.status !== 'draft' && isPublishedLesson(l)).map((l) => l._id.toString());
     const completedLessonIds = (student.completed_lessons || []).map((id) => id.toString());
 
     // Also check completed student_lesson_sessions
@@ -191,8 +195,7 @@ class AchievementsService {
     ]);
 
     const allFinished =
-      forceComplete ||
-      courseLessonIds.length === 0 ||
+      courseLessonIds.length > 0 &&
       courseLessonIds.every((lId) => allStudentCompletedLessons.has(lId));
 
     if (!allFinished) {
@@ -220,8 +223,8 @@ class AchievementsService {
     };
 
     // Update student document in MongoDB
-    await db.collection('students').updateOne(
-      { _id: studentId },
+    const award = await db.collection('students').updateOne(
+      { _id: studentId, completed_courses: { $nin: [courseId, String(courseId)] }, 'achievements.course_id': { $nin: [courseId, String(courseId)] } },
       {
         $addToSet: {
           completed_courses: course._id,
@@ -230,6 +233,7 @@ class AchievementsService {
         $inc: { xp: 150 }
       }
     );
+    if (award.modifiedCount !== 1) return { awarded: false, already_earned: true };
 
     // Also insert into achievements collection
     await db.collection('achievements').insertOne({
@@ -250,18 +254,28 @@ class AchievementsService {
   /**
    * Complete a single lesson and automatically trigger course check
    */
-  async completeLesson(studentIdStr, lessonIdStr) {
+  async completeLesson(studentIdStr, lessonIdStr, proof = {}) {
     const studentId = new ObjectId(studentIdStr);
     const lessonId = new ObjectId(lessonIdStr);
 
     const lesson = await db.collection('lessons').findOne({ _id: lessonId });
-    if (!lesson) {
-      throw new Error('Lesson not found');
+    if (!lesson) throw httpError(404, 'Lesson not found.');
+    const student = await studentsRepository.findById(studentIdStr);
+    if (!student || !await canStudyLesson({ ...student, role: 'student' }, lesson)) throw httpError(403, 'You do not have access to this lesson.');
+    const version = activeLessonVersion(publishedLessonDocument(lesson));
+    const sections = version?.sections || lesson.sections || [];
+    if (sections.some(s => s.diagnostic_check)) {
+      if (proof.version_no !== (version?.version_no || lesson.current_version_no || 1)) throw httpError(409, 'Reload the current lesson version before completing it.');
+      if (!proof.answers || typeof proof.answers !== 'object' || Array.isArray(proof.answers)) throw httpError(400, 'Complete the lesson checkpoints first.');
+      if (Object.keys(proof.answers).some(key => !/^\d+$/.test(key) || Number(key) >= sections.length)) throw httpError(400, 'Invalid lesson checkpoint.');
+      for (const [i, section] of sections.entries()) {
+        if (section.diagnostic_check && proof.answers[i] !== section.diagnostic_check.correct_answer) throw httpError(422, 'Complete every lesson checkpoint before finishing.');
+      }
     }
 
     // Add to completed_lessons
-    await db.collection('students').updateOne(
-      { _id: studentId },
+    const completion = await db.collection('students').updateOne(
+      { _id: studentId, completed_lessons: { $nin: [lessonId, String(lessonId)] } },
       {
         $addToSet: { completed_lessons: lessonId },
         $inc: { lessons_completed: 1, xp: 50 }
@@ -284,7 +298,7 @@ class AchievementsService {
 
     // Check if course is completed
     let courseResult = null;
-    if (lesson.course_id) {
+    if (lesson.course_id && (student.enrolled_courses || []).some(id => String(id) === String(lesson.course_id))) {
       courseResult = await this.checkAndAwardCourseCompletion(
         studentIdStr,
         lesson.course_id.toString()
@@ -293,6 +307,7 @@ class AchievementsService {
 
     return {
       lesson_completed: true,
+      already_completed: completion.modifiedCount !== 1,
       course_awarded: courseResult?.awarded || false,
       achievement: courseResult?.achievement || null,
       message: courseResult?.awarded

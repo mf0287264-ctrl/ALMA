@@ -1,109 +1,35 @@
 import jwt from 'jsonwebtoken';
+import { randomUUID } from 'node:crypto';
+import { requiredSecret } from '../Security/config.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'alma_jwt_secret_key_2026';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'alma_jwt_refresh_secret_key_2026_separate';
-const JWT_ACCESS_EXPIRES_IN = process.env.JWT_ACCESS_EXPIRES_IN || '30d';
-const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
+const issuer = () => process.env.JWT_ISSUER || 'alma-api';
+const audience = () => process.env.JWT_AUDIENCE || 'alma-web';
+const unauthorized = () => Object.assign(new Error('Invalid or expired authentication token.'), { statusCode: 401 });
 
-/**
- * Generates a signed ACCESS JWT token (expires in JWT_ACCESS_EXPIRES_IN)
- * @param {Object} payload
- * @param {string} [secret=JWT_SECRET]
- * @param {Object} [options={}]
- * @returns {string}
- */
-export const generateToken = (payload, secret = JWT_SECRET, options = {}) => {
-  return jwt.sign(payload, secret, { expiresIn: JWT_ACCESS_EXPIRES_IN, ...options });
-};
+export function extractRawToken(value) {
+  if (typeof value !== 'string' || value.length > 8192) return null;
+  return value.startsWith('Bearer ') ? value.slice(7).trim() : value.trim();
+}
 
-/**
- * Generates a signed REFRESH JWT token (expires in JWT_REFRESH_EXPIRES_IN)
- * Refresh token uses a separate secret so it cannot be used as an access token.
- * @param {Object} payload
- * @returns {string}
- */
-export const generateRefreshToken = (payload) => {
-  return jwt.sign(
-    { ...payload, tokenType: 'refresh' },
-    JWT_REFRESH_SECRET,
-    { expiresIn: JWT_REFRESH_EXPIRES_IN }
-  );
-};
+export function generateToken(payload) {
+  return jwt.sign({ ...payload, tokenType: 'access', jti: randomUUID() }, requiredSecret('JWT_SECRET'), { algorithm: 'HS256', issuer: issuer(), audience: audience(), expiresIn: 900 });
+}
 
-/**
- * Verifies and decodes an ACCESS JWT token with signature verification
- * @param {string} token - Raw JWT token or "Bearer <token>"
- * @param {string} [secret=JWT_SECRET]
- * @returns {Object} decodedData
- */
-export const verifyToken = (token, secret = JWT_SECRET) => {
-  if (!token) {
-    const error = new Error('Authorization token is required');
-    error.statusCode = 401;
-    throw error;
-  }
+export function generateRefreshToken(payload) {
+  return jwt.sign({ ...payload, tokenType: 'refresh', jti: randomUUID() }, requiredSecret('JWT_REFRESH_SECRET'), { algorithm: 'HS256', issuer: issuer(), audience: audience(), expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d' });
+}
 
-  const cleanToken = typeof token === 'string' && token.startsWith('Bearer ')
-    ? token.slice(7).trim()
-    : String(token).trim();
-
+function verify(value, secretName, tokenType) {
+  const raw = extractRawToken(value);
+  if (!raw) throw unauthorized();
   try {
-    const decodedData = jwt.verify(cleanToken, secret);
-    return decodedData;
-  } catch (err) {
-    const error = new Error(err.message || 'Invalid or expired token');
-    error.statusCode = 401;
-    throw error;
-  }
-};
+    const decoded = jwt.verify(raw, requiredSecret(secretName), { algorithms: ['HS256'], issuer: issuer(), audience: audience() });
+    if (!decoded || typeof decoded !== 'object' || decoded.tokenType !== tokenType || !['student', 'teacher', 'parent', 'admin'].includes(decoded.role)) throw unauthorized();
+    return decoded;
+  } catch { throw unauthorized(); }
+}
 
-/**
- * Verifies and decodes a REFRESH JWT token
- * @param {string} token - Raw refresh token
- * @returns {Object} decodedData
- */
-export const verifyRefreshToken = (token) => {
-  if (!token) {
-    const error = new Error('Refresh token is required');
-    error.statusCode = 401;
-    throw error;
-  }
-
-  const cleanToken = typeof token === 'string' && token.startsWith('Bearer ')
-    ? token.slice(7).trim()
-    : String(token).trim();
-
-  try {
-    const decodedData = jwt.verify(cleanToken, JWT_REFRESH_SECRET);
-    if (decodedData.tokenType !== 'refresh') {
-      const error = new Error('Invalid refresh token');
-      error.statusCode = 401;
-      throw error;
-    }
-    return decodedData;
-  } catch (err) {
-    const error = new Error(err.message || 'Invalid or expired refresh token');
-    error.statusCode = 401;
-    throw error;
-  }
-};
-
-/**
- * Extracts the raw token string from a "Bearer <token>" header
- * @param {string} authorization
- * @returns {string}
- */
-export const extractRawToken = (authorization) => {
-  if (!authorization) return null;
-  return typeof authorization === 'string' && authorization.startsWith('Bearer ')
-    ? authorization.slice(7).trim()
-    : String(authorization).trim();
-};
-
-export default {
-  generateToken,
-  generateRefreshToken,
-  verifyToken,
-  verifyRefreshToken,
-  extractRawToken,
-};
+export const verifyToken = token => verify(token, 'JWT_SECRET', 'access');
+export const verifyRefreshToken = token => verify(token, 'JWT_REFRESH_SECRET', 'refresh');
+export const tokenExpiration = token => new Date(jwt.decode(token).exp * 1000);
+export default { generateToken, generateRefreshToken, verifyToken, verifyRefreshToken, extractRawToken };

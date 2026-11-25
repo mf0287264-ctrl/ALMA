@@ -63,6 +63,7 @@ const sceneSchema = new mongoose.Schema({
 }, { _id: false });
 
 const whiteboardSchema = new mongoose.Schema({
+  compiler_version: { type: Number, default: 1 },
   narration: { type: String, default: null },
   audio_url: { type: String, default: null },
   duration_seconds: { type: Number, required: true },

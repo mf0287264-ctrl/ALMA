@@ -1,9 +1,12 @@
 import crypto from 'crypto';
 import lessonGenerationsRepository from './LessonGenerations.repository.js';
 import { WHITEBOARD_GENERATION_DEFAULTS } from '../../Whiteboard/generationDefaults.js';
+import { runLessonGeneration } from './generationWorker.js';
+import { validateGenerationInput, scheduleGeneration } from '../../Security/generation.js';
 
 class LessonGenerationsService {
   async createGenerationRequest(data) {
+    validateGenerationInput(data);
     data = { ...data, whiteboard_generation: { ...structuredClone(WHITEBOARD_GENERATION_DEFAULTS), ...data?.whiteboard_generation } };
     data.job_id = data.job_id || `job_${crypto.randomBytes(5).toString('hex')}`;
     data.status = data.status || 'pending';
@@ -12,8 +15,21 @@ class LessonGenerationsService {
     data.step_message = data.step_message || 'Generation initialized...';
     data.programming_language = data.programming_language || 'Python';
     data.grade_level = data.grade_level || 'Grade 8';
-    data.model = data.model || 'gemini-3.5-flash-lite';
-    return await lessonGenerationsRepository.create(data);
+    data.model = data.model || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    // Credentials are server configuration, never job metadata.
+    for (const field of ['api_key', 'gemini_api_key', 'geminiApiKey', 'hf_api_token']) delete data[field];
+    if (!process.env.GEMINI_API_KEY && !process.env.LESSON_GENERATION_EXTERNAL_WORKER) {
+      data.status = 'failed';
+      data.current_step = 'failed';
+      data.error = 'The lesson generation service is not connected. Ask your administrator to configure the model provider.';
+      data.step_message = data.error;
+    }
+    const job = await lessonGenerationsRepository.create(data);
+    if (process.env.GEMINI_API_KEY && job.status === 'pending') {
+      try { scheduleGeneration(() => runLessonGeneration(job)); }
+      catch { return await lessonGenerationsRepository.update(job._id, { status: 'failed', current_step: 'failed', error: 'The generation queue is full. Try again shortly.' }); }
+    }
+    return job;
   }
 
   async getAllGenerations(filter) {

@@ -39,12 +39,18 @@ class LessonsRepository {
     const projection = summary
       ? { 'versions.sections.whiteboard.scenes': 0, 'versions.sections.whiteboard.plan': 0 }
       : {};
-    return await this.collection.find(query, { projection }).toArray();
+    return await this.collection.find(query, { projection }).limit(200).toArray();
   }
 
   async findById(id) {
     const queryId = typeof id === 'string' && ObjectId.isValid(id) ? new ObjectId(id) : id;
     return await this.collection.findOne({ _id: queryId });
+  }
+
+  async findByIds(ids = []) {
+    if (!ids.length) return [];
+    const queryIds = ids.flatMap(id => typeof id === 'string' && ObjectId.isValid(id) ? [new ObjectId(id), id] : [id]);
+    return await this.collection.find({ _id: { $in: queryIds } }).toArray();
   }
 
   async findByCourseIds(courseIds = []) {
@@ -68,12 +74,9 @@ class LessonsRepository {
           { created_by: teacherId.toString() }
         ]
       }).toArray();
-      if (results.length > 0) return results;
+      return results;
     }
-    // Return any lessons created by teachers (created_by not null)
-    return await this.collection.find({
-      created_by: { $ne: null }
-    }).toArray();
+    return [];
   }
 
   async update(id, data) {

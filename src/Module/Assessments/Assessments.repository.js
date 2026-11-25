@@ -24,7 +24,7 @@ class AssessmentsRepository {
       ];
       delete query.course_id;
     }
-    return await this.collection.find(query).toArray();
+    return await this.collection.find(query).limit(200).toArray();
   }
 
   async findById(id) {

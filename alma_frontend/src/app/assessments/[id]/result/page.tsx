@@ -4,7 +4,7 @@ import React, { use, useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import api from "@/services/api";
-import { Check, X, RotateCcw, ArrowRight, Loader2, BookOpen } from "lucide-react";
+import { Check, X, RotateCcw, Loader2 } from "lucide-react";
 
 interface QuestionBreakdown {
   question_text: string;
@@ -45,44 +45,8 @@ function AssessmentResultContent({
     async function loadResult() {
       setLoading(true);
       try {
-        // First check MongoDB database for the logged-in student's result
-        try {
-          const apiRes = await api.get(`/assessments/${assessmentId}/my-result`);
-          if (apiRes.data?.data) {
-            setResult(apiRes.data.data);
-            setLoading(false);
-            return;
-          }
-        } catch {
-          // Continue to fallback
-        }
-
-        // Secondary fallback
-        const res = await api.get(`/assessments/${assessmentId}`);
-        const a = res.data?.data;
-        if (a) {
-          setResult({
-            assessment_id: a._id,
-            title: a.title,
-            course_title: a.course_title,
-            earned_points: a.total_points,
-            total_points: a.total_points,
-            score_percent: 100,
-            correct_count: a.questions?.length || 0,
-            total_questions: a.questions?.length || 0,
-            passing_score: a.passing_score || 60,
-            passed: true,
-            submitted_at: new Date().toISOString(),
-            breakdown: (a.questions || []).map((q: any) => ({
-              question_text: q.question_text,
-              selected_answer: q.correct_answer,
-              correct_answer: q.correct_answer,
-              is_correct: true,
-              points: q.points || 10,
-              explanation: q.explanation || "",
-            })),
-          });
-        }
+        const response = await api.get(`/assessments/${assessmentId}/my-result`);
+        setResult(response.data?.data || null);
       } catch (e) {
         console.error("Failed to load result:", e);
       } finally {
@@ -106,8 +70,18 @@ function AssessmentResultContent({
     );
   }
 
-  const passed = result?.passed ?? true;
-  const score = result ? `${result.earned_points} / ${result.total_points}` : "100 / 100";
+  if (!result) return (
+    <div className="flex min-h-screen bg-[#fff8ec]">
+      <Sidebar />
+      <main className="flex-1 p-10 pt-24 text-center">
+        <h1 className="text-2xl font-bold">No saved result yet</h1>
+        <p className="my-4">Submit the assessment to see your verified score. If you already submitted, try again when your connection is restored.</p>
+        <Link href={`/assessments/${assessmentId}/take`} className="font-bold text-[#118a80]">Open assessment</Link>
+      </main>
+    </div>
+  );
+  const passed = result.passed;
+  const score = result ? `${result.earned_points} / ${result.total_points}` : "—";
   const passScore = result?.passing_score || 60;
 
   return (

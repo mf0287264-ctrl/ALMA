@@ -17,9 +17,19 @@ const lessonGenerationSchema = new mongoose.Schema(
     topic: { type: String, required: true },
     programming_language: { type: String, default: 'Python' },
     grade_level: { type: String, default: 'Grade 8' },
-    model: { type: String, default: 'gemini-3.5-flash-lite' },
+    model: { type: String, default: 'gemini-2.5-flash' },
     // Explanatory animation contract supplied to generation workers.
     whiteboard_generation: { type: mongoose.Schema.Types.Mixed, default: null },
+    objectives: [{ type: String }],
+    prerequisites: { type: String, default: '' },
+    target_duration_minutes: { type: Number, default: 15 },
+    curriculum_standard: { type: String, default: '' },
+    scope_constraints: { type: String, default: '' },
+    special_instructions: { type: String, default: '' },
+    reference_notes: { type: String, default: '' },
+    desired_depth: { type: String, enum: ['introductory', 'standard', 'comprehensive', 'advanced'], default: 'comprehensive' },
+    outline: { type: mongoose.Schema.Types.Mixed, default: null },
+    quality_report: { type: mongoose.Schema.Types.Mixed, default: null },
 
     status: {
       type: String,

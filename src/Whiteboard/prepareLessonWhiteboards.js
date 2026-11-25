@@ -1,17 +1,17 @@
-import { buildWhiteboard } from './buildWhiteboard.js';
+import { buildWhiteboard, WHITEBOARD_COMPILER_VERSION } from './buildWhiteboard.js';
 
 const clip = (text, max = 90) => text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
 const sentences = (text) => String(text ?? '').split(/(?<=[.!?])\s+/).map(value => value.trim()).filter(Boolean);
 
 /** Recognize only the exact two-line loop this renderer explains; never execute source. */
-function simpleLoop(source) {
-  const match = source.trim().match(/^for ([A-Za-z_]\w*) in range\((\d+)(?:,\s*(\d+))?(?:,\s*(\d+))?\):\n\s+print\(["']([^"']*)["'],\s*\1\)$/);
+export function simpleLoop(source) {
+  const match = source.replace(/\r\n/g, '\n').trim().match(/^for ([A-Za-z_]\w*) in range\((-?\d+)(?:,\s*(-?\d+))?(?:,\s*(-?\d+))?\):\n\s+print\((?:["']([^"']*)["'],\s*)?\1\)$/);
   if (!match) return null;
   const [, variable, a, b, c, prefix] = match;
   const start = b === undefined ? 0 : Number(a), stop = b === undefined ? Number(a) : Number(b), step = c === undefined ? 1 : Number(c);
-  if (step <= 0 || stop <= start || Math.ceil((stop-start)/step) > 8) return null;
+  if (step === 0 || (stop-start)/step <= 0 || Math.ceil((stop-start)/step) > 8) return null;
   const values = Array.from({ length: Math.ceil((stop-start)/step) }, (_, index) => start + index * step);
-  return { algorithm: 'loop', variable, prefix, values, code: source.trim() };
+  return { algorithm: 'loop', variable, prefix: prefix ?? '', output_mode: prefix === undefined ? 'value' : 'prefix_value', values, code: source.trim() };
 }
 
 function describeLine(line, index) {
@@ -68,19 +68,25 @@ export function planFromSection(section) {
 }
 
 /** Called by lesson create/update, so plans are compiled before they are stored. */
-export function prepareLessonWhiteboards(data) {
-  if (!data || !Array.isArray(data.versions)) return data;
-  return { ...data, versions: data.versions.map(version => {
-    if (!version || !Array.isArray(version.sections)) return version;
-    return { ...version, sections: version.sections.map(section => {
+export function prepareLessonWhiteboards(data, { preserveExisting = false, upgradeExisting = false } = {}) {
+  if (!data || typeof data !== 'object') return data;
+  const prepareSection = (section) => {
       if (!section || typeof section !== 'object') return section;
       const existing = section.whiteboard;
       const explicitPlan = existing?.plan ?? section.whiteboard_plan ?? (Array.isArray(section.board) ? { beats: section.board } : null);
+      const canUpgrade = upgradeExisting && explicitPlan && !existing?.audio_url && (existing?.compiler_version ?? 1) < WHITEBOARD_COMPILER_VERSION;
+      if (preserveExisting && !canUpgrade && (existing?.scenes?.length || existing?.visual_sequence?.length || existing?.parts?.some(part => part.scenes?.length))) return section;
       if (!explicitPlan && Array.isArray(existing?.scenes) && existing.scenes.length) return section;
       const plan = explicitPlan ?? planFromSection(section);
       if (!plan) return section;
       try { return { ...section, whiteboard: { ...existing, ...buildWhiteboard(plan), plan } }; }
       catch (error) { error.statusCode = 400; throw error; }
-    }) };
+  };
+  let prepared = data;
+  if (Array.isArray(data.versions)) prepared = { ...prepared, versions: data.versions.map(version => {
+    if (!version || !Array.isArray(version.sections)) return version;
+    return { ...version, sections: version.sections.map(prepareSection) };
   }) };
+  if (Array.isArray(data.sections)) prepared = { ...prepared, sections: data.sections.map(prepareSection) };
+  return prepareSection(prepared);
 }

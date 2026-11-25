@@ -60,8 +60,8 @@ export default function TeacherSettingsPage() {
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Image size exceeds 10MB limit.");
+    if (file.size > 4 * 1024 * 1024) {
+      toast.error("Image size exceeds 4MB limit.");
       return;
     }
 
@@ -231,7 +231,7 @@ export default function TeacherSettingsPage() {
                   Teacher Profile Photo
                 </h3>
                 <p className="text-xs text-[#5a6e70] mt-0.5 mb-3">
-                  Upload a clear portrait photo (PNG, JPG, JPEG up to 10MB).
+                  Upload a clear portrait photo (PNG, JPG, JPEG up to 4MB).
                 </p>
 
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">

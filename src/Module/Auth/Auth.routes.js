@@ -1,6 +1,5 @@
 import express from 'express';
 import authController from './Auth.controller.js';
-import { authenticate } from '../../Middleware/auth.middleware.js';
 
 const router = express.Router();
 
@@ -17,6 +16,7 @@ router.post('/refresh-token', authController.refreshToken);
  * Protected — must send valid access token in Authorization header.
  * Blacklists the token so it can no longer be used.
  */
-router.post('/logout', authenticate, authController.logout);
+// Logout verifies an access or refresh token and revokes its entire session family.
+router.post('/logout', authController.logout);
 
 export default router;

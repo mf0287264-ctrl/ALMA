@@ -1,3 +1,5 @@
+import "server-only";
+
 /**
  * Token Encryption Utilities
  *
@@ -22,20 +24,28 @@ async function getDerivedKey(): Promise<CryptoKey> {
   const rawKey = process.env[KEY_ENV];
   if (!rawKey) {
     throw new Error(
-      `[tokenEncryption] ${KEY_ENV} is not set in environment variables.`
+      `[tokenEncryption] ${KEY_ENV} is not set in environment variables.`,
     );
   }
 
-  // Use the first 32 bytes of the UTF-8 encoded key string
-  const encoder = new TextEncoder();
-  const keyMaterial = encoder.encode(rawKey.padEnd(32, "0").slice(0, 32));
+  if (
+    new TextEncoder().encode(rawKey).byteLength < 32 ||
+    /^(your[_-]|replace[_-]?me|changeme)/i.test(rawKey)
+  )
+    throw new Error(
+      "TOKEN_ENCRYPTION_KEY requires at least 32 bytes of random secret material.",
+    );
+  const keyMaterial = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(rawKey),
+  );
 
   _cachedKey = await crypto.subtle.importKey(
     "raw",
     keyMaterial,
     { name: "AES-GCM" },
     false,
-    ["encrypt", "decrypt"]
+    ["encrypt", "decrypt"],
   );
 
   return _cachedKey;
@@ -53,7 +63,7 @@ export async function encryptToken(plaintext: string): Promise<string> {
   const ciphertext = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
     key,
-    encoded
+    encoded,
   );
 
   // Combine iv + ciphertext into a single Uint8Array
@@ -80,7 +90,7 @@ export async function decryptToken(encrypted: string): Promise<string | null> {
     const decrypted = await crypto.subtle.decrypt(
       { name: "AES-GCM", iv },
       key,
-      ciphertext
+      ciphertext,
     );
 
     return new TextDecoder().decode(decrypted);

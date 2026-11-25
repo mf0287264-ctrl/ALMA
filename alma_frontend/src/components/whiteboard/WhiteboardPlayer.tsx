@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
-import { Check, Pause, Play, RotateCcw } from "lucide-react";
+import { ArrowRight, Check, Pause, Play, RotateCcw } from "lucide-react";
 import type { Payload, WhiteboardPart } from "@/types/Whiteboard.type";
 import { toWhiteboardPart } from "@/utils/toWhiteboardPart";
 import CaptionBubble from "./CaptionBubble";
@@ -23,6 +23,11 @@ interface WhiteboardPlayerProps {
   onPlay?: () => void;
   /** The part reached its end. */
   onEnd?: () => void;
+  /** Let the lesson page distinguish finishing the board from passing its checkpoint. */
+  endTitle?: string;
+  endDescription?: string;
+  onContinue?: () => void;
+  continueLabel?: string;
   /**
    * Handle sandbox_question scenes yourself. The lesson pauses; return a promise to resume
    * when it resolves. Without this prop the player shows its own "your turn" card.
@@ -44,6 +49,10 @@ function Player({
   autoplay,
   onPlay,
   onEnd,
+  endTitle = "Section complete",
+  endDescription = "Replay a chapter or try the lesson again.",
+  onContinue,
+  continueLabel = "Continue",
   onSandboxQuestion,
   onAsk,
 }: Omit<WhiteboardPlayerProps, "lesson"> & { part: WhiteboardPart }) {
@@ -254,8 +263,9 @@ function Player({
             <div className="wb-panel-in absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-white/90 p-3 text-center backdrop-blur-[2px] sm:gap-3 sm:p-4">
               <Confetti pieces={36} fall={380} />
               <span className="wb-success-pop rounded-full bg-[#e6f5f2] p-2 text-[#118a80] sm:p-4"><Check className="h-6 w-6 sm:h-9 sm:w-9" /></span>
-              <p className="text-base font-extrabold text-[#10292e] sm:text-lg">Section complete</p>
-              <p className="text-xs text-[#607274] sm:text-sm">Replay a chapter or try the lesson again.</p>
+              <p className="text-base font-extrabold text-[#10292e] sm:text-lg">{endTitle}</p>
+              <p className="max-w-sm text-xs text-[#607274] sm:text-sm">{endDescription}</p>
+              {onContinue && <button type="button" onClick={(event) => { event.stopPropagation(); onContinue(); }} className="flex cursor-pointer items-center gap-2 rounded-full bg-[#10292e] px-4 py-2 text-xs font-bold text-white sm:px-5 sm:py-2.5"><ArrowRight className="h-3.5 w-3.5" />{continueLabel}</button>}
               <button type="button" onClick={(event) => { event.stopPropagation(); start(); }} className="flex cursor-pointer items-center gap-2 rounded-full bg-[#ffa11f] px-4 py-2 text-xs font-bold text-[#10292e] sm:px-5 sm:py-2.5 sm:text-sm"><RotateCcw className="h-4 w-4" /> Replay lesson</button>
             </div>
           )}

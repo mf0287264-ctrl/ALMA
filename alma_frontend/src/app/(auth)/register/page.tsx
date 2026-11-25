@@ -37,8 +37,8 @@ export default function RegisterPage() {
     if (!email.includes("@") || !email.includes(".")) {
       newErrors.email = ["Enter a valid email address."];
     }
-    if (password.length < 8) {
-      newErrors.password = ["At least 8 characters"];
+    if (password.length < 12 || password.length > 128) {
+      newErrors.password = ["12–128 characters"];
     }
     if (password !== rePassword) {
       newErrors.rePassword = ["Passwords don't match."];
@@ -203,7 +203,7 @@ export default function RegisterPage() {
                   errors.password ? "text-[#cc4d4c] font-semibold" : "text-[#5a6e70]"
                 }`}
               >
-                {errors.password?.[0] || "At least 8 characters"}
+                {errors.password?.[0] || "12–128 characters"}
               </p>
             </div>
 

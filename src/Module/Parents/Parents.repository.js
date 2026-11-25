@@ -13,7 +13,7 @@ class ParentsRepository {
   async findByEmail(email) {
     if (!email) return null;
     const doc = await this.collection.findOne({ email: email.toLowerCase().trim() });
-    return doc ? { role: 'parent', ...doc } : null;
+    return doc ? { ...doc, role: 'parent' } : null;
   }
 
   async create(data) {
@@ -26,15 +26,15 @@ class ParentsRepository {
   }
 
   async findAll(filter = {}) {
-    const docs = await this.collection.find(filter, { projection: { password_hash: 0 } }).toArray();
-    return docs.map((d) => ({ role: 'parent', ...d }));
+    const docs = await this.collection.find(filter, { projection: { password_hash: 0 } }).limit(200).toArray();
+    return docs.map((d) => ({ ...d, role: 'parent' }));
   }
 
   async findById(id) {
     if (!id) return null;
     const queryId = typeof id === 'string' ? new ObjectId(id) : id;
     const doc = await this.collection.findOne({ _id: queryId }, { projection: { password_hash: 0 } });
-    return doc ? { role: 'parent', ...doc } : null;
+    return doc ? { ...doc, role: 'parent' } : null;
   }
 
   async update(id, data) {
@@ -45,6 +45,13 @@ class ParentsRepository {
       { $set: { ...data, updated_at: new Date() } }
     );
     return await this.findById(id);
+  }
+
+  async updateCredentials(id, data) {
+    const clean = { ...data };
+    delete clean.auth_version;
+    const doc = await this.collection.findOneAndUpdate({ _id: new ObjectId(String(id)) }, { $set: { ...clean, updated_at: new Date() }, $inc: { auth_version: 1 } }, { returnDocument: 'after', projection: { password_hash: 0 } });
+    return doc ? { ...doc, role: 'parent' } : null;
   }
 
   async updateDocumentById(id, data, options = {}) {
@@ -96,11 +103,11 @@ class ParentsRepository {
     return await this.findById(parentId);
   }
 
-  async findChildrenDetails(childrenIds = []) {
+  async findChildrenDetails(childrenIds = [], parentId) {
     if (!childrenIds || childrenIds.length === 0) return [];
     const objectIds = childrenIds.map((id) => (typeof id === 'string' ? new ObjectId(id) : id));
     return await db.collection('students').find(
-      { _id: { $in: objectIds } },
+      { _id: { $in: objectIds }, parent_id: new ObjectId(String(parentId)), guardian_verified_at: { $exists: true } },
       { projection: { password_hash: 0 } }
     ).toArray();
   }

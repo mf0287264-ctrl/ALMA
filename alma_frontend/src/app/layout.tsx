@@ -10,13 +10,22 @@ export const metadata: Metadata = {
   description: "ALMA Platform",
 };
 
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" style={{ fontFamily: "Gill Sans, sans-serif" }} className="h-full antialiased">
+    // Browser extensions can add attributes to <html> before React hydrates.
+    // Keep the exception on this element; descendants still receive hydration checks.
+    <html
+      lang="en"
+      style={{ fontFamily: "Gill Sans, sans-serif" }}
+      className="h-full antialiased"
+      suppressHydrationWarning
+    >
       <body className="min-h-full flex flex-col bg-[#fff8ec]">
         {/*
           AuthProviders wraps everything with next-auth SessionProvider.

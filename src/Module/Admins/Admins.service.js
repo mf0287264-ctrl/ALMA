@@ -1,8 +1,28 @@
 import adminsRepository from './Admins.repository.js';
 import { hashPassword, verifyPassword } from '../../Utils/argon2.util.js';
-import { generateToken, generateRefreshToken } from '../../Utils/jwt.util.js';
+import authService from '../Auth/Auth.service.js';
+import sessions from '../Auth/AuthSessions.repository.js';
+import { ObjectId } from 'mongodb';
+import studentsRepository from '../Students/Students.repository.js';
+import parentsRepository from '../Parents/Parents.repository.js';
+import teachersRepository from '../Teachers/Teachers.repository.js';
 
 class AdminsService {
+  async verifyTeacher(adminId, teacherId) {
+    if (typeof teacherId !== 'string' || !ObjectId.isValid(teacherId)) throw Object.assign(new Error('A valid teacher identifier is required.'), { statusCode: 400 });
+    const teacher = await teachersRepository.update(teacherId, { is_verified: true, teacher_verified_at: new Date(), teacher_verified_by: new ObjectId(String(adminId)) });
+    if (!teacher) throw Object.assign(new Error('Teacher not found.'), { statusCode: 404 });
+    return { teacher_id: teacherId, verified: true };
+  }
+  async linkGuardian(adminId, { student_id, parent_id }) {
+    if (typeof student_id !== 'string' || typeof parent_id !== 'string' || !ObjectId.isValid(student_id) || !ObjectId.isValid(parent_id)) throw Object.assign(new Error('Valid parent and student identifiers are required.'), { statusCode: 400 });
+    const student = await studentsRepository.findById(student_id), parent = await parentsRepository.findById(parent_id);
+    if (!student || !parent) throw Object.assign(new Error('Account not found.'), { statusCode: 404 });
+    if (student.parent_id && String(student.parent_id) !== parent_id) throw Object.assign(new Error('Remove the existing guardian link before assigning another guardian.'), { statusCode: 409 });
+    await studentsRepository.update(student_id, { parent_id: new ObjectId(parent_id), guardian_verified_at: new Date(), guardian_verified_by: new ObjectId(String(adminId)), parent_name: `${parent.first_name || ''} ${parent.last_name || ''}`.trim(), parent_email: parent.email, parent_phone: parent.phone_number || null });
+    await parentsRepository.addChild(parent_id, student_id);
+    return { student_id, parent_id, verified: true };
+  }
   async createAdmin(data) {
     if (data.name && (!data.first_name || data.first_name === 'Admin')) {
       const parts = data.name.trim().split(' ');
@@ -36,7 +56,8 @@ class AdminsService {
       }
     }
 
-    const rawPassword = data.password || 'AdminPass123!';
+    if (!data.password) throw Object.assign(new Error('A password is required.'), { statusCode: 400 });
+    const rawPassword = data.password;
     data.password_hash = await hashPassword(rawPassword);
     delete data.password;
 
@@ -44,13 +65,13 @@ class AdminsService {
 
     const payload = {
       id: createdAdmin._id,
+      auth_version: createdAdmin.auth_version || 0,
       name: `${createdAdmin.first_name || ''} ${createdAdmin.last_name || ''}`.trim(),
       email: createdAdmin.email,
       role: 'admin',
     };
 
-    const accessToken = generateToken(payload);
-    const refreshToken = generateRefreshToken(payload);
+    const { accessToken, refreshToken } = await authService.generateTokenPair(payload);
 
     const { password_hash, ...adminWithoutPassword } = createdAdmin;
 
@@ -69,7 +90,7 @@ class AdminsService {
     }
 
     const admin = await adminsRepository.findByEmail(email);
-    if (!admin) {
+    if (!admin || admin.is_active === false || !admin.password_hash) {
       const error = new Error('Invalid email or password');
       error.statusCode = 401;
       throw error;
@@ -84,13 +105,13 @@ class AdminsService {
 
     const payload = {
       id: admin._id,
+      auth_version: admin.auth_version || 0,
       name: `${admin.first_name || ''} ${admin.last_name || ''}`.trim(),
       email: admin.email,
       role: 'admin',
     };
 
-    const accessToken = generateToken(payload);
-    const refreshToken = generateRefreshToken(payload);
+    const { accessToken, refreshToken } = await authService.generateTokenPair(payload);
 
     const { password_hash, ...adminWithoutPassword } = admin;
 
@@ -125,20 +146,24 @@ class AdminsService {
       }
     }
 
+    const before = data.email ? await adminsRepository.findById(id) : null;
+    const revokeSessions = Boolean(data.password || data.is_active === false || (data.email && data.email !== before?.email));
     if (data.password) {
       data.password_hash = await hashPassword(data.password);
       delete data.password;
     }
-    const admin = await adminsRepository.update(id, data);
+    const admin = await (revokeSessions ? adminsRepository.updateCredentials(id, data) : adminsRepository.update(id, data));
     if (!admin) {
       const error = new Error('Admin not found');
       error.statusCode = 404;
       throw error;
     }
+    if (revokeSessions) await sessions.revokeUser(id, admin.auth_version);
     return admin;
   }
 
   async deleteAdmin(id) {
+    await sessions.revokeUser(id);
     const result = await adminsRepository.delete(id);
     if (!result || result.deletedCount === 0) {
       const error = new Error('Admin not found');

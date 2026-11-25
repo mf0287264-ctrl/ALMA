@@ -1,3 +1,4 @@
+import { gradeAssessment, questionsForViewer } from '../../Security/grading.js';
 import assessmentsRepository from './Assessments.repository.js';
 import coursesRepository from '../Courses/Courses.repository.js';
 import modulesRepository from '../Modules/Modules.repository.js';
@@ -10,7 +11,7 @@ class AssessmentsService {
 
   async getAllAssessments(filter, user = null) {
     let student = null;
-    if (user?._id) {
+    if (user?._id && (!user.role || user.role === 'student')) {
       student = await studentsRepository.findById(user._id);
     }
 
@@ -50,7 +51,7 @@ class AssessmentsService {
       const sub = submissionsMap.get(a._id.toString());
 
       return {
-        ...a,
+        ...questionsForViewer(a, user),
         course_title: cId ? coursesMap.get(cId) || 'Platform Course' : 'Platform Course',
         module_title: mId ? modulesMap.get(mId) || '' : '',
         status: sub ? 'completed' : 'available',
@@ -60,7 +61,7 @@ class AssessmentsService {
     });
   }
 
-  async getAssessmentById(id) {
+  async getAssessmentById(id, user = null) {
     const assessment = await assessmentsRepository.findById(id);
     if (!assessment) {
       const error = new Error('Assessment not found');
@@ -81,7 +82,7 @@ class AssessmentsService {
     }
 
     return {
-      ...assessment,
+      ...questionsForViewer(assessment, user),
       course_title: courseTitle,
       module_title: moduleTitle,
     };
@@ -96,7 +97,7 @@ class AssessmentsService {
     }
 
     const submission = await assessmentsRepository.saveSubmission({
-      ...data,
+      ...gradeAssessment(assessment, data.answers),
       student_id: studentId,
       assessment_id: assessment._id,
       course_id: assessment.course_id,

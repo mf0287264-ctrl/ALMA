@@ -25,20 +25,7 @@ router.post('/login', validate(loginStudentSchema), studentsController.login);
 // Authenticated: get own profile from database
 router.get('/profile', authenticate, requireRole('student', 'admin'), studentsController.getProfile);
 
-// If authorization header is sent, get profile from database; otherwise list all
-router.get('/', (req, res, next) => {
-  if (req.headers.authorization || req.headers.authorize) {
-    return authenticate(req, res, () => {
-      if (req.authUser?.role !== 'student' && req.authUser?.role !== 'admin') {
-        const error = new Error("Forbidden: Access denied. Role 'student' required.");
-        error.statusCode = 403;
-        return next(error);
-      }
-      return studentsController.getProfile(req, res, next);
-    });
-  }
-  return studentsController.getAll(req, res, next);
-});
+router.get('/', authenticate, requireRole('student', 'teacher', 'admin'), (req, res, next) => req.authUser.role === 'student' ? studentsController.getProfile(req, res, next) : studentsController.getAll(req, res, next));
 
 // Authenticated: update own profile
 router.put('/', authenticate, requireRole('student', 'admin'), validate(updateStudentSchema), studentsController.update);
@@ -58,11 +45,11 @@ router.post('/accept-friend-request/:id', authenticate, studentsController.accep
 router.put('/:id/accept-friend', authenticate, studentsController.acceptFriendRequest);
 router.post('/reject-friend-request/:id', authenticate, studentsController.rejectFriendRequest);
 router.put('/:id/reject-friend', authenticate, studentsController.rejectFriendRequest);
-router.get('/:id/following', studentsController.getFollowing);
-router.get('/:id/followers', studentsController.getFollowers);
+router.get('/:id/following', authenticate, studentsController.getFollowing);
+router.get('/:id/followers', authenticate, studentsController.getFollowers);
 
 // Routes by :id
-router.get('/:id', studentsController.getById);
+router.get('/:id', authenticate, studentsController.getById);
 router.put('/:id', authenticate, validate(updateStudentSchema), studentsController.update);
 router.delete('/:id', authenticate, studentsController.delete);
 
