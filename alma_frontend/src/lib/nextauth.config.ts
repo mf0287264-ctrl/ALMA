@@ -25,6 +25,15 @@ type UserProfile = {
   role?: string;
 };
 
+export function authRedirect({ url, baseUrl }: { url: string; baseUrl: string }): string {
+  try {
+    const target = new URL(url, baseUrl);
+    return allowedRequestOrigin(target.origin, baseUrl) ? target.href : baseUrl;
+  } catch {
+    return baseUrl;
+  }
+}
+
 function accessExpiry(token: string): number {
   const payload = JSON.parse(
     Buffer.from(token.split(".")[1], "base64url").toString("utf8"),
@@ -188,16 +197,7 @@ export const authOptions: NextAuthOptions = {
       if (typeof token.exp === "number") session.expires = new Date(token.exp * 1000).toISOString();
       return session;
     },
-    async redirect({ url, baseUrl }) {
-      try {
-        const target = new URL(url, baseUrl);
-        return allowedRequestOrigin(target.origin, baseUrl)
-          ? target.href
-          : baseUrl;
-      } catch {
-        return baseUrl;
-      }
-    },
+    redirect: authRedirect,
   },
   events: {
     async signOut({ token }) {

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { allowedRequestOrigin, secureAuthCookies } from "../alma_frontend/src/lib/request-security.ts";
+import { allowedRequestOrigin, frontendRequestOrigin, secureAuthCookies } from "../alma_frontend/src/lib/request-security.ts";
 
 function configure(t, mode, url) {
   const previousMode = process.env.NODE_ENV;
@@ -61,8 +61,27 @@ test("a local server on a different port accepts its own browser origin", (t) =>
   );
 });
 
+for (const mode of ["development", "production"]) {
+  test(`a local ${mode} server uses the browser's host for network access`, (t) => {
+    configure(t, mode, "http://localhost:3000");
+    const request = new Request("http://localhost:3000/api/proxy/students", {
+      headers: { host: "preview.example:3000", "x-forwarded-host": "other.example:3000" },
+    });
+    const origin = frontendRequestOrigin(request);
+    assert.equal(origin, "http://preview.example:3000");
+    assert.equal(allowedRequestOrigin("http://preview.example:3000", origin), true);
+    assert.equal(allowedRequestOrigin("http://preview.example:3001", origin), false);
+    assert.equal(allowedRequestOrigin("http://localhost:3000", origin), false);
+    assert.equal(allowedRequestOrigin("http://other.example:3000", origin), false);
+  });
+}
+
 test("production accepts only the configured origin", (t) => {
   configure(t, "production", "https://alma.example");
+  const request = new Request("http://localhost:3000/api/proxy/students", {
+    headers: { host: "preview.example:3000" },
+  });
+  assert.equal(frontendRequestOrigin(request), "https://alma.example");
   assert.equal(
     allowedRequestOrigin("https://alma.example", "http://localhost:3000/api/proxy/students"),
     true,

@@ -3,6 +3,7 @@ import { getBackendSession } from "@/lib/server-auth";
 import {
   allowedRequestOrigin,
   backendApiUrl,
+  frontendRequestOrigin,
   readLimitedBody,
   safeBackendJson,
 } from "@/lib/request-security";
@@ -56,7 +57,7 @@ async function handle(request: NextRequest, context: Context) {
   const unsafe = !["GET", "HEAD"].includes(request.method);
   if (
     (unsafe &&
-      !allowedRequestOrigin(request.headers.get("origin"), request.url)) ||
+      !allowedRequestOrigin(request.headers.get("origin"), frontendRequestOrigin(request))) ||
     request.headers.get("sec-fetch-site") === "cross-site"
   )
     return NextResponse.json(

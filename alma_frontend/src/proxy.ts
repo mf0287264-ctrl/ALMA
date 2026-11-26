@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { authSigningSecret, backendApiUrl, secureAuthCookies } from "@/lib/request-security";
+import { authSigningSecret, backendApiUrl, frontendRequestOrigin, secureAuthCookies } from "@/lib/request-security";
 import { protectedPages, under } from "@/lib/auth-routes";
 
 export async function proxy(request: NextRequest) {
@@ -37,6 +37,7 @@ export async function proxy(request: NextRequest) {
   if (
     protectedPages.some((prefix) => under(request.nextUrl.pathname, prefix))
   ) {
+    const origin = frontendRequestOrigin(request);
     let token = null;
     try {
       token = await getToken({
@@ -50,7 +51,7 @@ export async function proxy(request: NextRequest) {
       token.error === "RefreshAccessTokenError" ||
       !["student", "teacher", "parent", "admin"].includes(String(token.role))
     ) {
-      const login = new URL("/login", request.url);
+      const login = new URL("/login", origin);
       if (under(request.nextUrl.pathname, "/teacher"))
         login.searchParams.set("role", "teacher");
       if (under(request.nextUrl.pathname, "/parent"))
@@ -67,7 +68,7 @@ export async function proxy(request: NextRequest) {
       response = NextResponse.redirect(
         new URL(
           token.role === "parent" ? "/parent/dashboard" : "/home",
-          request.url,
+          origin,
         ),
       );
     } else if (
@@ -77,14 +78,14 @@ export async function proxy(request: NextRequest) {
       response = NextResponse.redirect(
         new URL(
           token.role === "teacher" ? "/teacher/dashboard" : "/home",
-          request.url,
+          origin,
         ),
       );
     } else if (
       under(request.nextUrl.pathname, "/admin") &&
       token.role !== "admin"
     ) {
-      response = NextResponse.redirect(new URL("/home", request.url));
+      response = NextResponse.redirect(new URL("/home", origin));
     }
     response.headers.set("Cache-Control", "private, no-store");
   }

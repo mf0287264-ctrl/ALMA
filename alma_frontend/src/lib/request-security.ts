@@ -19,11 +19,36 @@ export function authSigningSecret(): string {
   return secret;
 }
 
+const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+function isLoopbackHttp(url: URL): boolean {
+  return url.protocol === "http:" && loopbackHosts.has(url.hostname);
+}
+
+function usesRequestHost(configured?: URL): boolean {
+  return process.env.NODE_ENV !== "production" ||
+    (configured !== undefined && isLoopbackHttp(configured));
+}
+
+export function frontendRequestOrigin(request: Pick<Request, "url" | "headers">): string {
+  const target = new URL(request.url);
+  try {
+    const configured = process.env.NEXTAUTH_URL ? new URL(process.env.NEXTAUTH_URL) : undefined;
+    if (!usesRequestHost(configured)) return configured?.origin ?? target.origin;
+
+    // Next can use its listener address in request.url. Host is the browser's authority.
+    const host = request.headers.get("host");
+    if (host && /^[a-z\d.:[\]-]+$/i.test(host))
+      return new URL(`${target.protocol}//${host}`).origin;
+  } catch {}
+  return target.origin;
+}
+
 export function secureAuthCookies(): boolean {
   try {
     const origin = new URL(process.env.NEXTAUTH_URL || "");
     if (origin.protocol === "https:") return true;
-    if (origin.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(origin.hostname)) return false;
+    if (isLoopbackHttp(origin)) return false;
   } catch {}
   return process.env.NODE_ENV === "production";
 }
@@ -35,25 +60,17 @@ export function allowedRequestOrigin(
   if (!origin) return false;
   try {
     const actual = new URL(origin);
-    const configured = process.env.NEXTAUTH_URL
-      ? new URL(process.env.NEXTAUTH_URL)
-      : new URL(target);
-    const requested = new URL(target);
-    const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
+    const configured = process.env.NEXTAUTH_URL ? new URL(process.env.NEXTAUTH_URL) : undefined;
+    const expected = !configured || usesRequestHost(configured) ? new URL(target) : configured;
+    if (actual.origin === expected.origin) return true;
     // Next can normalize the request host to localhost even when Safari opens
     // 127.0.0.1. Treat only loopback hosts on the same port/protocol as aliases.
-    const sameLocalOrigin = (expected: URL) =>
+    return (
+      (process.env.NODE_ENV !== "production" || configured !== undefined) &&
       loopbackHosts.has(actual.hostname) &&
       loopbackHosts.has(expected.hostname) &&
       actual.protocol === expected.protocol &&
-      actual.port === expected.port;
-    return (
-      actual.origin === configured.origin ||
-      // An explicitly configured loopback production preview can use either
-      // local hostname. Public production origins still require an exact match.
-      (!!process.env.NEXTAUTH_URL && sameLocalOrigin(configured)) ||
-      (process.env.NODE_ENV !== "production" &&
-        (sameLocalOrigin(requested) || sameLocalOrigin(configured)))
+      actual.port === expected.port
     );
   } catch {
     return false;
