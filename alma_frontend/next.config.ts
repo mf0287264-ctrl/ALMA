@@ -17,8 +17,10 @@ const sonnerCss: string = JSON.parse(
 const sonnerStyleHash = createHash("sha256").update(sonnerCss).digest("base64");
 
 const nextConfig: NextConfig = {
+  distDir: process.env.ALMA_NEXT_DIST_DIR || ".next",
   env: { SONNER_CSP_STYLE_HASH: sonnerStyleHash },
   poweredByHeader: false,
+  devIndicators: false,
   experimental: {
     agentFeedback: true,
     cpus: 4,
@@ -26,12 +28,7 @@ const nextConfig: NextConfig = {
   // Strict per-request script nonces require dynamic rendering; cached shells cannot reuse a nonce.
   cacheComponents: false,
   turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
-      },
-    },
+    root: process.cwd(),
   },
 };
 

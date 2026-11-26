@@ -1,4 +1,5 @@
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
+import { isProtectedPage, loginPath } from "@/lib/auth-routes";
 
 const serverBase =
   process.env.BACKEND_API_URL ||
@@ -21,19 +22,21 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+let signingOut = false;
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (
       typeof window !== "undefined" &&
-      error.response?.status === 401 &&
-      !["/login", "/welcome"].some((path) =>
-        window.location.pathname.startsWith(path),
-      )
+      isAxiosError(error) && error.response?.status === 401 &&
+      isProtectedPage(window.location.pathname) &&
+      !signingOut
     ) {
-      void import("next-auth/react").then(({ signOut }) =>
-        signOut({ callbackUrl: "/welcome" }),
-      );
+      signingOut = true;
+      const destination = loginPath(`${window.location.pathname}${window.location.search}`);
+      void import("next-auth/react")
+        .then(({ signOut }) => signOut({ callbackUrl: new URL(destination, window.location.origin).href }))
+        .finally(() => { signingOut = false; });
     }
     return Promise.reject(error);
   },

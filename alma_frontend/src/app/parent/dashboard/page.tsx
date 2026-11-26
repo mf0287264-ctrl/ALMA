@@ -1,5 +1,9 @@
 "use client";
 
+import type { LessonSessionSummary, StrugglingConceptSummary } from "@/types/Parent.type";
+
+import { deferRequest } from "@/lib/defer-request";
+
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/app/_Context/AuthContext";
@@ -37,7 +41,7 @@ interface LinkedChild {
     last_diagnosed_misconception?: string | null;
   }>;
   weekly_activity?: Record<string, number>;
-  sessions?: any[];
+  sessions?: LessonSessionSummary[];
 }
 
 export default function ParentOverviewPage() {
@@ -97,13 +101,17 @@ export default function ParentOverviewPage() {
   };
 
   useEffect(() => {
-    loadData();
+    return deferRequest(() => {
+      loadData();
+    });
   }, []);
 
   useEffect(() => {
-    if (selectedChildId) {
+    return deferRequest(() => {
+      if (selectedChildId) {
       loadChildDetails(selectedChildId);
-    }
+      }
+    });
   }, [selectedChildId]);
 
   const activeChild =
@@ -374,7 +382,7 @@ export default function ParentOverviewPage() {
 
         {strugglingList.length > 0 ? (
           <div className="space-y-3">
-            {strugglingList.map((sc: any, idx: number) => (
+            {strugglingList.map((sc: StrugglingConceptSummary, idx: number) => (
               <div
                 key={sc.concept_id || idx}
                 className="p-4 rounded-2xl bg-[#fff2f4] border border-[#fed7dd] flex items-center justify-between flex-wrap gap-2"

@@ -106,8 +106,8 @@ export default function TeacherOverviewPage() {
           const list = genRes.value.data.data;
           if (Array.isArray(list) && list.length > 0) {
             setJobs(
-              list.slice(0, 3).map((j: any) => ({
-                id: j._id || j.job_id,
+              list.slice(0, 3).map((j: { _id?: string; job_id?: string; topic: string; status: string; progress_percent?: number; step_message?: string }) => ({
+                id: j._id || j.job_id || "",
                 topic: j.topic,
                 status: j.status === "completed" ? "completed" : "processing",
                 progress: Math.round((j.progress_percent || 0.6) * 100),

@@ -9,7 +9,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 <!-- END:nextjs-agent-rules -->
 
 # Project Instructions & Architecture Guidelines
-For full coding conventions, folder structure, libraries used, and code templates, see [PROJECT_INSTRUCTIONS.md](./PROJECT_INSTRUCTIONS.md).
+For full coding conventions, folder structure, libraries used, and code templates, see [README.md](./README.md).
 
 
 <!-- BEGIN:nextjs-agent-feedback -->

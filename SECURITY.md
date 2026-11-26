@@ -23,6 +23,6 @@ Catalog responses contain lesson summaries. Student lesson responses exclude new
 
 Nonce-based CSP requires dynamic page rendering, so page shells are no longer statically cached. Keep multiple frontend processes on a shared session-rotation coordinator or sticky routing: concurrent refresh coordination is currently per process, while the backend's replay protection is shared in MongoDB. Generation concurrency and its bounded queue are also per process; use a dedicated durable worker for multi-instance job recovery.
 
-The temporary local preview uses only authored sample content and dummy authentication on loopback. It is outside the repository and does not authorize access to the real API. It must not be deployed.
+The browser tests run isolated services on loopback ports 3100 and 5100 with a disposable local MongoDB database. They exercise persistent authentication, session refresh, teacher approval, class joining, and responsive rendering using sample accounts and authored sample lessons.
 
-Automated checks reduce risk but do not establish absolute security. Live deployment still requires verified secrets, HTTPS, database configuration, and an operational review. No live database or model provider was available during local verification.
+Automated checks reduce risk but do not establish absolute security. Live deployment still requires verified secrets, HTTPS, database configuration, and an operational review. Verification uses isolated local services; live databases and model providers are not exercised.

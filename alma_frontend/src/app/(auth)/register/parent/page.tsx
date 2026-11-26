@@ -2,26 +2,16 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import MangoIcon from "@/components/MangoIcon";
 import { useAuth } from "@/app/_Context/AuthContext";
 
 export default function RegisterParentPage() {
-  const router = useRouter();
   const { registerParent } = useAuth();
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [rePassword, setRePassword] = useState("");
-  const [relation, setRelation] = useState<"father" | "mother" | "guardian">("guardian");
-  const [childEmail, setChildEmail] = useState("");
-  const [childStudentCode, setChildStudentCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [errors, setErrors] = useState<{
     name?: string[];
     email?: string[];
@@ -30,9 +20,22 @@ export default function RegisterParentPage() {
     agreeToTerms?: string[];
   }>({});
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (loading) return;
+    const form = new FormData(e.currentTarget);
+    const name = String(form.get("name") || "");
+    const email = String(form.get("email") || "");
+    const password = String(form.get("password") || "");
+    const rePassword = String(form.get("rePassword") || "");
+    const phone = String(form.get("phone_number") || "");
+    const selectedRelation = form.get("relation");
+    const relation = selectedRelation === "father" || selectedRelation === "mother" ? selectedRelation : "guardian";
+    const childEmail = String(form.get("child_email") || "");
+    const childStudentCode = String(form.get("child_student_code") || "");
+    const agreeToTerms = form.has("agreeToTerms");
     setErrors({});
+    setSubmitError("");
 
     const newErrors: typeof errors = {};
     if (!name.trim()) {
@@ -75,12 +78,12 @@ export default function RegisterParentPage() {
 
       if (result.success) {
         toast.success("Parent account created successfully!");
-        router.push("/parent/dashboard");
+        window.location.assign(new URL("/parent/dashboard", window.location.origin).href);
       } else {
-        toast.error(result.error || "Registration failed. Please check your details.");
+        setSubmitError(result.error || "Registration failed. Please check your details.");
       }
     } catch {
-      toast.error("An unexpected error occurred. Please try again.");
+      setSubmitError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -128,16 +131,15 @@ export default function RegisterParentPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-3.5">
+          <form onSubmit={handleSubmit} className="space-y-3.5" noValidate aria-busy={loading}>
+            {submitError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{submitError}</p>}
             {/* Full Name */}
             <div>
-              <label className="block text-xs font-bold text-[#10292e] mb-1">
+              <label htmlFor="name" className="block text-xs font-bold text-[#10292e] mb-1">
                 Full Name
               </label>
-              <input
+              <input id="name" name="name" autoComplete="name" maxLength={100} aria-label="Full name"
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
                 placeholder="Sarah Connor"
                 required
                 className="w-full rounded-2xl border border-[#d2dcd7] bg-white px-4 py-3 text-sm text-[#10292e] placeholder:text-[#5a6e70]/60 focus:outline-none focus:ring-2 focus:ring-[#4ba3d0]"
@@ -149,13 +151,11 @@ export default function RegisterParentPage() {
 
             {/* Email */}
             <div>
-              <label className="block text-xs font-bold text-[#10292e] mb-1">
+              <label htmlFor="email" className="block text-xs font-bold text-[#10292e] mb-1">
                 Parent Email
               </label>
-              <input
+              <input id="email" name="email" autoComplete="email" maxLength={254} autoCapitalize="none" spellCheck={false} aria-label="Email"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 placeholder="parent@example.com"
                 required
                 className="w-full rounded-2xl border border-[#d2dcd7] bg-white px-4 py-3 text-sm text-[#10292e] placeholder:text-[#5a6e70]/60 focus:outline-none focus:ring-2 focus:ring-[#4ba3d0]"
@@ -168,24 +168,21 @@ export default function RegisterParentPage() {
             {/* Phone & Relation Row */}
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs font-bold text-[#10292e] mb-1">
+                <label htmlFor="phone-number" className="block text-xs font-bold text-[#10292e] mb-1">
                   Phone (Optional)
                 </label>
-                <input
+                <input id="phone-number" name="phone_number" autoComplete="tel" maxLength={64} aria-label="Phone number"
                   type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
                   placeholder="+1 234 567 890"
                   className="w-full rounded-2xl border border-[#d2dcd7] bg-white px-3 py-3 text-xs text-[#10292e] placeholder:text-[#5a6e70]/60 focus:outline-none focus:ring-2 focus:ring-[#4ba3d0]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-[#10292e] mb-1">
+                <label htmlFor="relation" className="block text-xs font-bold text-[#10292e] mb-1">
                   Relation
                 </label>
-                <select
-                  value={relation}
-                  onChange={(e) => setRelation(e.target.value as any)}
+                <select id="relation" name="relation" autoComplete="off" aria-label="Relation"
+                  defaultValue="guardian"
                   className="w-full rounded-2xl border border-[#d2dcd7] bg-white px-3 py-3 text-xs text-[#10292e] focus:outline-none focus:ring-2 focus:ring-[#4ba3d0]"
                 >
                   <option value="father">Father</option>
@@ -197,14 +194,12 @@ export default function RegisterParentPage() {
 
             {/* Password */}
             <div>
-              <label className="block text-xs font-bold text-[#10292e] mb-1">
+              <label htmlFor="password" className="block text-xs font-bold text-[#10292e] mb-1">
                 Password
               </label>
               <div className="relative flex items-center">
-                <input
+                <input id="password" name="password" autoComplete="new-password" maxLength={128} aria-label="Password"
                   type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
                   className="w-full rounded-2xl border border-[#d2dcd7] bg-white pl-4 pr-16 py-3 text-sm text-[#10292e] placeholder:text-[#5a6e70]/60 focus:outline-none focus:ring-2 focus:ring-[#4ba3d0]"
@@ -224,13 +219,11 @@ export default function RegisterParentPage() {
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-xs font-bold text-[#10292e] mb-1">
+              <label htmlFor="rePassword" className="block text-xs font-bold text-[#10292e] mb-1">
                 Confirm Password
               </label>
-              <input
+              <input id="rePassword" name="rePassword" autoComplete="new-password" maxLength={128} aria-label="Confirm password"
                 type={showPassword ? "text" : "password"}
-                value={rePassword}
-                onChange={(e) => setRePassword(e.target.value)}
                 placeholder="••••••••"
                 required
                 className="w-full rounded-2xl border border-[#d2dcd7] bg-white px-4 py-3 text-sm text-[#10292e] placeholder:text-[#5a6e70]/60 focus:outline-none focus:ring-2 focus:ring-[#4ba3d0]"
@@ -249,17 +242,13 @@ export default function RegisterParentPage() {
                 Provide either your child&apos;s registered email or student code:
               </p>
               <div className="grid grid-cols-2 gap-2">
-                <input
+                <input id="child-email" name="child_email" autoComplete="off" maxLength={254} aria-label="Child email"
                   type="email"
-                  value={childEmail}
-                  onChange={(e) => setChildEmail(e.target.value)}
                   placeholder="Child's Email"
                   className="w-full rounded-xl border border-[#d2dcd7] bg-white px-3 py-2 text-xs text-[#10292e] placeholder:text-[#5a6e70]/60 focus:outline-none focus:ring-2 focus:ring-[#4ba3d0]"
                 />
-                <input
+                <input id="child-code" name="child_student_code" autoComplete="off" maxLength={64} aria-label="Child student code"
                   type="text"
-                  value={childStudentCode}
-                  onChange={(e) => setChildStudentCode(e.target.value)}
                   placeholder="Code (e.g. STU-1001)"
                   className="w-full rounded-xl border border-[#d2dcd7] bg-white px-3 py-2 text-xs text-[#10292e] placeholder:text-[#5a6e70]/60 focus:outline-none focus:ring-2 focus:ring-[#4ba3d0]"
                 />
@@ -269,28 +258,7 @@ export default function RegisterParentPage() {
             {/* Terms checkbox */}
             <div className="pt-1">
               <label className="flex items-center gap-2 cursor-pointer select-none">
-                <button
-                  type="button"
-                  role="checkbox"
-                  aria-checked={agreeToTerms}
-                  onClick={() => setAgreeToTerms(!agreeToTerms)}
-                  className={`w-4 h-4 rounded border transition-all flex items-center justify-center shrink-0 ${
-                    agreeToTerms
-                      ? "bg-[#4ba3d0] border-[#4ba3d0] text-white"
-                      : "border-[#4ba3d0] bg-white"
-                  }`}
-                >
-                  {agreeToTerms && (
-                    <svg
-                      className="w-3 h-3 stroke-current"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      strokeWidth="3"
-                    >
-                      <path d="M3.5 8.5L6.5 11.5L12.5 4.5" />
-                    </svg>
-                  )}
-                </button>
+                <input type="checkbox" name="agreeToTerms" className="h-5 w-5 shrink-0 rounded accent-[#118a80]" />
                 <span className="text-[#10292e] text-xs font-medium">
                   I agree to the Terms and Privacy Policy
                 </span>

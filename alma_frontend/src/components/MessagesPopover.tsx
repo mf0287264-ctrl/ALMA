@@ -1,6 +1,9 @@
 "use client";
 
+import { deferRequest } from "@/lib/defer-request";
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, Plus, Loader2, X, MessageSquare, Check, CheckCheck } from "lucide-react";
@@ -93,9 +96,11 @@ export default function MessagesPopover({
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
+    return deferRequest(() => {
+      if (isOpen) {
       fetchThreads();
-    }
+      }
+    });
   }, [isOpen, fetchThreads]);
 
   const formatRelativeTime = (dateStr: string) => {
@@ -125,13 +130,15 @@ export default function MessagesPopover({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       ref={popoverRef}
-      className={`z-50 bg-white rounded-2xl shadow-2xl border border-[#e8eeea] text-[#10292e] overflow-hidden flex flex-col transition-all duration-200 animate-in fade-in slide-in-from-bottom-2 ${
+      role="dialog"
+      aria-label="Messages"
+      className={`fixed bottom-4 z-[70] w-80 max-w-[calc(100vw-32px)] max-h-[calc(100dvh-32px)] bg-white rounded-2xl shadow-2xl border border-[#e8eeea] text-[#10292e] overflow-hidden hidden lg:flex flex-col ${
         isCollapsed
-          ? "fixed bottom-16 left-20 w-80 max-h-[460px]"
-          : "absolute bottom-20 left-2 right-2 w-[calc(100%-16px)] max-h-[460px]"
+          ? "left-20"
+          : "left-60"
       }`}
       style={{
         boxShadow: "0 10px 30px -5px rgba(16, 41, 46, 0.15), 0 0 1px 1px rgba(16, 41, 46, 0.05)",
@@ -291,6 +298,7 @@ export default function MessagesPopover({
           All Messages
         </Link>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

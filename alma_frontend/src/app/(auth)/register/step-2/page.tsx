@@ -45,15 +45,19 @@ export default function RegisterStepTwoPage() {
     const roleName = ROLES.find((r) => r.id === selectedRole)?.title;
 
     try {
-      await updateUser({
+      const result = await updateUser({
         learning_for: selectedRole,
       });
+      if (!result.success) {
+        toast.error(result.error || "Unable to save your preferences. Please try again.");
+        return;
+      }
       toast.success(`Selected: ${roleName}`);
+      router.push("/register/step-3");
     } catch {
-      // Continue even if network hiccups
+      toast.error("Unable to save your preferences. Please try again.");
     } finally {
       setLoading(false);
-      router.push("/register/step-3");
     }
   };
 

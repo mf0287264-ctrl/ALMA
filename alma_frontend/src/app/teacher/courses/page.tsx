@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import TeacherSidebar from "@/components/TeacherSidebar";
 import MangoIcon from "@/components/MangoIcon";
@@ -87,6 +87,7 @@ const DEFAULT_COURSES: CourseItem[] = [
 
 function CoursesContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { user } = useAuth();
 
   const [courses, setCourses] = useState<CourseItem[]>(DEFAULT_COURSES);
@@ -97,7 +98,16 @@ function CoursesContent() {
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
 
   // New Course Modal
-  const [showModal, setShowModal] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const showModal = modalOpen || searchParams.get("action") === "new";
+  const setShowModal = (open: boolean) => {
+    setModalOpen(open);
+    if (!open && searchParams.get("action") === "new") {
+      const query = new URLSearchParams(searchParams.toString());
+      query.delete("action");
+      router.replace(`/teacher/courses${query.size ? `?${query}` : ""}`, { scroll: false });
+    }
+  };
   const [newTitle, setNewTitle] = useState("");
   const [newSubject, setNewSubject] = useState("Computer Science");
   const [newGrade, setNewGrade] = useState("Grade 8");
@@ -106,20 +116,13 @@ function CoursesContent() {
   const [newStatus, setNewStatus] = useState<"draft" | "published">("published");
   const [creating, setCreating] = useState(false);
 
-  // Check query params if user clicked "New course" from overview
-  useEffect(() => {
-    if (searchParams.get("action") === "new") {
-      setShowModal(true);
-    }
-  }, [searchParams]);
-
   // Fetch real courses from backend if available
   useEffect(() => {
     async function fetchCourses() {
       try {
         const res = await api.get("/courses");
         if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
-          const apiCourses: CourseItem[] = res.data.data.map((c: any, index: number) => ({
+          const apiCourses: CourseItem[] = res.data.data.map((c: CourseItem, index: number) => ({
             id: c._id || `c-${index}`,
             title: c.title,
             subject: c.subject || "Computer Science",
@@ -522,7 +525,7 @@ function CoursesContent() {
                   </label>
                   <select
                     value={newStatus}
-                    onChange={(e) => setNewStatus(e.target.value as any)}
+                    onChange={(e) => setNewStatus(e.target.value as typeof newStatus)}
                     className="w-full rounded-2xl border border-[#d2dcd7] px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ffa11f]"
                   >
                     <option value="published">Published</option>

@@ -1,5 +1,7 @@
 "use client";
 
+import { deferRequest } from "@/lib/defer-request";
+
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
@@ -102,7 +104,9 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    fetchDashboard();
+    return deferRequest(() => {
+      fetchDashboard();
+    });
   }, []);
 
   // Student profile fallbacks from AuthContext while loading

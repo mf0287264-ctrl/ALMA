@@ -1,5 +1,9 @@
 "use client";
 
+import { apiError } from "@/lib/api-error";
+
+import { deferRequest } from "@/lib/defer-request";
+
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -72,8 +76,10 @@ export default function FriendsSearchPage() {
   }, []);
 
   useEffect(() => {
-    fetchStudents("");
-    fetchFriendsAndRequests();
+    return deferRequest(() => {
+      fetchStudents("");
+      fetchFriendsAndRequests();
+    });
   }, [fetchStudents, fetchFriendsAndRequests]);
 
   // Debounced live search
@@ -97,7 +103,7 @@ export default function FriendsSearchPage() {
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || "Failed to send friend request");
+      toast.error(apiError(error, "Failed to send friend request"));
     } finally {
       setActionLoadingId(null);
     }
@@ -114,7 +120,7 @@ export default function FriendsSearchPage() {
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || "Failed to accept request");
+      toast.error(apiError(error, "Failed to accept request"));
     } finally {
       setActionLoadingId(null);
     }
@@ -131,7 +137,7 @@ export default function FriendsSearchPage() {
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || "Failed to reject request");
+      toast.error(apiError(error, "Failed to reject request"));
     } finally {
       setActionLoadingId(null);
     }

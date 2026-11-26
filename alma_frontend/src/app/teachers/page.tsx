@@ -1,5 +1,9 @@
 "use client";
 
+import { apiError } from "@/lib/api-error";
+
+import { deferRequest } from "@/lib/defer-request";
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
@@ -81,7 +85,7 @@ interface EnrolledGroup {
   subject: string;
   grade_level: string;
   class_code: string;
-  teacher_id: any;
+  teacher_id: { _id?: string; first_name?: string; last_name?: string } | null;
   teacher_name: string;
   lessons: EnrolledGroupLesson[];
   tasks: EnrolledGroupTask[];
@@ -130,9 +134,10 @@ export default function TeacherCommunicationPage() {
       if (selectId) {
         setSelectedGroupId(selectId);
       } else if (!selectedGroupId && list.length > 0) {
-        setSelectedGroupId(list[0]._id);
+        const requested = new URLSearchParams(window.location.search).get("group");
+        setSelectedGroupId(list.find((group) => group._id === requested)?._id || list[0]._id);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to load joined groups:", err);
     } finally {
       setLoadingGroups(false);
@@ -149,7 +154,7 @@ export default function TeacherCommunicationPage() {
       if (list.length > 0 && !selectedTeacherId) {
         setSelectedTeacherId(list[0]._id);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to load real teachers:", err);
     } finally {
       setLoadingTeachers(false);
@@ -157,8 +162,10 @@ export default function TeacherCommunicationPage() {
   };
 
   useEffect(() => {
-    fetchMyGroups();
-    fetchTeachers();
+    return deferRequest(() => {
+      fetchMyGroups();
+      fetchTeachers();
+    });
   }, []);
 
   const activeGroup = myGroups.find((g) => g._id === selectedGroupId) || null;
@@ -181,7 +188,7 @@ export default function TeacherCommunicationPage() {
       } else {
         setDirectMessages([]);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // No prior messages is normal
       setDirectMessages([]);
     } finally {
@@ -190,9 +197,11 @@ export default function TeacherCommunicationPage() {
   }, []);
 
   useEffect(() => {
-    if (selectedTeacherId && topTab === "direct") {
+    return deferRequest(() => {
+      if (selectedTeacherId && topTab === "direct") {
       loadTeacherConversation(selectedTeacherId);
-    }
+      }
+    });
   }, [selectedTeacherId, topTab, loadTeacherConversation]);
 
   // Auto scroll direct chat
@@ -219,8 +228,8 @@ export default function TeacherCommunicationPage() {
       setJoinCode("");
       await fetchMyGroups(joinedGroup?._id);
       setTopTab("classes");
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to join class. Please verify the code.");
+    } catch (err: unknown) {
+      toast.error(apiError(err, "Failed to join class. Please verify the code."));
     } finally {
       setIsJoining(false);
     }
@@ -246,8 +255,8 @@ export default function TeacherCommunicationPage() {
             : g
         )
       );
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to send message to class");
+    } catch (err: unknown) {
+      toast.error(apiError(err, "Failed to send message to class"));
     } finally {
       setIsSendingGroupMessage(false);
     }
@@ -271,8 +280,8 @@ export default function TeacherCommunicationPage() {
         setDirectMessages((prev) => [...prev, res.data.data]);
         toast.success("Message sent to teacher!");
       }
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to send message");
+    } catch (err: unknown) {
+      toast.error(apiError(err, "Failed to send message"));
     } finally {
       setIsSendingDirect(false);
     }

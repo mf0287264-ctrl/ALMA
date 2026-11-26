@@ -1,36 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { authSigningSecret, backendApiUrl } from "@/lib/request-security";
-
-const protectedPages = [
-  "/home",
-  "/profile",
-  "/learn",
-  "/lesson",
-  "/my-lessons",
-  "/courses",
-  "/assessments",
-  "/compete",
-  "/quize",
-  "/ai-lesson",
-  "/achievements",
-  "/teachers",
-  "/teacher",
-  "/parent",
-  "/feeds",
-  "/feed",
-  "/friends",
-  "/messages",
-  "/admin",
-];
-const under = (path: string, prefix: string) =>
-  path === prefix || path.startsWith(`${prefix}/`);
+import { authSigningSecret, backendApiUrl, secureAuthCookies } from "@/lib/request-security";
+import { protectedPages, under } from "@/lib/auth-routes";
 
 export async function proxy(request: NextRequest) {
   const nonce = Buffer.from(
     crypto.getRandomValues(new Uint8Array(16)),
   ).toString("base64");
   const dev = process.env.NODE_ENV === "development";
+  const secureCookies = secureAuthCookies();
+  const devPort = request.nextUrl.port || "3000";
   let assetOrigin = "";
   try {
     assetOrigin = new URL(backendApiUrl()).origin;
@@ -42,14 +21,14 @@ export async function proxy(request: NextRequest) {
     `style-src 'self' ${dev ? "'unsafe-inline'" : `'nonce-${nonce}' 'sha256-${process.env.SONNER_CSP_STYLE_HASH}' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='`}`,
     "style-src-attr 'unsafe-inline'",
     `img-src 'self' data: blob: https:${dev && assetOrigin ? ` ${assetOrigin}` : ""}`,
-    `media-src 'self' https:${dev && assetOrigin ? ` ${assetOrigin}` : ""}`,
+    `media-src 'self' blob: https:${dev && assetOrigin ? ` ${assetOrigin}` : ""}`,
     "font-src 'self' data:",
-    `connect-src 'self'${dev ? " ws://127.0.0.1:3000 ws://localhost:3000 ws://127.0.0.1:3001" : ""}`,
+    `connect-src 'self'${dev ? ` ws://127.0.0.1:${devPort} ws://localhost:${devPort} ws://[::1]:${devPort}` : ""}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
-    ...(dev ? [] : ["upgrade-insecure-requests"]),
+    ...(dev || !secureCookies ? [] : ["upgrade-insecure-requests"]),
   ].join("; ");
   const headers = new Headers(request.headers);
   headers.set("x-nonce", nonce);
@@ -63,7 +42,7 @@ export async function proxy(request: NextRequest) {
       token = await getToken({
         req: request,
         secret: authSigningSecret(),
-        secureCookie: process.env.NODE_ENV === "production",
+        secureCookie: secureCookies,
       });
     } catch {}
     if (
@@ -117,7 +96,7 @@ export async function proxy(request: NextRequest) {
     "Permissions-Policy",
     "camera=(), geolocation=(), payment=(), microphone=(self)",
   );
-  if (!dev)
+  if (!dev && secureCookies)
     response.headers.set(
       "Strict-Transport-Security",
       "max-age=31536000; includeSubDomains",

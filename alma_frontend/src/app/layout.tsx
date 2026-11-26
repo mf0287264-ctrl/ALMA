@@ -22,11 +22,11 @@ export default function RootLayout({
     // Keep the exception on this element; descendants still receive hydration checks.
     <html
       lang="en"
-      style={{ fontFamily: "Gill Sans, sans-serif" }}
       className="h-full antialiased"
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-[#fff8ec]">
+      <body className="min-h-screen flex flex-col bg-[#fff8ec]">
         {/*
           AuthProviders wraps everything with next-auth SessionProvider.
           AuthProvider (our custom context) sits inside so it can call useSession().

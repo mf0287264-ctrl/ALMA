@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import MangoIcon from "@/components/MangoIcon";
 import { useAuth } from "@/app/_Context/AuthContext";
+import { avatarFile } from "@/utils/avatarFile";
 
 const AGE_OPTIONS = ["Under 10", "10 to 12", "13 to 15", "16 to 18", "19 and over"];
 const CODING_EXPERIENCE = ["Never", "A little", "I know the basics"];
@@ -20,7 +21,7 @@ const AVATAR_OPTIONS = [
 
 export default function RegisterStepThreePage() {
   const router = useRouter();
-  const { updateUser, refreshUser } = useAuth();
+  const { updateUser, refreshUser, uploadProfilePicture } = useAuth();
 
   // Personalization fields
   const [gender, setGender] = useState<string>("Female");
@@ -79,21 +80,25 @@ export default function RegisterStepThreePage() {
         school_name: schoolName.trim() || null,
         address: address.trim() || null,
         national_id: nationalId.trim() || null,
-        profile_image: selectedAvatar,
         quiz_answers: quizData,
       });
 
       if (!res.success) {
-        toast.error(res.error || "Could not save preferences, continuing to dashboard...");
+        toast.error(res.error || "Unable to save your profile. Please try again.");
+        return;
       } else {
+        const uploaded = await uploadProfilePicture(await avatarFile(selectedAvatar));
+        if (!uploaded.success) {
+          toast.error(uploaded.error || "Your preferences were saved, but your avatar could not be uploaded. Please try again.");
+          return;
+        }
         toast.success("Profile setup & diagnostic quiz complete! Welcome to ALMA.");
       }
 
       await refreshUser();
       router.push("/home");
     } catch {
-      toast.error("An unexpected error occurred. Continuing to home.");
-      router.push("/home");
+      toast.error("Unable to save your profile. Please try again.");
     } finally {
       setLoading(false);
     }

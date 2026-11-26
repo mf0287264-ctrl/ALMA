@@ -1,5 +1,9 @@
 "use client";
 
+import { apiError } from "@/lib/api-error";
+
+import { deferRequest } from "@/lib/defer-request";
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -110,7 +114,9 @@ export default function MessagesClient({ initialPartnerId }: MessagesClientProps
   }, []);
 
   useEffect(() => {
-    fetchThreads();
+    return deferRequest(() => {
+      fetchThreads();
+    });
   }, [fetchThreads]);
 
   // Load conversation messages with partner
@@ -126,7 +132,7 @@ export default function MessagesClient({ initialPartnerId }: MessagesClientProps
       } catch (err: unknown) {
         console.error("Error loading conversation:", err);
         const error = err as { response?: { data?: { message?: string } } };
-        toast.error(error.response?.data?.message || "Failed to load conversation");
+        toast.error(apiError(error, "Failed to load conversation"));
       } finally {
         setLoadingConversation(false);
       }
@@ -135,9 +141,11 @@ export default function MessagesClient({ initialPartnerId }: MessagesClientProps
   );
 
   useEffect(() => {
-    if (initialPartnerId) {
+    return deferRequest(() => {
+      if (initialPartnerId) {
       loadConversation(initialPartnerId);
-    }
+      }
+    });
   }, [initialPartnerId, loadConversation]);
 
   // Fetch friends list for New Message modal
@@ -185,7 +193,7 @@ export default function MessagesClient({ initialPartnerId }: MessagesClientProps
     } catch (err: unknown) {
       console.error("Error sending message:", err);
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || "Failed to send message");
+      toast.error(apiError(error, "Failed to send message"));
       setMessageInput(textToSend); // Restore
     } finally {
       setIsSending(false);

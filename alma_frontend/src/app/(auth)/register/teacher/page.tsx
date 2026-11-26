@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import MangoIcon from "@/components/MangoIcon";
 import { useAuth } from "@/app/_Context/AuthContext";
@@ -18,28 +17,32 @@ const SPECIALIZATIONS = [
 ];
 
 export default function TeacherRegisterPage() {
-  const router = useRouter();
   const { registerTeacher } = useAuth();
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [rePassword, setRePassword] = useState("");
   const [specialization, setSpecialization] = useState(SPECIALIZATIONS[0]);
-  const [customSpecialization, setCustomSpecialization] = useState("");
-  const [schoolName, setSchoolName] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [teacherCode, setTeacherCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (loading) return;
+    const form = new FormData(e.currentTarget);
+    const firstName = String(form.get("first_name") || "");
+    const lastName = String(form.get("last_name") || "");
+    const email = String(form.get("email") || "");
+    const password = String(form.get("password") || "");
+    const rePassword = String(form.get("rePassword") || "");
+    const schoolName = String(form.get("school_name") || "");
+    const phoneNumber = String(form.get("phone_number") || "");
+    const teacherCode = String(form.get("teacher_code") || "");
+    const selectedSpecialization = String(form.get("specialization") || SPECIALIZATIONS[0]);
+    const customSpecialization = String(form.get("custom_specialization") || "");
+    const agreeToTerms = form.has("agreeToTerms");
     setErrors({});
+    setSubmitError("");
 
     const newErrors: Record<string, string> = {};
     if (!firstName.trim()) newErrors.firstName = "First name is required";
@@ -47,7 +50,7 @@ export default function TeacherRegisterPage() {
     if (!email.includes("@") || !email.includes(".")) newErrors.email = "Valid email is required";
     if (password.length < 12 || password.length > 128) newErrors.password = "Password must be 12–128 characters";
     if (password !== rePassword) newErrors.rePassword = "Passwords do not match";
-    if (specialization === "Other" && !customSpecialization.trim()) {
+    if (selectedSpecialization === "Other" && !customSpecialization.trim()) {
       newErrors.specialization = "Please specify your subject area";
     }
     if (!agreeToTerms) newErrors.agreeToTerms = "Please agree to the Terms of Service";
@@ -59,7 +62,7 @@ export default function TeacherRegisterPage() {
 
     setLoading(true);
     try {
-      const finalSpecialization = specialization === "Other" ? customSpecialization.trim() : specialization;
+      const finalSpecialization = selectedSpecialization === "Other" ? customSpecialization.trim() : selectedSpecialization;
 
       const result = await registerTeacher({
         first_name: firstName.trim(),
@@ -69,17 +72,17 @@ export default function TeacherRegisterPage() {
         specialization: finalSpecialization,
         school_name: schoolName.trim() || null,
         phone_number: phoneNumber.trim() || null,
-        teacher_code: teacherCode.trim() || undefined,
+        teacher_code: teacherCode.trim().toUpperCase() || undefined,
       });
 
       if (result.success) {
         toast.success("Teacher account created! Welcome to your dashboard.");
-        router.push("/teacher/dashboard");
+        window.location.assign(new URL("/teacher/dashboard", window.location.origin).href);
       } else {
-        toast.error(result.error || "Registration failed. Please check your inputs.");
+        setSubmitError(result.error || "Registration failed. Please check your inputs.");
       }
     } catch {
-      toast.error("An unexpected error occurred. Please try again.");
+      setSubmitError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -143,17 +146,16 @@ export default function TeacherRegisterPage() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate aria-busy={loading}>
+            {submitError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{submitError}</p>}
             {/* Name Fields (2 Columns) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
-                <label className="block text-xs font-bold text-[#10292e] mb-1">
+                <label htmlFor="first-name" className="block text-xs font-bold text-[#10292e] mb-1">
                   First Name <span className="text-red-500">*</span>
                 </label>
-                <input
+                <input id="first-name" name="first_name" autoComplete="given-name" maxLength={100} aria-label="First name"
                   type="text"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
                   placeholder="e.g. Sarah"
                   required
                   className="w-full rounded-2xl border border-[#d2dcd7] bg-white px-3.5 py-3 text-sm text-[#10292e] placeholder:text-[#5a6e70]/50 focus:outline-none focus:ring-2 focus:ring-[#f25c78] transition-all"
@@ -164,13 +166,11 @@ export default function TeacherRegisterPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#10292e] mb-1">
+                <label htmlFor="last-name" className="block text-xs font-bold text-[#10292e] mb-1">
                   Last Name <span className="text-red-500">*</span>
                 </label>
-                <input
+                <input id="last-name" name="last_name" autoComplete="family-name" maxLength={100} aria-label="Last name"
                   type="text"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
                   placeholder="e.g. Jenkins"
                   required
                   className="w-full rounded-2xl border border-[#d2dcd7] bg-white px-3.5 py-3 text-sm text-[#10292e] placeholder:text-[#5a6e70]/50 focus:outline-none focus:ring-2 focus:ring-[#f25c78] transition-all"
@@ -183,13 +183,11 @@ export default function TeacherRegisterPage() {
 
             {/* Email Field */}
             <div>
-              <label className="block text-xs font-bold text-[#10292e] mb-1">
+              <label htmlFor="email" className="block text-xs font-bold text-[#10292e] mb-1">
                 School or Professional Email <span className="text-red-500">*</span>
               </label>
-              <input
+              <input id="email" name="email" autoComplete="email" maxLength={254} autoCapitalize="none" spellCheck={false} aria-label="Email"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 placeholder="teacher@school.edu"
                 required
                 className="w-full rounded-2xl border border-[#d2dcd7] bg-white px-3.5 py-3 text-sm text-[#10292e] placeholder:text-[#5a6e70]/50 focus:outline-none focus:ring-2 focus:ring-[#f25c78] transition-all"
@@ -201,10 +199,10 @@ export default function TeacherRegisterPage() {
 
             {/* Specialization Field (Key difference from Student) */}
             <div>
-              <label className="block text-xs font-bold text-[#10292e] mb-1">
+              <label htmlFor="specialization" className="block text-xs font-bold text-[#10292e] mb-1">
                 Teaching Specialization / Focus <span className="text-red-500">*</span>
               </label>
-              <select
+              <select id="specialization" name="specialization" autoComplete="off" aria-label="Teaching specialization"
                 value={specialization}
                 onChange={(e) => setSpecialization(e.target.value)}
                 className="w-full rounded-2xl border border-[#d2dcd7] bg-white px-3.5 py-3 text-sm text-[#10292e] focus:outline-none focus:ring-2 focus:ring-[#f25c78] transition-all"
@@ -217,10 +215,8 @@ export default function TeacherRegisterPage() {
               </select>
 
               {specialization === "Other" && (
-                <input
+                <input id="custom-specialization" name="custom_specialization" autoComplete="off" maxLength={100} aria-label="Other subject area"
                   type="text"
-                  value={customSpecialization}
-                  onChange={(e) => setCustomSpecialization(e.target.value)}
                   placeholder="Specify your field or subject..."
                   className="w-full mt-2 rounded-2xl border border-[#d2dcd7] bg-white px-3.5 py-2.5 text-sm text-[#10292e] focus:outline-none focus:ring-2 focus:ring-[#f25c78] transition-all"
                 />
@@ -233,26 +229,22 @@ export default function TeacherRegisterPage() {
             {/* School & Phone (2 Columns) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
-                <label className="block text-xs font-bold text-[#10292e] mb-1">
+                <label htmlFor="school-name" className="block text-xs font-bold text-[#10292e] mb-1">
                   School / Organization <span className="text-xs text-[#5a6e70] font-normal">(Optional)</span>
                 </label>
-                <input
+                <input id="school-name" name="school_name" autoComplete="organization" maxLength={100} aria-label="School or organization"
                   type="text"
-                  value={schoolName}
-                  onChange={(e) => setSchoolName(e.target.value)}
                   placeholder="e.g. Oakridge Academy"
                   className="w-full rounded-2xl border border-[#d2dcd7] bg-white px-3.5 py-3 text-sm text-[#10292e] placeholder:text-[#5a6e70]/50 focus:outline-none focus:ring-2 focus:ring-[#f25c78] transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#10292e] mb-1">
+                <label htmlFor="phone-number" className="block text-xs font-bold text-[#10292e] mb-1">
                   Phone Number <span className="text-xs text-[#5a6e70] font-normal">(Optional)</span>
                 </label>
-                <input
+                <input id="phone-number" name="phone_number" autoComplete="tel" maxLength={64} aria-label="Phone number"
                   type="tel"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
                   placeholder="+1 (555) 000-0000"
                   className="w-full rounded-2xl border border-[#d2dcd7] bg-white px-3.5 py-3 text-sm text-[#10292e] placeholder:text-[#5a6e70]/50 focus:outline-none focus:ring-2 focus:ring-[#f25c78] transition-all"
                 />
@@ -261,13 +253,11 @@ export default function TeacherRegisterPage() {
 
             {/* Teacher Code (Optional) */}
             <div>
-              <label className="block text-xs font-bold text-[#10292e] mb-1">
+              <label htmlFor="teacher-code" className="block text-xs font-bold text-[#10292e] mb-1">
                 Custom Teacher Code <span className="text-xs text-[#5a6e70] font-normal">(Optional - auto-assigned if empty)</span>
               </label>
-              <input
+              <input id="teacher-code" name="teacher_code" autoComplete="off" maxLength={64} aria-label="Teacher code"
                 type="text"
-                value={teacherCode}
-                onChange={(e) => setTeacherCode(e.target.value.toUpperCase())}
                 placeholder="e.g. TEA-4029"
                 className="w-full rounded-2xl border border-[#d2dcd7] bg-white px-3.5 py-3 text-sm text-[#10292e] placeholder:text-[#5a6e70]/50 focus:outline-none focus:ring-2 focus:ring-[#f25c78] transition-all font-mono"
               />
@@ -276,14 +266,12 @@ export default function TeacherRegisterPage() {
             {/* Password Fields */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
-                <label className="block text-xs font-bold text-[#10292e] mb-1">
+                <label htmlFor="password" className="block text-xs font-bold text-[#10292e] mb-1">
                   Password <span className="text-red-500">*</span>
                 </label>
-                <input
+                <input id="password" name="password" autoComplete="new-password" maxLength={128} aria-label="Password"
                   type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="At least 6 chars"
+                  placeholder="12–128 characters"
                   required
                   className="w-full rounded-2xl border border-[#d2dcd7] bg-white px-3.5 py-3 text-sm text-[#10292e] placeholder:text-[#5a6e70]/50 focus:outline-none focus:ring-2 focus:ring-[#f25c78] transition-all"
                 />
@@ -293,13 +281,11 @@ export default function TeacherRegisterPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#10292e] mb-1">
+                <label htmlFor="rePassword" className="block text-xs font-bold text-[#10292e] mb-1">
                   Confirm Password <span className="text-red-500">*</span>
                 </label>
-                <input
+                <input id="rePassword" name="rePassword" autoComplete="new-password" maxLength={128} aria-label="Confirm password"
                   type={showPassword ? "text" : "password"}
-                  value={rePassword}
-                  onChange={(e) => setRePassword(e.target.value)}
                   placeholder="Repeat password"
                   required
                   className="w-full rounded-2xl border border-[#d2dcd7] bg-white px-3.5 py-3 text-sm text-[#10292e] placeholder:text-[#5a6e70]/50 focus:outline-none focus:ring-2 focus:ring-[#f25c78] transition-all"
@@ -327,8 +313,7 @@ export default function TeacherRegisterPage() {
               <label className="flex items-start gap-2.5 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={agreeToTerms}
-                  onChange={(e) => setAgreeToTerms(e.target.checked)}
+                  name="agreeToTerms"
                   className="mt-1 rounded accent-[#f25c78]"
                 />
                 <span className="text-xs text-[#5a6e70] leading-snug">

@@ -1,5 +1,9 @@
 "use client";
 
+import type { LinkedChildSummary, ParentAchievement } from "@/types/Parent.type";
+
+import { deferRequest } from "@/lib/defer-request";
+
 import React, { useEffect, useState } from "react";
 import api from "@/services/api";
 import { toast } from "sonner";
@@ -15,7 +19,7 @@ interface AchievementItem {
 }
 
 export default function ParentAchievementsPage() {
-  const [children, setChildren] = useState<any[]>([]);
+  const [children, setChildren] = useState<LinkedChildSummary[]>([]);
   const [selectedChildId, setSelectedChildId] = useState<string>("");
   const [achievements, setAchievements] = useState<AchievementItem[]>([]);
   const [stats, setStats] = useState({ earned: 0, current_streak: 0, longest_streak: 0 });
@@ -46,7 +50,7 @@ export default function ParentAchievementsPage() {
         });
 
         if (Array.isArray(childData.achievements) && childData.achievements.length > 0) {
-          const mapped = childData.achievements.map((a: any) => ({
+          const mapped = childData.achievements.map((a: ParentAchievement) => ({
             ...a,
             awarded_at: a.awarded_at
               ? new Date(a.awarded_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })
@@ -63,13 +67,17 @@ export default function ParentAchievementsPage() {
   };
 
   useEffect(() => {
-    loadChildren();
+    return deferRequest(() => {
+      loadChildren();
+    });
   }, []);
 
   useEffect(() => {
-    if (selectedChildId) {
+    return deferRequest(() => {
+      if (selectedChildId) {
       loadAchievements(selectedChildId);
-    }
+      }
+    });
   }, [selectedChildId]);
 
   const activeChild =

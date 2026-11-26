@@ -11,6 +11,7 @@ declare module "next-auth" {
     role?: string;
     /** User ID from the backend */
     backendId?: string;
+    rememberMe?: boolean;
     /** Display name from the backend */
     name?: string;
     /** Access token expiry timestamp (unix seconds) */
@@ -34,6 +35,7 @@ declare module "next-auth/jwt" {
     role?: string;
     backendId?: string;
     name?: string;
+    rememberMe?: boolean;
     /** Unix timestamp (ms) when the access token expires */
     accessTokenExpires?: number;
     error?: "RefreshAccessTokenError" | "AuthenticationServiceUnavailable";

@@ -1,5 +1,7 @@
 "use client";
 
+import { deferRequest } from "@/lib/defer-request";
+
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import api from "@/services/api";
@@ -106,7 +108,9 @@ export default function ParentFeedsPage() {
   }, [selectedTag, searchQuery]);
 
   useEffect(() => {
-    fetchPosts();
+    return deferRequest(() => {
+      fetchPosts();
+    });
   }, [fetchPosts]);
 
   // Handle Like

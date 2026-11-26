@@ -1,5 +1,7 @@
 "use client";
 
+import { deferRequest } from "@/lib/defer-request";
+
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
@@ -45,7 +47,7 @@ export default function AssessmentsCatalogPage() {
       const res = await api.get("/assessments");
       const list: AssessmentItem[] = res.data?.data || [];
       setAssessments(list);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to load assessments:", err);
       setError("Could not load assessments from database. Please check your connection.");
     } finally {
@@ -54,7 +56,9 @@ export default function AssessmentsCatalogPage() {
   };
 
   useEffect(() => {
-    fetchAssessments();
+    return deferRequest(() => {
+      fetchAssessments();
+    });
   }, []);
 
   const totalCompleted = assessments.filter((a) => a.status === "completed").length;

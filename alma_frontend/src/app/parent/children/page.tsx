@@ -1,5 +1,9 @@
 "use client";
 
+import { apiError } from "@/lib/api-error";
+
+import { deferRequest } from "@/lib/defer-request";
+
 import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import api from "@/services/api";
@@ -47,7 +51,9 @@ export default function MyChildrenPage() {
   };
 
   useEffect(() => {
-    loadChildren();
+    return deferRequest(() => {
+      loadChildren();
+    });
   }, []);
 
   const handleLinkChild = async (e: React.FormEvent) => {
@@ -74,11 +80,8 @@ export default function MyChildrenPage() {
       toast.success("Child linked successfully!");
       setStudentCode("");
       loadChildren();
-    } catch (err: any) {
-      const msg =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        "Phone number does not match. Check the number the school has on file.";
+    } catch (err: unknown) {
+      const msg = apiError(err, "Ask your school administrator to verify this guardian relationship before linking your child.");
       setErrorMsg(msg);
       toast.error(msg);
     } finally {
@@ -94,8 +97,8 @@ export default function MyChildrenPage() {
       await api.post("/parents/unlink-child", { child_id: childId });
       toast.success(`Unlinked ${name}`);
       setChildren((prev) => prev.filter((c) => (c._id || c.student_id) !== childId));
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to unlink child");
+    } catch (err: unknown) {
+      toast.error(apiError(err, "Failed to unlink child"));
     } finally {
       setUnlinkingId(null);
     }

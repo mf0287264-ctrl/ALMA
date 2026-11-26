@@ -1,5 +1,9 @@
 "use client";
 
+import { apiError } from "@/lib/api-error";
+
+import { deferRequest } from "@/lib/defer-request";
+
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -163,7 +167,9 @@ export default function FeedsPage() {
   }, [selectedTag, searchQuery]);
 
   useEffect(() => {
-    fetchPosts();
+    return deferRequest(() => {
+      fetchPosts();
+    });
   }, [fetchPosts]);
 
   // Load earned achievements for quick sharing
@@ -266,7 +272,7 @@ export default function FeedsPage() {
     } catch (err: unknown) {
       console.error("Failed to create post:", err);
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || "Failed to publish post");
+      toast.error(apiError(error, "Failed to publish post"));
     } finally {
       setIsSubmitting(false);
     }
@@ -340,7 +346,7 @@ export default function FeedsPage() {
     } catch (err: unknown) {
       console.error("Error deleting post:", err);
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || "Failed to delete post");
+      toast.error(apiError(error, "Failed to delete post"));
     }
   };
 
@@ -364,7 +370,7 @@ export default function FeedsPage() {
     } catch (err: unknown) {
       console.error("Error sharing post:", err);
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || "Failed to share post");
+      toast.error(apiError(error, "Failed to share post"));
     } finally {
       setIsSharing(false);
     }

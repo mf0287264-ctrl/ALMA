@@ -43,27 +43,14 @@ class TeacherGroupsService {
       teacher_id: teacherUser._id,
       teacher_name: teacherName,
       students: [],
-      lessons: [
-        {
-          title: "Introduction to Iteration & For Loops",
-          topic: "For Loops and Iteration",
-          duration_minutes: 15,
-          programming_language: "Python",
-        },
-      ],
-      tasks: [
-        {
-          title: "Complete Python For Loops Diagnostic Quiz",
-          description: "Practice the 3 range() exercises before our next lab session.",
-          status: "assigned",
-        },
-      ],
+      lessons: [],
+      tasks: [],
       messages: [
         {
           sender_id: teacherUser._id,
           sender_name: teacherName,
           sender_role: "teacher",
-          message: `Welcome to ${data.name}! Use class code ${classCode} to invite your classmates. Check the lessons and tasks tab for this week's assignments.`,
+          message: `Welcome to ${data.name}! Use class code ${classCode} to invite your classmates. Your teacher will add lessons and tasks here.`,
         },
       ],
     };

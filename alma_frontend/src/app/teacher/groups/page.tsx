@@ -1,5 +1,9 @@
 "use client";
 
+import { apiError } from "@/lib/api-error";
+
+import { deferRequest } from "@/lib/defer-request";
+
 import React, { useState, useEffect, useRef } from "react";
 import TeacherSidebar from "@/components/TeacherSidebar";
 import api from "@/services/api";
@@ -143,16 +147,18 @@ export default function TeacherGroupsPage() {
         // default select first group
         setSelectedGroupId(list[0]._id);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to load teacher groups:", err);
-      toast.error(err?.response?.data?.message || "Failed to load class groups");
+      toast.error(apiError(err, "Failed to load class groups"));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchGroups();
+    return deferRequest(() => {
+      fetchGroups();
+    });
   }, []);
 
   const activeGroup = groups.find((g) => g._id === selectedGroupId) || null;
@@ -192,8 +198,8 @@ export default function TeacherGroupsPage() {
         description: "",
       });
       await fetchGroups(newGroup?._id);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to create group");
+    } catch (err: unknown) {
+      toast.error(apiError(err, "Failed to create group"));
     } finally {
       setIsSubmittingGroup(false);
     }
@@ -213,8 +219,8 @@ export default function TeacherGroupsPage() {
       toast.success("Student enrolled successfully!");
       setStudentIdentifier("");
       setShowAddStudentModal(false);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to add student. Ensure code/email is correct.");
+    } catch (err: unknown) {
+      toast.error(apiError(err, "Failed to add student. Ensure code/email is correct."));
     } finally {
       setIsSubmittingStudent(false);
     }
@@ -229,8 +235,8 @@ export default function TeacherGroupsPage() {
       const updated = res.data?.data;
       setGroups((prev) => prev.map((g) => (g._id === updated._id ? updated : g)));
       toast.success(`${studentName} removed from class.`);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to remove student");
+    } catch (err: unknown) {
+      toast.error(apiError(err, "Failed to remove student"));
     }
   };
 
@@ -251,8 +257,8 @@ export default function TeacherGroupsPage() {
         programming_language: "Python",
       });
       setShowAddLessonModal(false);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to assign lesson");
+    } catch (err: unknown) {
+      toast.error(apiError(err, "Failed to assign lesson"));
     } finally {
       setIsSubmittingLesson(false);
     }
@@ -270,8 +276,8 @@ export default function TeacherGroupsPage() {
       toast.success("Task assigned to class group!");
       setTaskForm({ title: "", description: "", due_date: "" });
       setShowAddTaskModal(false);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to assign task");
+    } catch (err: unknown) {
+      toast.error(apiError(err, "Failed to assign task"));
     } finally {
       setIsSubmittingTask(false);
     }
@@ -296,8 +302,8 @@ export default function TeacherGroupsPage() {
             : g
         )
       );
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to send message");
+    } catch (err: unknown) {
+      toast.error(apiError(err, "Failed to send message"));
     } finally {
       setIsSendingMessage(false);
     }
@@ -346,7 +352,7 @@ export default function TeacherGroupsPage() {
             </div>
             <h2 className="text-xl font-bold text-[#10292e] mb-2">No Class Groups Yet</h2>
             <p className="text-sm text-[#607274] mb-6">
-              Create your first student class group! You'll receive a unique Class Code (e.g., ALMA-3661) that your students can enter to join your class, view your generated lessons, and collaborate.
+              Create your first student class group! You&apos;ll receive a unique class code that your students can enter to join your class, view your generated lessons, and collaborate.
             </p>
             <button
               onClick={() => setShowCreateModal(true)}
@@ -1162,7 +1168,7 @@ export default function TeacherGroupsPage() {
           <div className="bg-white rounded-3xl border border-[#e8eeea] max-w-md w-full p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150">
             <h3 className="text-lg font-black text-[#10292e]">Add Student Directly</h3>
             <p className="text-xs text-[#607274] mt-1">
-              Enter the student's email or student code (e.g., STU-4650) to enroll them.
+              Enter the student&apos;s email or student code to enroll them.
             </p>
 
             <form onSubmit={handleAddStudent} className="mt-5 space-y-4">

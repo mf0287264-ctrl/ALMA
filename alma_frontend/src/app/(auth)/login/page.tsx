@@ -1,58 +1,67 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import MangoIcon from "@/components/MangoIcon";
 import { useAuth } from "@/app/_Context/AuthContext";
+import { loginDestination } from "@/lib/auth-routes";
+import { logInSchema } from "./login.schema";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const qRole = searchParams.get("role");
-  const initialRole: "student" | "teacher" | "parent" =
+  const role: "student" | "teacher" | "parent" =
     qRole === "teacher" ? "teacher" : qRole === "parent" ? "parent" : "student";
 
   const { login } = useAuth();
-  const [role, setRole] = useState<"student" | "teacher" | "parent">(initialRole);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string[]; password?: string[] }>({});
+  const [submitError, setSubmitError] = useState("");
 
-  useEffect(() => {
-    const query = searchParams.get("role");
-    if (query === "teacher" || query === "parent" || query === "student") {
-      setRole(query);
-    }
-  }, [searchParams]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const changeRole = (nextRole: typeof role) => {
+    const query = new URLSearchParams(searchParams.toString());
+    query.set("role", nextRole);
     setErrors({});
+    setSubmitError("");
+    router.replace(`/login?${query}`, { scroll: false });
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (loading) return;
+    setErrors({});
+    setSubmitError("");
+    // Read the form itself so Safari/Password AutoFill values are included even
+    // when the browser has not dispatched a React change event.
+    const form = new FormData(e.currentTarget);
+    const rememberMe = form.has("rememberMe");
+    const parsed = logInSchema.safeParse({ email: form.get("email"), password: form.get("password") });
+    if (!parsed.success) {
+      setErrors(parsed.error.flatten().fieldErrors);
+      return;
+    }
     setLoading(true);
 
     try {
-      const result = await login({ email, password, role });
+      const result = await login({ ...parsed.data, role, rememberMe });
       if (result.success) {
         if (role === "teacher") {
           toast.success("Welcome back, Educator!");
-          router.push("/teacher/dashboard");
         } else if (role === "parent") {
           toast.success("Welcome back, Parent!");
-          router.push("/parent/dashboard");
         } else {
           toast.success("Welcome back!");
-          router.push("/home");
         }
+        window.location.replace(new URL(loginDestination(result.role || role, searchParams.get("callbackUrl")), window.location.origin).href);
       } else {
-        toast.error(result.error || "Invalid credentials");
+        setSubmitError(result.error || "Unable to log in. Please try again.");
       }
     } catch {
-      toast.error("An unexpected error occurred. Please try again.");
+      setSubmitError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -131,7 +140,9 @@ function LoginForm() {
             <div className="mt-4 p-1 bg-[#ebe5d8] rounded-2xl flex items-center gap-1">
               <button
                 type="button"
-                onClick={() => setRole("student")}
+                onClick={() => changeRole("student")}
+                aria-pressed={role === "student"}
+                disabled={loading}
                 className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   role === "student"
                     ? "bg-white text-[#10292e] shadow-sm"
@@ -142,7 +153,9 @@ function LoginForm() {
               </button>
               <button
                 type="button"
-                onClick={() => setRole("teacher")}
+                onClick={() => changeRole("teacher")}
+                aria-pressed={role === "teacher"}
+                disabled={loading}
                 className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   role === "teacher"
                     ? "bg-[#f25c78] text-white shadow-sm"
@@ -153,7 +166,9 @@ function LoginForm() {
               </button>
               <button
                 type="button"
-                onClick={() => setRole("parent")}
+                onClick={() => changeRole("parent")}
+                aria-pressed={role === "parent"}
+                disabled={loading}
                 className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   role === "parent"
                     ? "bg-[#4ba3d0] text-white shadow-sm"
@@ -166,7 +181,12 @@ function LoginForm() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate aria-busy={loading}>
+            {submitError && (
+              <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                {submitError}
+              </p>
+            )}
             {/* Email Field */}
             <div>
               <label
@@ -181,9 +201,14 @@ function LoginForm() {
               </label>
               <input
                 id="email"
+                name="email"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                maxLength={254}
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? "email-error" : undefined}
                 placeholder={
                   isTeacher
                     ? "teacher@school.edu"
@@ -195,7 +220,7 @@ function LoginForm() {
                 className="w-full rounded-2xl border border-[#d2dcd7] bg-white px-4 py-3.5 text-sm text-[#10292e] placeholder:text-[#5a6e70]/60 focus:outline-none focus:ring-2 focus:ring-[#118a80] focus:border-transparent transition-all shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
               />
               {errors.email?.[0] && (
-                <p className="text-xs text-red-500 font-semibold mt-1">
+                <p id="email-error" className="text-xs text-red-500 font-semibold mt-1">
                   {errors.email[0]}
                 </p>
               )}
@@ -212,9 +237,12 @@ function LoginForm() {
               <div className="relative flex items-center">
                 <input
                   id="password"
+                  name="password"
+                  autoComplete="current-password"
+                  maxLength={128}
+                  aria-invalid={!!errors.password}
+                  aria-describedby={errors.password ? "password-error" : undefined}
                   type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
                   className="w-full rounded-2xl border border-[#d2dcd7] bg-white pl-4 pr-16 py-3.5 text-sm text-[#10292e] placeholder:text-[#5a6e70]/60 focus:outline-none focus:ring-2 focus:ring-[#118a80] focus:border-transparent transition-all shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
@@ -222,13 +250,15 @@ function LoginForm() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
                   className="absolute right-4 text-sm font-bold text-[#118a80] hover:text-[#0b6b63] transition-colors cursor-pointer select-none"
                 >
                   {showPassword ? "Hide" : "Show"}
                 </button>
               </div>
               {errors.password?.[0] && (
-                <p className="text-xs text-red-500 font-semibold mt-1">
+                <p id="password-error" className="text-xs text-red-500 font-semibold mt-1">
                   {errors.password[0]}
                 </p>
               )}
@@ -237,30 +267,11 @@ function LoginForm() {
             {/* Remember me & Forgot password row */}
             <div className="flex items-center justify-between text-sm pt-1 pb-2">
               <label className="flex items-center gap-2 cursor-pointer select-none">
-                <button
-                  type="button"
-                  role="checkbox"
-                  aria-checked={rememberMe}
-                  onClick={() => setRememberMe(!rememberMe)}
-                  className={`w-5 h-5 rounded-md border-2 transition-all flex items-center justify-center cursor-pointer ${
-                    rememberMe
-                      ? "bg-[#118a80] border-[#118a80] text-white"
-                      : "border-[#118a80] bg-white hover:border-[#0b6b63]"
-                  }`}
-                >
-                  {rememberMe && (
-                    <svg
-                      className="w-3.5 h-3.5 stroke-current"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M3.5 8.5L6.5 11.5L12.5 4.5" />
-                    </svg>
-                  )}
-                </button>
+                <input
+                  type="checkbox"
+                  name="rememberMe"
+                  className="h-5 w-5 shrink-0 rounded-md accent-[#118a80]"
+                />
                 <span className="text-[#10292e] text-sm font-medium">
                   Remember me
                 </span>
@@ -292,7 +303,7 @@ function LoginForm() {
                   href="/class-code"
                   className="w-full bg-white hover:bg-[#fafaf8] active:scale-[0.98] border-2 border-[#10292e] text-[#10292e] font-bold text-base py-3.5 rounded-full cursor-pointer transition-all shadow-sm flex items-center justify-center text-center"
                 >
-                  Log in with class code
+                  Join with a class code
                 </Link>
               )}
             </div>

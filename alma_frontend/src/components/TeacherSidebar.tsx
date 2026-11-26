@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import MangoIcon from "./MangoIcon";
 import { useAuth, getProfileImageUrl } from "@/app/_Context/AuthContext";
 import { useSidebar } from "@/app/_Context/SidebarContext";
+import { NavigationDrawer, useMobileNavigation } from "@/components/ui/navigation-drawer";
 import {
   LayoutGrid,
   Compass,
@@ -48,7 +49,7 @@ export default function TeacherSidebar({ className = "" }: { className?: string 
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const { isCollapsed, isAnimating, toggleCollapsed } = useSidebar();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isOpen: mobileMenuOpen, close: closeMobileMenu, toggle: toggleMobileMenu } = useMobileNavigation(pathname);
 
   const teacherName =
     user?.name ||
@@ -90,23 +91,19 @@ export default function TeacherSidebar({ className = "" }: { className?: string 
         </Link>
 
         <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          onClick={toggleMobileMenu}
           className="p-2 rounded-xl text-[#10292e] hover:bg-[#fafaf8] border border-[#e8eeea] cursor-pointer"
           aria-label="Toggle Navigation"
+          aria-expanded={mobileMenuOpen}
+          aria-controls="teacher-navigation"
         >
           {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </div>
 
       {/* Mobile Drawer */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex">
-          <div
-            className="fixed inset-0 bg-black/30 backdrop-blur-xs transition-opacity"
-            onClick={() => setMobileMenuOpen(false)}
-          />
-
-          <div className="relative w-72 max-w-[80vw] bg-white h-full shadow-2xl flex flex-col justify-between p-5 pt-20 z-50 overflow-y-auto no-scrollbar">
+      <NavigationDrawer open={mobileMenuOpen} onClose={closeMobileMenu} title="Teacher navigation" id="teacher-navigation">
+          <div className="flex min-h-full flex-col justify-between">
             <div className="space-y-1">
               <span className="text-[10px] font-black text-[#8a999b] uppercase tracking-wider px-3 block mb-2">
                 Teacher Workspace
@@ -119,7 +116,8 @@ export default function TeacherSidebar({ className = "" }: { className?: string 
                   <Link
                     key={item.href}
                     href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={closeMobileMenu}
+                    aria-current={active ? "page" : undefined}
                     className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
                       active
                         ? "bg-[#fff7ee] text-[#10292e] border-l-4 border-[#ffa11f]"
@@ -137,7 +135,7 @@ export default function TeacherSidebar({ className = "" }: { className?: string 
               <div className="flex items-center gap-3 p-2 rounded-xl bg-[#fafaf8]">
                 <Link
                   href="/teacher/settings"
-                  onClick={() => setMobileMenuOpen(false)}
+                    onClick={closeMobileMenu}
                   className="flex items-center gap-3 flex-1 min-w-0 group hover:opacity-80 transition-opacity"
                 >
                   <div className="w-8 h-8 rounded-full overflow-hidden bg-[#118a80] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
@@ -166,8 +164,7 @@ export default function TeacherSidebar({ className = "" }: { className?: string 
               </div>
             </div>
           </div>
-        </div>
-      )}
+      </NavigationDrawer>
 
       {/* Desktop Sticky In-Flow Sidebar (Collapsible) */}
       <aside
@@ -178,7 +175,12 @@ export default function TeacherSidebar({ className = "" }: { className?: string 
         } ${className}`}
       >
         {/* Navigation Area */}
-        <div className="flex-1 overflow-y-auto no-scrollbar py-3 px-2.5 space-y-2">
+        <div className="min-h-0 flex-1 sidebar-tabs-slider py-4 px-3 space-y-4">
+          {user && !user.is_verified && !isCollapsed && (
+            <p role="status" className="rounded-xl bg-[#fff7ee] p-3 text-xs leading-relaxed text-[#607274]">
+              Your account is awaiting school approval. An administrator must verify it before you can create classes or access student data.
+            </p>
+          )}
           {/* Header with Logo and Collapse Toggle */}
           <div
             className={`flex items-center ${
@@ -226,12 +228,13 @@ export default function TeacherSidebar({ className = "" }: { className?: string 
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={active ? "page" : undefined}
                   title={isCollapsed ? item.label : undefined}
                   className={`relative flex items-center ${
                     isCollapsed
                       ? "justify-center p-2 rounded-xl"
-                      : "justify-between px-2.5 py-1.5 rounded-xl"
-                  } text-xs ${
+                      : "justify-between px-3 py-2.5 rounded-xl"
+                  } text-sm ${
                     isAnimating ? "transition-colors duration-150" : "transition-none"
                   } ${
                     active
@@ -241,10 +244,10 @@ export default function TeacherSidebar({ className = "" }: { className?: string 
                 >
                   <div className="flex items-center gap-2.5">
                     <Icon
-                      size={16}
+                      size={18}
                       className={active ? "text-[#ffa11f]" : "text-[#7f9092]"}
                     />
-                    {!isCollapsed && <span className="font-bold text-xs">{item.label}</span>}
+                    {!isCollapsed && <span className="font-semibold text-sm">{item.label}</span>}
                   </div>
 
                   {item.badge && !isCollapsed && (

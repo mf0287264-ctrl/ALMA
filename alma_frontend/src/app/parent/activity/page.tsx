@@ -1,5 +1,9 @@
 "use client";
 
+import type { LinkedChildSummary, LessonSessionSummary } from "@/types/Parent.type";
+
+import { deferRequest } from "@/lib/defer-request";
+
 import React, { useEffect, useState } from "react";
 import { Clock } from "lucide-react";
 import api from "@/services/api";
@@ -18,7 +22,7 @@ interface SessionItem {
 }
 
 export default function ParentActivityPage() {
-  const [children, setChildren] = useState<any[]>([]);
+  const [children, setChildren] = useState<LinkedChildSummary[]>([]);
   const [selectedChildId, setSelectedChildId] = useState<string>("");
   const [filter, setFilter] = useState<"all" | "active" | "completed" | "abandoned">("all");
   const [sessions, setSessions] = useState<SessionItem[]>([]);
@@ -34,6 +38,8 @@ export default function ParentActivityPage() {
       }
     } catch {
       setChildren([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -43,10 +49,10 @@ export default function ParentActivityPage() {
       const res = await api.get(`/parents/child/${cid}/progress`);
       const rawSessions = res.data?.data?.sessions;
       if (Array.isArray(rawSessions) && rawSessions.length > 0) {
-        const mapped = rawSessions.map((s: any) => {
+        const mapped = rawSessions.map((s: LessonSessionSummary) => {
           let correct = 0;
           const total = (s.checkpoint_logs || []).length || 2;
-          (s.checkpoint_logs || []).forEach((cp: any) => {
+          (s.checkpoint_logs || []).forEach((cp: { is_correct: boolean }) => {
             if (cp.is_correct) correct += 1;
           });
           const questions = (s.dialogue_logs || []).length;
@@ -77,13 +83,17 @@ export default function ParentActivityPage() {
   };
 
   useEffect(() => {
-    loadChildren();
+    return deferRequest(() => {
+      loadChildren();
+    });
   }, []);
 
   useEffect(() => {
-    if (selectedChildId) {
+    return deferRequest(() => {
+      if (selectedChildId) {
       loadSessions(selectedChildId);
-    }
+      }
+    });
   }, [selectedChildId]);
 
   const activeChild =

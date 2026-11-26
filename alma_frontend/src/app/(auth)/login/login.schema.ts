@@ -1,12 +1,8 @@
 import * as z from "zod";
 
 export const logInSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number"),
+  email: z.string().trim().toLowerCase().max(254).email("Enter a valid email address."),
+  password: z.string().min(1, "Enter your password.").max(128, "Password is too long."),
 });
 
 export type formDataInputType = z.infer<typeof logInSchema>;

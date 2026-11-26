@@ -1,6 +1,11 @@
 "use client";
 
+import { apiError } from "@/lib/api-error";
+
+import { deferRequest } from "@/lib/defer-request";
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -49,8 +54,10 @@ export default function FriendsPopover({
   const [receivedRequests, setReceivedRequests] = useState<StudentFriend[]>([]);
   const [sentRequests, setSentRequests] = useState<StudentFriend[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<StudentFriend[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const [searchState, setSearchState] = useState<{ query: string; results: StudentFriend[]; loading: boolean }>({ query: "", results: [], loading: false });
+  const query = searchQuery.trim();
+  const searchResults = searchState.query === query ? searchState.results : [];
+  const isSearching = !!query && (searchState.query !== query || searchState.loading);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -107,35 +114,34 @@ export default function FriendsPopover({
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
+    return deferRequest(() => {
+      if (isOpen) {
       fetchFriendsData();
-    }
+      }
+    });
   }, [isOpen, fetchFriendsData]);
 
   // Debounced search
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      setIsSearching(false);
-      return;
-    }
+    if (!query) return;
+    const controller = new AbortController();
 
     const timer = setTimeout(async () => {
       try {
-        setIsSearching(true);
-        const res = await api.get(`/students/search?q=${encodeURIComponent(searchQuery.trim())}`);
-        if (res.data?.success) {
-          setSearchResults(res.data.data || []);
+        setSearchState({ query, results: [], loading: true });
+        const res = await api.get(`/students/search?q=${encodeURIComponent(query)}`, { signal: controller.signal });
+        if (!controller.signal.aborted && res.data?.success) {
+          setSearchState({ query, results: res.data.data || [], loading: false });
         }
       } catch (err) {
-        console.error("Error searching students:", err);
+        if (!controller.signal.aborted) console.error("Error searching students:", err);
       } finally {
-        setIsSearching(false);
+        if (!controller.signal.aborted) setSearchState((state) => ({ ...state, loading: false }));
       }
     }, 250);
 
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [query]);
 
   const handleSendRequest = async (targetId: string) => {
     try {
@@ -143,14 +149,12 @@ export default function FriendsPopover({
       const res = await api.post(`/students/friend-request/${targetId}`);
       if (res.data?.success) {
         toast.success("Friend request sent!");
-        setSearchResults((prev) =>
-          prev.map((s) => (s._id === targetId ? { ...s, friendship_status: "sent" } : s))
-        );
+        setSearchState((state) => ({ ...state, results: state.results.map((student) => student._id === targetId ? { ...student, friendship_status: "sent" } : student) }));
         fetchFriendsData();
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || "Failed to send friend request");
+      toast.error(apiError(error, "Failed to send friend request"));
     } finally {
       setActionLoadingId(null);
     }
@@ -166,7 +170,7 @@ export default function FriendsPopover({
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || "Failed to accept request");
+      toast.error(apiError(error, "Failed to accept request"));
     } finally {
       setActionLoadingId(null);
     }
@@ -182,7 +186,7 @@ export default function FriendsPopover({
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || "Failed to reject request");
+      toast.error(apiError(error, "Failed to reject request"));
     } finally {
       setActionLoadingId(null);
     }
@@ -195,13 +199,15 @@ export default function FriendsPopover({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       ref={popoverRef}
-      className={`z-50 bg-white rounded-2xl shadow-2xl border border-[#e8eeea] text-[#10292e] overflow-hidden flex flex-col transition-all duration-200 animate-in fade-in slide-in-from-bottom-2 ${
+      role="dialog"
+      aria-label="Friends and requests"
+      className={`fixed bottom-4 z-[70] w-80 max-w-[calc(100vw-32px)] max-h-[calc(100dvh-32px)] bg-white rounded-2xl shadow-2xl border border-[#e8eeea] text-[#10292e] overflow-hidden hidden lg:flex flex-col ${
         isCollapsed
-          ? "fixed bottom-16 left-20 w-80 max-h-[460px]"
-          : "absolute bottom-20 left-2 right-2 w-[calc(100%-16px)] max-h-[460px]"
+          ? "left-20"
+          : "left-60"
       }`}
       style={{
         boxShadow: "0 10px 30px -5px rgba(16, 41, 46, 0.15), 0 0 1px 1px rgba(16, 41, 46, 0.05)",
@@ -569,6 +575,7 @@ export default function FriendsPopover({
           <ArrowRight size={12} />
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

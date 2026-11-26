@@ -14,7 +14,7 @@ interface AssessmentDetail {
   module_title?: string;
   total_points: number;
   passing_score: number;
-  questions?: any[];
+  questions?: unknown[];
 }
 
 function InstructionsContent({
@@ -40,7 +40,7 @@ function InstructionsContent({
         } else {
           setError("Assessment not found in database.");
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Failed to load assessment:", err);
         setError("Could not load assessment details from database.");
       } finally {

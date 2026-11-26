@@ -1,5 +1,11 @@
 "use client";
 
+import { apiError } from "@/lib/api-error";
+
+import { isAxiosError } from "axios";
+
+import { deferRequest } from "@/lib/defer-request";
+
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -57,7 +63,7 @@ export default function CoursesPage() {
       // Only show published courses for students
       const published = list.filter((c) => c.status === "published");
       setCourses(published);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to load courses from database:", err);
       setError("Could not load courses from database. Please check your connection.");
     } finally {
@@ -73,12 +79,12 @@ export default function CoursesPage() {
       setCourses((prev) =>
         prev.map((c) => (c._id === courseId ? { ...c, is_enrolled: true } : c))
       );
-    } catch (err: any) {
-      if (err.response?.status === 401) {
+    } catch (err: unknown) {
+      if (isAxiosError(err) && err.response?.status === 401) {
         toast.error("Please log in to enroll in this course.");
         router.push("/login");
       } else {
-        toast.error(err.response?.data?.message || "Failed to enroll. Please try again.");
+        toast.error(apiError(err, "Failed to enroll. Please try again."));
       }
     } finally {
       setEnrollingId(null);
@@ -86,7 +92,9 @@ export default function CoursesPage() {
   };
 
   useEffect(() => {
-    fetchCourses();
+    return deferRequest(() => {
+      fetchCourses();
+    });
   }, []);
 
   // Filter options derived dynamically from data

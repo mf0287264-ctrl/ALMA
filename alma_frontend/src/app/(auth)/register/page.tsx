@@ -2,21 +2,16 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import MangoIcon from "@/components/MangoIcon";
 import { useAuth } from "@/app/_Context/AuthContext";
+import { loginDestination } from "@/lib/auth-routes";
 
 export default function RegisterPage() {
-  const router = useRouter();
   const { register } = useAuth();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [rePassword, setRePassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [errors, setErrors] = useState<{
     name?: string[];
     email?: string[];
@@ -25,9 +20,17 @@ export default function RegisterPage() {
     agreeToTerms?: string[];
   }>({});
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (loading) return;
+    const form = new FormData(e.currentTarget);
+    const name = String(form.get("name") || "");
+    const email = String(form.get("email") || "");
+    const password = String(form.get("password") || "");
+    const rePassword = String(form.get("rePassword") || "");
+    const agreeToTerms = form.has("agreeToTerms");
     setErrors({});
+    setSubmitError("");
 
     // Client validation for immediate feedback
     const newErrors: typeof errors = {};
@@ -62,12 +65,13 @@ export default function RegisterPage() {
 
       if (result.success) {
         toast.success("Account created successfully!");
-        router.push("/register/step-2");
+        const callback = new URLSearchParams(window.location.search).get("callbackUrl");
+        window.location.assign(new URL(callback ? loginDestination("student", callback) : "/register/step-2", window.location.origin).href);
       } else {
-        toast.error(result.error || "Please correct the errors in the form.");
+        setSubmitError(result.error || "Please correct the errors in the form.");
       }
     } catch {
-      toast.error("An unexpected error occurred. Please try again.");
+      setSubmitError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -105,7 +109,8 @@ export default function RegisterPage() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate aria-busy={loading}>
+            {submitError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{submitError}</p>}
             {/* Full Name */}
             <div>
               <label
@@ -114,12 +119,10 @@ export default function RegisterPage() {
               >
                 Full name
               </label>
-              <input
+              <input name="name" autoComplete="name" maxLength={100} aria-label="Full name"
                 id="name"
                 type="text"
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
+                onChange={() => {
                   if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
                 }}
                 placeholder="Alex Morgan"
@@ -144,12 +147,10 @@ export default function RegisterPage() {
               >
                 Email
               </label>
-              <input
+              <input name="email" autoComplete="email" maxLength={254} autoCapitalize="none" spellCheck={false} aria-label="Email"
                 id="email"
                 type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
+                onChange={() => {
                   if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
                 }}
                 placeholder="alex@school.edu"
@@ -175,12 +176,10 @@ export default function RegisterPage() {
                 Password
               </label>
               <div className="relative flex items-center">
-                <input
+                <input name="password" autoComplete="new-password" maxLength={128} aria-label="Password"
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
+                  onChange={() => {
                     if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
                   }}
                   placeholder="••••••"
@@ -215,12 +214,10 @@ export default function RegisterPage() {
               >
                 Confirm password
               </label>
-              <input
+              <input name="rePassword" autoComplete="new-password" maxLength={128} aria-label="Confirm password"
                 id="rePassword"
                 type={showPassword ? "text" : "password"}
-                value={rePassword}
-                onChange={(e) => {
-                  setRePassword(e.target.value);
+                onChange={() => {
                   if (errors.rePassword)
                     setErrors((prev) => ({ ...prev, rePassword: undefined }));
                 }}
@@ -241,35 +238,7 @@ export default function RegisterPage() {
             {/* Terms and Privacy Policy Checkbox */}
             <div className="pt-1">
               <label className="flex items-center gap-2 cursor-pointer select-none">
-                <button
-                  type="button"
-                  role="checkbox"
-                  aria-checked={agreeToTerms}
-                  onClick={() => {
-                    const next = !agreeToTerms;
-                    setAgreeToTerms(next);
-                    if (errors.agreeToTerms)
-                      setErrors((prev) => ({ ...prev, agreeToTerms: undefined }));
-                  }}
-                  className={`w-5 h-5 rounded-md border-2 transition-all flex items-center justify-center shrink-0 cursor-pointer ${
-                    agreeToTerms
-                      ? "bg-[#118a80] border-[#118a80] text-white"
-                      : "border-[#118a80] bg-white hover:border-[#0b6b63]"
-                  }`}
-                >
-                  {agreeToTerms && (
-                    <svg
-                      className="w-3.5 h-3.5 stroke-current"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M3.5 8.5L6.5 11.5L12.5 4.5" />
-                    </svg>
-                  )}
-                </button>
+                <input type="checkbox" name="agreeToTerms" className="h-5 w-5 shrink-0 rounded accent-[#118a80]" />
                 <span className="text-[#10292e] text-sm font-medium">
                   I agree to the Terms and Privacy Policy
                 </span>

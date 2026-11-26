@@ -1,14 +1,28 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
-import { useAuth, getProfileImageUrl } from "@/app/_Context/AuthContext";
+import { useAuth, getProfileImageUrl, type User } from "@/app/_Context/AuthContext";
 import { toast } from "sonner";
 import { Award, Flame, Trophy, CheckCircle2, ArrowRight, ShieldCheck, KeyRound, Camera, Loader2, Trash2 } from "lucide-react";
 
 export default function ProfilePage() {
-  const { user, updateUser, uploadProfilePicture, updateName } = useAuth();
+  const { user, refreshUser } = useAuth();
+  if (!user) return (
+    <div className="flex min-h-screen w-full bg-[#fff8ec]">
+      <Sidebar />
+      <main className="flex-1 p-6 pt-24 lg:pt-10">
+        <p className="text-sm text-[#607274]">Loading your profile…</p>
+        <button type="button" onClick={() => void refreshUser()} className="mt-4 rounded-full bg-[#ffa11f] px-5 py-2 font-semibold">Retry</button>
+      </main>
+    </div>
+  );
+  return <ProfileForm key={user._id || user.id} user={user} />;
+}
+
+function ProfileForm({ user }: { user: User }) {
+  const { updateUser, uploadProfilePicture, updateName } = useAuth();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [activeTab, setActiveTab] = useState<"account" | "workspace">("account");
@@ -29,23 +43,6 @@ export default function ProfilePage() {
   );
   const [dailyReminder, setDailyReminder] = useState(true);
   const [streakAlerts, setStreakAlerts] = useState(true);
-
-  // Sync state when user profile is loaded
-  useEffect(() => {
-    if (user) {
-      if (user.first_name) setFirstName(user.first_name);
-      if (user.last_name) setLastName(user.last_name);
-      if (user.email) setEmail(user.email);
-      if (user.grade_level) setGradeLevel(user.grade_level);
-      if (user.school_name) setSchoolName(user.school_name);
-      if (user.parent_phone) setParentPhone(user.parent_phone);
-      if (user.age_group) setAgeRange(user.age_group);
-      if (user.coding_experience) setCodingExp(user.coding_experience);
-      if (user.learning_styles && user.learning_styles.length > 0) {
-        setLearningStyle(user.learning_styles.join(", "));
-      }
-    }
-  }, [user]);
 
   // Password modal
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -102,7 +99,11 @@ export default function ProfilePage() {
 
   const handleRemovePhoto = async () => {
     try {
-      await updateUser({ profile_image: null });
+      const result = await updateUser({ profile_image: null });
+      if (!result.success) {
+        toast.error(result.error || "Unable to remove your profile picture.");
+        return;
+      }
       toast.info("Profile picture removed");
     } catch {
       toast.error("Failed to remove profile picture");
@@ -135,14 +136,14 @@ export default function ProfilePage() {
         toast.error(res.error || "Failed to update profile");
       }
     } catch {
-      toast.success("Profile preferences saved locally!");
+      toast.error("Unable to save your profile. Please try again.");
     }
   };
 
   const handleSavePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters long.");
+    if (newPassword.length < 12 || newPassword.length > 128) {
+      toast.error("Password must be 12–128 characters long.");
       return;
     }
     if (newPassword !== confirmPassword) {

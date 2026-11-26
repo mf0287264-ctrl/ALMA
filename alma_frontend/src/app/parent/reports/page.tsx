@@ -1,14 +1,18 @@
 "use client";
 
+import type { LinkedChildSummary, ChildProgress, StrugglingConceptSummary, ParentAchievement, LessonSessionSummary } from "@/types/Parent.type";
+
+import { deferRequest } from "@/lib/defer-request";
+
 import React, { useEffect, useState } from "react";
 import api from "@/services/api";
 import { toast } from "sonner";
 import { Download, Mail, Check, Bell, ShieldAlert } from "lucide-react";
 
 export default function ParentReportsPage() {
-  const [children, setChildren] = useState<any[]>([]);
+  const [children, setChildren] = useState<LinkedChildSummary[]>([]);
   const [selectedChildId, setSelectedChildId] = useState<string>("");
-  const [childProgress, setChildProgress] = useState<any>(null);
+  const [childProgress, setChildProgress] = useState<ChildProgress | null>(null);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [alertRules, setAlertRules] = useState({
     missed_streak: true,
@@ -40,13 +44,17 @@ export default function ParentReportsPage() {
   };
 
   useEffect(() => {
-    loadChildren();
+    return deferRequest(() => {
+      loadChildren();
+    });
   }, []);
 
   useEffect(() => {
-    if (selectedChildId) {
+    return deferRequest(() => {
+      if (selectedChildId) {
       loadChildProgress(selectedChildId);
-    }
+      }
+    });
   }, [selectedChildId]);
 
   const activeChild =
@@ -88,7 +96,7 @@ export default function ParentReportsPage() {
 
   const dynamicAlerts: Array<{ text: string; date: string; type: string }> = [];
 
-  strugglingList.forEach((sc: any) => {
+  strugglingList.forEach((sc: StrugglingConceptSummary) => {
     dynamicAlerts.push({
       text: `${activeChild?.first_name || "Child"} is working through "${sc.concept_label || sc.concept_id}"`,
       date: "Active",
@@ -96,7 +104,7 @@ export default function ParentReportsPage() {
     });
   });
 
-  achievementsList.slice(0, 2).forEach((ach: any) => {
+  achievementsList.slice(0, 2).forEach((ach: ParentAchievement) => {
     dynamicAlerts.push({
       text: `${activeChild?.first_name || "Child"} earned "${ach.title || "Milestone"}"`,
       date: ach.awarded_at ? new Date(ach.awarded_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "Recent",
@@ -104,7 +112,7 @@ export default function ParentReportsPage() {
     });
   });
 
-  sessionsList.filter((s: any) => s.status === "abandoned").slice(0, 2).forEach((s: any) => {
+  sessionsList.filter((s: LessonSessionSummary) => s.status === "abandoned").slice(0, 2).forEach((s: LessonSessionSummary) => {
     dynamicAlerts.push({
       text: `${activeChild?.first_name || "Child"} left "${s.lesson_title || "Lesson"}" in progress`,
       date: s.completed_at ? new Date(s.completed_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "Recent",

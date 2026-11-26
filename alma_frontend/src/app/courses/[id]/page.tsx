@@ -1,5 +1,9 @@
 "use client";
 
+import { apiError } from "@/lib/api-error";
+
+import { isAxiosError } from "axios";
+
 import React, { use, useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -63,7 +67,7 @@ function CourseDetailContent({
         } else {
           setError("Course not found in database.");
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Failed to load course details:", err);
         setError("Could not load course information from database.");
       } finally {
@@ -83,12 +87,12 @@ function CourseDetailContent({
       await api.post(`/courses/${course._id}/enroll`);
       toast.success("Enrolled in course successfully!");
       setCourse((prev) => (prev ? { ...prev, is_enrolled: true } : prev));
-    } catch (err: any) {
-      if (err.response?.status === 401) {
+    } catch (err: unknown) {
+      if (isAxiosError(err) && err.response?.status === 401) {
         toast.error("Please log in to enroll in this course.");
         router.push("/login");
       } else {
-        toast.error(err.response?.data?.message || "Failed to enroll. Please try again.");
+        toast.error(apiError(err, "Failed to enroll. Please try again."));
       }
     } finally {
       setEnrolling(false);
@@ -112,7 +116,7 @@ function CourseDetailContent({
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || "Failed to claim achievement.");
+      toast.error(apiError(error, "Failed to claim achievement."));
     } finally {
       setClaiming(false);
     }

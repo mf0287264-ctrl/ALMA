@@ -1,5 +1,9 @@
 "use client";
 
+import { apiError } from "@/lib/api-error";
+
+import { deferRequest } from "@/lib/defer-request";
+
 import React, { useEffect, useState, useRef } from "react";
 import api from "@/services/api";
 import { useAuth, getProfileImageUrl } from "@/app/_Context/AuthContext";
@@ -57,7 +61,9 @@ export default function ParentSettingsPage() {
   };
 
   useEffect(() => {
-    loadProfile();
+    return deferRequest(() => {
+      loadProfile();
+    });
   }, []);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,8 +129,8 @@ export default function ParentSettingsPage() {
       });
       await refreshUser();
       toast.success("Parent profile updated successfully!");
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to update profile");
+    } catch (err: unknown) {
+      toast.error(apiError(err, "Failed to update profile"));
     } finally {
       setSaving(false);
     }
@@ -138,8 +144,8 @@ export default function ParentSettingsPage() {
       await api.post("/parents/unlink-child", { child_id: childId });
       toast.success(`Unlinked ${name}`);
       setChildren((prev) => prev.filter((c) => (c._id || c.student_id) !== childId));
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to unlink child");
+    } catch (err: unknown) {
+      toast.error(apiError(err, "Failed to unlink child"));
     } finally {
       setUnlinkingId(null);
     }

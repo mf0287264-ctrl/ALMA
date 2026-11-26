@@ -1,5 +1,9 @@
 "use client";
 
+import type { LinkedChildSummary, LessonSessionSummary } from "@/types/Parent.type";
+
+import { deferRequest } from "@/lib/defer-request";
+
 import React, { useEffect, useState } from "react";
 import api from "@/services/api";
 import { CheckCircle2, TrendingUp, AlertCircle, BookOpen } from "lucide-react";
@@ -23,11 +27,11 @@ interface ProgressData {
     times_wrong?: number;
     last_diagnosed_misconception?: string | null;
   }>;
-  sessions?: any[];
+  sessions?: LessonSessionSummary[];
 }
 
 export default function ParentProgressPage() {
-  const [children, setChildren] = useState<any[]>([]);
+  const [children, setChildren] = useState<LinkedChildSummary[]>([]);
   const [selectedChildId, setSelectedChildId] = useState<string>("");
   const [progressData, setProgressData] = useState<ProgressData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,6 +46,8 @@ export default function ParentProgressPage() {
       }
     } catch {
       setChildren([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -58,13 +64,17 @@ export default function ParentProgressPage() {
   };
 
   useEffect(() => {
-    loadChildren();
+    return deferRequest(() => {
+      loadChildren();
+    });
   }, []);
 
   useEffect(() => {
-    if (selectedChildId) {
+    return deferRequest(() => {
+      if (selectedChildId) {
       loadChildProgress(selectedChildId);
-    }
+      }
+    });
   }, [selectedChildId]);
 
   const activeChild =
@@ -150,7 +160,7 @@ export default function ParentProgressPage() {
                 </p>
               </div>
             ) : (
-              sessions.slice(0, 5).map((s: any, idx: number) => {
+              sessions.slice(0, 5).map((s: LessonSessionSummary, idx: number) => {
                 const isCompleted = s.status === "completed";
                 const isAbandoned = s.status === "abandoned";
                 return (

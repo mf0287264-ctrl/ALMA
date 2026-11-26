@@ -1,14 +1,28 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import TeacherSidebar from "@/components/TeacherSidebar";
-import { useAuth, getProfileImageUrl } from "@/app/_Context/AuthContext";
+import { useAuth, getProfileImageUrl, type User } from "@/app/_Context/AuthContext";
 import { toast } from "sonner";
 
 export default function TeacherSettingsPage() {
+  const { user, refreshUser } = useAuth();
+  if (!user) return (
+    <div className="flex min-h-screen w-full bg-[#fff8ec]">
+      <TeacherSidebar />
+      <main className="flex-1 p-6 pt-24 lg:pt-10">
+        <p className="text-sm text-[#607274]">Loading your profile…</p>
+        <button type="button" onClick={() => void refreshUser()} className="mt-4 rounded-full bg-[#ffa11f] px-5 py-2 font-semibold">Retry</button>
+      </main>
+    </div>
+  );
+  return <TeacherSettingsForm key={user._id || user.id} user={user} />;
+}
+
+function TeacherSettingsForm({ user }: { user: User }) {
   const router = useRouter();
-  const { user, updateUser, uploadProfilePicture, updateName, logout } = useAuth();
+  const { updateUser, uploadProfilePicture, updateName, logout } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state initialized with user
@@ -21,7 +35,7 @@ export default function TeacherSettingsPage() {
   const [schoolName, setSchoolName] = useState(user?.school_name || "");
 
   // Profile photo state
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(user.profile_image ? getProfileImageUrl(user.profile_image) : null);
 
   // Password modal / change state
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -35,20 +49,6 @@ export default function TeacherSettingsPage() {
   const [notifStudentSupport, setNotifStudentSupport] = useState(false);
 
   const [saving, setSaving] = useState(false);
-
-  // Populate from authenticated user if available
-  useEffect(() => {
-    if (user) {
-      if (user.first_name) setFirstName(user.first_name);
-      if (user.last_name) setLastName(user.last_name);
-      if (user.email) setEmail(user.email);
-      if (user.teacher_code) setTeacherCode(user.teacher_code);
-      if (user.phone_number) setPhoneNumber(user.phone_number);
-      if (user.specialization) setSpecialization(user.specialization);
-      if (user.school_name) setSchoolName(user.school_name);
-      if (user.profile_image) setPhotoPreview(getProfileImageUrl(user.profile_image));
-    }
-  }, [user]);
 
   // Handle Photo File Upload
   const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,7 +111,7 @@ export default function TeacherSettingsPage() {
         return;
       }
 
-      await updateUser({
+      const result = await updateUser({
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         name: `${firstName.trim()} ${lastName.trim()}`.trim(),
@@ -121,9 +121,13 @@ export default function TeacherSettingsPage() {
         school_name: schoolName,
         teacher_code: teacherCode,
       });
+      if (!result.success) {
+        toast.error(result.error || "Unable to save your profile. Please try again.");
+        return;
+      }
       toast.success("Teacher profile updated successfully!");
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to save profile changes.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to save profile changes.");
     } finally {
       setSaving(false);
     }
@@ -131,8 +135,8 @@ export default function TeacherSettingsPage() {
 
   const handleSavePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters long.");
+    if (newPassword.length < 12 || newPassword.length > 128) {
+      toast.error("Password must be 12–128 characters long.");
       return;
     }
     if (newPassword !== confirmPassword) {

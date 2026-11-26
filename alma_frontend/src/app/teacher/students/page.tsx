@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import TeacherSidebar from "@/components/TeacherSidebar";
 import api from "@/services/api";
 import { toast } from "sonner";
+import type { User } from "@/app/_Context/AuthContext";
 
 interface StudentRow {
   id: string;
@@ -58,8 +59,8 @@ export default function StudentPerformancePage() {
         const res = await api.get("/students");
         const list = Array.isArray(res.data?.data) ? res.data.data : [];
         if (list.length > 0) {
-          const mapped: StudentRow[] = list.map((s: any) => ({
-            id: s._id || s.id,
+          const mapped: StudentRow[] = list.map((s: User) => ({
+            id: s._id || s.id || "",
             name: `${s.first_name || ""} ${s.last_name || ""}`.trim() || s.name || "Student",
             code: s.student_code || "STU",
             grade: s.grade_level || "Grade 8",

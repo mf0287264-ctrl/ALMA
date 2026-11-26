@@ -262,4 +262,12 @@ npm run build
 
 # Start production server
 npm start
+
+# Check registration, sign-in, session refresh, navigation, and responsive pages
+# Start a local MongoDB instance first; tests create and remove an isolated database.
+npx playwright install chromium firefox webkit
+npm run test:e2e
+
+# If your local MongoDB uses a different port:
+ALMA_E2E_MONGODB_URI=mongodb://127.0.0.1:27018 npm run test:e2e
 ```

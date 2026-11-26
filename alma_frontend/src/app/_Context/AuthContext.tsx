@@ -1,11 +1,12 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useCallback, Suspense } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { signIn, signOut, useSession } from "next-auth/react";
-import { isAxiosError } from "axios";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { getSession, signIn, signOut, useSession } from "next-auth/react";
 import api from "@/services/api";
 import MangoIcon from "@/components/MangoIcon";
+import { apiError, signInError } from "@/lib/api-error";
+import { isProtectedPage, loginDestination, loginPath, protectedPages } from "@/lib/auth-routes";
 
 export interface User {
   _id?: string;
@@ -20,6 +21,7 @@ export interface User {
   school_name?: string | null;
   profile_image?: string | null;
   is_active?: boolean;
+  is_verified?: boolean;
   national_id?: string | null;
   address?: string | null;
   parent_name?: string | null;
@@ -60,7 +62,7 @@ export interface TeacherRegisterData {
   first_name: string;
   last_name: string;
   email: string;
-  password?: string;
+  password: string;
   specialization: string;
   school_name?: string | null;
   phone_number?: string | null;
@@ -71,7 +73,7 @@ export interface ParentRegisterData {
   first_name: string;
   last_name: string;
   email: string;
-  password?: string;
+  password: string;
   phone_number?: string | null;
   national_id?: string | null;
   relation?: "father" | "mother" | "guardian";
@@ -79,20 +81,12 @@ export interface ParentRegisterData {
   child_student_code?: string | null;
 }
 
-function apiError(error: unknown, fallback: string): string {
-  if (isAxiosError<{ error?: string; message?: string; details?: { message?: string }[] }>(error)) {
-    const data = error.response?.data;
-    return data?.details?.[0]?.message || data?.error || data?.message || fallback;
-  }
-  return fallback;
-}
-
 interface AuthContextType {
   user: User | null;
   role: string | null;
   loading: boolean;
-  login: (credentials: { email: string; password: string; role?: "student" | "teacher" | "admin" | "parent" }) => Promise<{ success: boolean; role?: string; error?: string }>;
-  register: (data: { name?: string; first_name?: string; last_name?: string; email: string; password?: string }) => Promise<{ success: boolean; error?: string }>;
+  login: (credentials: { email: string; password: string; role?: "student" | "teacher" | "admin" | "parent"; rememberMe?: boolean }) => Promise<{ success: boolean; role?: string; error?: string }>;
+  register: (data: { name?: string; first_name?: string; last_name?: string; email: string; password: string }) => Promise<{ success: boolean; error?: string }>;
   registerTeacher: (data: TeacherRegisterData) => Promise<{ success: boolean; error?: string }>;
   registerParent: (data: ParentRegisterData) => Promise<{ success: boolean; error?: string }>;
   updateUser: (data: Partial<User>) => Promise<{ success: boolean; error?: string }>;
@@ -120,41 +114,23 @@ export const getProfileImageUrl = (imagePath?: string | null): string => {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const PROTECTED_ROUTES = [
-  "/home",
-  "/profile",
-  "/learn",
-  "/lesson",
-  "/my-lessons",
-  "/courses",
-  "/assessments",
-  "/compete",
-  "/quize",
-  "/ai-lesson",
-  "/achievements",
-  "/teachers",
-  "/teacher",
-  "/parent",
-  "/feeds",
-  "/feed",
-  "/friends",
-  "/messages",
-];
+const PROTECTED_ROUTES = protectedPages;
 
 /**
  * Route protection and path-dependent redirection inside Suspense.
  * Next.js requires hooks reading URL data (usePathname, useSearchParams) to be
  * contained within a Suspense boundary when rendered in the RootLayout tree.
  */
-function AuthRouteGuard() {
+function AuthRouteGuard({ authenticating }: { authenticating: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const loading = status === "loading";
   const role = (session?.role as string | undefined) || null;
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || authenticating) return;
 
     const isAuthenticated = status === "authenticated";
     const isTeacherRoute = pathname === "/teacher" || pathname.startsWith("/teacher/");
@@ -168,10 +144,13 @@ function AuthRouteGuard() {
       pathname === "/" ||
       pathname === "/welcome" ||
       pathname === "/choose-role" ||
-      pathname === "/login" ||
-      pathname === "/register";
+      pathname === "/login";
 
     if (isAuthenticated) {
+      if (isGuestAuthRoute) {
+        router.replace(loginDestination(role, searchParams.get("callbackUrl")));
+        return;
+      }
       if (role === "teacher") {
         if (isGuestAuthRoute || pathname === "/home" || isParentRoute) {
           router.replace("/teacher/dashboard");
@@ -199,20 +178,12 @@ function AuthRouteGuard() {
         }
       }
     } else {
-      // Unauthenticated visitor trying to access protected dashboards
-      if (isTeacherRoute) {
-        router.replace("/login?role=teacher");
-      } else if (isParentRoute) {
-        router.replace("/login?role=parent");
-      } else if (isStudentRoute) {
-        router.replace("/welcome");
-      }
+      if (isTeacherRoute || isParentRoute || isStudentRoute)
+        router.replace(loginPath(`${pathname}${searchParams.size ? `?${searchParams}` : ""}`));
     }
-  }, [status, role, loading, pathname, router]);
+  }, [status, role, loading, authenticating, pathname, router, searchParams]);
 
-  const isProtectedRoute = PROTECTED_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
-  );
+  const isProtectedRoute = isProtectedPage(pathname);
 
   if (loading && isProtectedRoute) {
     return (
@@ -230,10 +201,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
 
   const [user, setUser] = useState<User | null>(null);
+  const [authenticating, setAuthenticating] = useState(false);
   const loading = status === "loading";
 
   // Derive role from session
   const role = (session?.role as string | undefined) || null;
+  const backendId = session?.backendId;
 
   // Fetch full profile from backend
   const fetchProfile = useCallback(async () => {
@@ -247,9 +220,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ? "/parents/profile"
           : "/students/profile";
 
-      const response = await api.get(endpoint);
+      const response = await api.get<{ data?: User }>(endpoint);
       if (response.data?.data) {
         const fetchedUser = response.data.data;
+        if (String(fetchedUser._id || fetchedUser.id) !== backendId) return null;
         if (!fetchedUser.role) {
           fetchedUser.role = role || "student";
         }
@@ -259,7 +233,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.warn("[AuthContext] Could not fetch full profile.");
     }
     return null;
-  }, [role]);
+  }, [role, backendId]);
 
   // Whenever the session becomes authenticated, load the full profile
   useEffect(() => {
@@ -273,7 +247,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Handle refresh error — force re-login
   useEffect(() => {
     if (session?.error === "RefreshAccessTokenError") {
-      signOut({ callbackUrl: "/welcome" });
+      const currentPath = `${window.location.pathname}${window.location.search}`;
+      void signOut({ callbackUrl: new URL(window.location.pathname === "/login" ? currentPath : loginPath(currentPath), window.location.origin).href });
     }
   }, [session?.error]);
 
@@ -281,28 +256,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     email,
     password,
     role: loginRole,
+    rememberMe = false,
   }: {
     email: string;
     password: string;
     role?: "student" | "teacher" | "admin" | "parent";
+    rememberMe?: boolean;
   }) => {
+    setAuthenticating(true);
+    let signedIn = false;
     try {
       const result = await signIn("credentials", {
         email,
         password,
         role: loginRole || "student",
+        rememberMe,
         redirect: false,
       });
 
-      if (result?.error) {
-        return { success: false, error: result.error };
+      if (!result?.ok || result.error) {
+        return { success: false, error: signInError(result?.error) };
       }
 
-      return { success: true, role: loginRole };
-    } catch (error: unknown) {
-      const msg =
-        error instanceof Error ? error.message : "Invalid email or password";
-      return { success: false, error: msg };
+      const signedInSession = await getSession();
+      if (!signedInSession?.backendId || signedInSession.error)
+        return { success: false, error: signInError("SessionNotSaved") };
+      signedIn = true;
+      return { success: true, role: signedInSession.role };
+    } catch {
+      return { success: false, error: signInError("AuthenticationServiceUnavailable") };
+    } finally {
+      // A successful form performs a full navigation; keep the route guard
+      // from starting a competing client navigation while that happens.
+      if (!signedIn) setAuthenticating(false);
     }
   };
 
@@ -311,18 +297,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     first_name?: string;
     last_name?: string;
     email: string;
-    password?: string;
+    password: string;
   }) => {
     try {
       await api.post("/students", formData);
-      const result = await signIn("credentials", {
+      const result = await login({
         email: formData.email,
         password: formData.password,
         role: "student",
-        redirect: false,
+        rememberMe: true,
       });
-      if (result?.error) {
-        return { success: false, error: result.error };
+      if (!result.success) {
+        return { success: false, error: `Your account was created, but sign-in failed. ${result.error}` };
       }
       return { success: true };
     } catch (error: unknown) {
@@ -333,14 +319,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const registerTeacher = async (formData: TeacherRegisterData) => {
     try {
       await api.post("/teachers", formData);
-      const result = await signIn("credentials", {
+      const result = await login({
         email: formData.email,
         password: formData.password,
         role: "teacher",
-        redirect: false,
+        rememberMe: true,
       });
-      if (result?.error) {
-        return { success: false, error: result.error };
+      if (!result.success) {
+        return { success: false, error: `Your account was created, but sign-in failed. ${result.error}` };
       }
       return { success: true };
     } catch (error: unknown) {
@@ -351,14 +337,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const registerParent = async (formData: ParentRegisterData) => {
     try {
       await api.post("/parents", formData);
-      const result = await signIn("credentials", {
+      const result = await login({
         email: formData.email,
         password: formData.password,
         role: "parent",
-        redirect: false,
+        rememberMe: true,
       });
-      if (result?.error) {
-        return { success: false, error: result.error };
+      if (!result.success) {
+        return { success: false, error: `Your account was created, but sign-in failed. ${result.error}` };
       }
       return { success: true };
     } catch (error: unknown) {
@@ -434,14 +420,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     if (typeof window !== "undefined") {
       try {
-        localStorage.clear();
-        sessionStorage.clear();
+        for (const storage of [localStorage, sessionStorage]) {
+          for (let index = storage.length - 1; index >= 0; index--) {
+            const key = storage.key(index);
+            if (key?.startsWith("alma_")) storage.removeItem(key);
+          }
+        }
       } catch (e) {
         console.warn("Error clearing browser storage:", e);
       }
     }
     setUser(null);
-    await signOut({ callbackUrl: "/welcome" });
+    await signOut({ callbackUrl: new URL("/welcome", window.location.origin).href });
   };
 
   const refreshUser = async () => {
@@ -469,7 +459,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       <Suspense fallback={null}>
-        <AuthRouteGuard />
+        <AuthRouteGuard authenticating={authenticating} />
       </Suspense>
       {children}
     </AuthContext.Provider>

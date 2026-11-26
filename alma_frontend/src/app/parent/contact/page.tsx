@@ -1,5 +1,9 @@
 "use client";
 
+import type { LinkedChildSummary, ParentTeacherSummary } from "@/types/Parent.type";
+
+import { deferRequest } from "@/lib/defer-request";
+
 import React, { useEffect, useState } from "react";
 import api from "@/services/api";
 import { toast } from "sonner";
@@ -20,8 +24,8 @@ interface HistoryMessage {
 }
 
 export default function ParentContactPage() {
-  const [children, setChildren] = useState<any[]>([]);
-  const [teachers, setTeachers] = useState<any[]>([]);
+  const [children, setChildren] = useState<LinkedChildSummary[]>([]);
+  const [teachers, setTeachers] = useState<ParentTeacherSummary[]>([]);
   const [messages, setMessages] = useState<HistoryMessage[]>([]);
 
   // Teacher message form
@@ -69,7 +73,9 @@ export default function ParentContactPage() {
   };
 
   useEffect(() => {
-    loadInitialData();
+    return deferRequest(() => {
+      loadInitialData();
+    });
   }, []);
 
   const handleSendTeacher = async (e: React.FormEvent) => {

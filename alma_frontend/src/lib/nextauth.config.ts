@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { encode } from "next-auth/jwt";
 import { encryptToken, decryptToken } from "@/utils/tokenEncryption";
-import { authSigningSecret, backendApiUrl } from "./request-security";
+import { allowedRequestOrigin, authSigningSecret, backendApiUrl, secureAuthCookies } from "./request-security";
 
 const SESSION_SECONDS = 60 * 60 * 24 * 30;
 const roles = new Set(["student", "teacher", "parent", "admin"]);
@@ -86,6 +87,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
         role: { label: "Role", type: "text" },
+        rememberMe: { label: "Remember me", type: "checkbox" },
       },
       async authorize(credentials) {
         if (
@@ -98,15 +100,22 @@ export const authOptions: NextAuthOptions = {
         const role = credentials.role || "student";
         if (!roles.has(role)) return null;
         const email = credentials.email.toLowerCase().trim();
+        let response: Response;
         try {
-          const response = await fetch(`${backendApiUrl()}/${role}s/login`, {
+          response = await fetch(`${backendApiUrl()}/${role}s/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password: credentials.password }),
             cache: "no-store",
             signal: AbortSignal.timeout(15000),
           });
-          if (!response.ok) return null;
+        } catch {
+          throw new Error("AuthenticationServiceUnavailable");
+        }
+        if (response.status === 429) throw new Error("TooManyRequests");
+        if (response.status >= 500) throw new Error("AuthenticationServiceUnavailable");
+        if (!response.ok) return null;
+        try {
           const { data } = await response.json();
           if (
             typeof data?.accessToken !== "string" ||
@@ -128,6 +137,7 @@ export const authOptions: NextAuthOptions = {
             id: String(profile._id || profile.id),
             backendId: String(profile._id || profile.id),
             role,
+            rememberMe: credentials.rememberMe === "true",
             name:
               `${profile.first_name || ""} ${profile.last_name || ""}`.trim() ||
               profile.name ||
@@ -151,6 +161,7 @@ export const authOptions: NextAuthOptions = {
           accessToken: user.accessToken,
           refreshToken: user.refreshToken,
           role: user.role,
+          rememberMe: user.rememberMe,
           backendId: user.backendId,
           name: user.name || undefined,
           accessTokenExpires: user.accessTokenExpires,
@@ -174,12 +185,13 @@ export const authOptions: NextAuthOptions = {
       session.role = token.role;
       session.backendId = token.backendId;
       session.error = token.error;
+      if (typeof token.exp === "number") session.expires = new Date(token.exp * 1000).toISOString();
       return session;
     },
     async redirect({ url, baseUrl }) {
       try {
         const target = new URL(url, baseUrl);
-        return target.origin === new URL(baseUrl).origin
+        return allowedRequestOrigin(target.origin, baseUrl)
           ? target.href
           : baseUrl;
       } catch {
@@ -216,7 +228,13 @@ export const authOptions: NextAuthOptions = {
   },
   pages: { signIn: "/login" },
   session: { strategy: "jwt", maxAge: SESSION_SECONDS },
-  jwt: { maxAge: SESSION_SECONDS },
+  jwt: {
+    maxAge: SESSION_SECONDS,
+    encode: (params) => encode({
+      ...params,
+      maxAge: params.token?.rememberMe === false ? 24 * 60 * 60 : SESSION_SECONDS,
+    }),
+  },
   secret: authSigningSecret(),
-  useSecureCookies: process.env.NODE_ENV === "production",
+  useSecureCookies: secureAuthCookies(),
 };
